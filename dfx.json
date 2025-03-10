@@ -1,0 +1,27 @@
+{
+  "canisters": {
+    "burn_price_backend": {
+      "candid": "src/burn_price_backend/burn_price_backend.did",
+      "package": "burn_price_backend",
+      "type": "rust"
+    },
+    "burn_price_frontend": {
+      "dependencies": [
+        "burn_price_backend"
+      ],
+      "source": [
+        "src/burn_price_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "burn_price_frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
