@@ -1,3 +1,4 @@
 service : {
-    "greet": (text) -> (text) query;
+  "add_price": (float32) -> ();
+  "predict": () -> (float32) query;
 }
