@@ -3,7 +3,12 @@
     "burn_price_backend": {
       "candid": "src/burn_price_backend/burn_price_backend.did",
       "package": "burn_price_backend",
-      "type": "rust"
+      "type": "custom",
+      "optimize": "cycles",
+      "build": [
+        "RUSTFLAGS='--cfg getrandom_backend=\"custom\"' cargo build --target wasm32-unknown-unknown --release -p burn_price_backend"
+      ],
+      "wasm": "target/wasm32-unknown-unknown/release/burn_price_backend.wasm"
     },
     "burn_price_frontend": {
       "dependencies": [

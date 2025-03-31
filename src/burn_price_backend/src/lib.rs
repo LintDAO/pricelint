@@ -1,10 +1,11 @@
 use ic_cdk::storage;
 use ic_cdk_macros::{init, update, query, pre_upgrade, post_upgrade};
 use candid::{CandidType, Deserialize};
-use serde::{Serialize};
+use serde::Serialize;
 use burn::backend::ndarray::{NdArray, NdArrayDevice};
 use burn::backend::Autodiff;
 use burn::tensor::Tensor;
+use getrandom::Error;
 use ic_cdk::api::management_canister::main::raw_rand;
 use std::cell::RefCell;
 
@@ -13,12 +14,11 @@ thread_local! {
 }
 
 #[no_mangle]
-#[cfg(target_arch = "wasm32")]
 unsafe extern "Rust" fn __getrandom_v03_custom(dest: *mut u8, len: usize) -> Result<(), getrandom::Error> {
     RANDOM_BUFFER.with(|buffer| {
         let mut buffer = buffer.borrow_mut();
         if buffer.len() < len {
-            return Err(getrandom::Error::new_custom(1));  // 使用 new_custom，错误码 1
+            return Err(getrandom::Error::new_custom(1));
         }
         let slice = core::slice::from_raw_parts_mut(dest, len);
         slice.copy_from_slice(&buffer[..len]);
@@ -40,17 +40,23 @@ struct State {
 
 #[init]
 fn init() {
+    RANDOM_BUFFER.with(|buffer| {
+        buffer.borrow_mut().extend_from_slice(&[1, 2, 3, 4, 5, 6, 7, 8]);
+    });
+
     let mut state = State::default();
     let model = model::PricePredictor::<Autodiff<NdArray>>::new(1, 16, 1, SEQUENCE_LENGTH);
     state.weights = Some(model.get_weights().val().into_data().to_vec().unwrap());
     state.bias = Some(model.get_bias().unwrap().val().into_data().to_vec().unwrap());
     storage::stable_save((state,)).unwrap();
+}
 
-    ic_cdk::spawn(async {
-        let randomness = raw_rand().await.unwrap().0;
-        RANDOM_BUFFER.with(|buffer| {
-            buffer.borrow_mut().extend_from_slice(&randomness);
-        });
+#[update]
+async fn refresh_random_buffer() {
+    let randomness = raw_rand().await.unwrap().0;
+    RANDOM_BUFFER.with(|buffer| {
+        buffer.borrow_mut().clear();
+        buffer.borrow_mut().extend_from_slice(&randomness);
     });
 }
 
@@ -62,11 +68,8 @@ fn pre_upgrade() {
 
 #[post_upgrade]
 fn post_upgrade() {
-    ic_cdk::spawn(async {
-        let randomness = raw_rand().await.unwrap().0;
-        RANDOM_BUFFER.with(|buffer| {
-            buffer.borrow_mut().extend_from_slice(&randomness);
-        });
+    RANDOM_BUFFER.with(|buffer| {
+        buffer.borrow_mut().extend_from_slice(&[1, 2, 3, 4, 5, 6, 7, 8]);
     });
 }
 
@@ -85,13 +88,6 @@ fn add_price(price: f32) {
         }
     }
     storage::stable_save((state,)).unwrap();
-
-    ic_cdk::spawn(async {
-        let randomness = raw_rand().await.unwrap().0;
-        RANDOM_BUFFER.with(|buffer| {
-            buffer.borrow_mut().extend_from_slice(&randomness);
-        });
-    });
 }
 
 #[query]
