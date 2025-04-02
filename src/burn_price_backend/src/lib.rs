@@ -13,12 +13,17 @@ thread_local! {
     static RANDOM_BUFFER: RefCell<Vec<u8>> = RefCell::new(Vec::new());
 }
 
+
 #[no_mangle]
-unsafe extern "Rust" fn __getrandom_v03_custom(dest: *mut u8, len: usize) -> Result<(), getrandom::Error> {
+//TODO 目前随机数是固定的，没有请求IC自带的随机数生成随机数，会导致问题，需要后续修改，但IC的随机数raw_rand不能异步填充
+//需要在 post_upgrade 或 add_price 中用 raw_rand 填充随机数
+unsafe extern "Rust" fn __getrandom_v03_custom(dest: *mut u8, len: usize) -> Result<(), Error> {
     RANDOM_BUFFER.with(|buffer| {
         let mut buffer = buffer.borrow_mut();
         if buffer.len() < len {
-            return Err(getrandom::Error::new_custom(1));
+            // 如果缓冲区不足，填充更多数据
+            let needed = len - buffer.len();
+            buffer.extend(vec![42; needed]); // 用固定值填充，避免无限循环
         }
         let slice = core::slice::from_raw_parts_mut(dest, len);
         slice.copy_from_slice(&buffer[..len]);
@@ -26,6 +31,7 @@ unsafe extern "Rust" fn __getrandom_v03_custom(dest: *mut u8, len: usize) -> Res
         Ok(())
     })
 }
+
 
 mod model;
 
@@ -41,7 +47,9 @@ struct State {
 #[init]
 fn init() {
     RANDOM_BUFFER.with(|buffer| {
-        buffer.borrow_mut().extend_from_slice(&[1, 2, 3, 4, 5, 6, 7, 8]);
+        let mut buffer = buffer.borrow_mut();
+        buffer.clear();
+        buffer.extend_from_slice(&[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
     });
 
     let mut state = State::default();
@@ -131,4 +139,9 @@ fn prepare_data(prices: &[f32]) -> (Tensor<Autodiff<NdArray>, 3>, Tensor<Autodif
         .to_device(&NdArrayDevice::Cpu);
 
     (inputs, targets)
+}
+
+#[query]
+fn get_state() -> State {
+    storage::stable_restore::<(State,)>().unwrap().0
 }
