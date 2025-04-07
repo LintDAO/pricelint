@@ -39,23 +39,22 @@ const SEQUENCE_LENGTH: usize = 5;
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Default)]
 struct State {
-    weights: Option<Vec<f32>>,
-    bias: Option<Vec<f32>>,
+    weights: Option<Vec<f32>>, // [5]，而不是 [80]
+    bias: Option<Vec<f32>>,    // [1]，而不是 [16]
     prices: Vec<f32>,
 }
 
 #[init]
 fn init() {
     RANDOM_BUFFER.with(|buffer| {
-        let mut buffer = buffer.borrow_mut();
-        buffer.clear();
-        buffer.extend_from_slice(&[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+        buffer.borrow_mut().extend_from_slice(&[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
     });
 
     let mut state = State::default();
-    let model = model::PricePredictor::<Autodiff<NdArray>>::new(1, 16, 1, SEQUENCE_LENGTH);
-    state.weights = Some(model.get_weights().val().into_data().to_vec().unwrap());
-    state.bias = Some(model.get_bias().unwrap().val().into_data().to_vec().unwrap());
+    let model = model::PricePredictor::<Autodiff<NdArray>>::new(1, 1, SEQUENCE_LENGTH); // output_size = 1
+    state.weights = Some(model.get_weights().val().into_data().to_vec().unwrap()); // 5 个元素
+    state.bias = Some(model.get_bias().unwrap().val().into_data().to_vec().unwrap()); // 1 个元素
+    state.prices = vec![100.0, 101.0, 102.0, 103.0, 104.0];
     storage::stable_save((state,)).unwrap();
 }
 
@@ -68,18 +67,18 @@ async fn refresh_random_buffer() {
     });
 }
 
-#[pre_upgrade]
-fn pre_upgrade() {
-    let state: State = storage::stable_restore::<(State,)>().unwrap().0;
-    storage::stable_save((state,)).unwrap();
-}
+// #[pre_upgrade]
+// fn pre_upgrade() {
+//     let state: State = storage::stable_restore::<(State,)>().unwrap().0;
+//     storage::stable_save((state,)).unwrap();
+// }
 
-#[post_upgrade]
-fn post_upgrade() {
-    RANDOM_BUFFER.with(|buffer| {
-        buffer.borrow_mut().extend_from_slice(&[1, 2, 3, 4, 5, 6, 7, 8]);
-    });
-}
+// #[post_upgrade]
+// fn post_upgrade() {
+//     RANDOM_BUFFER.with(|buffer| {
+//         buffer.borrow_mut().extend_from_slice(&[1, 2, 3, 4, 5, 6, 7, 8]);
+//     });
+// }
 
 #[update]
 fn add_price(price: f32) {
@@ -98,6 +97,7 @@ fn add_price(price: f32) {
     storage::stable_save((state,)).unwrap();
 }
 
+
 #[query]
 fn predict() -> f32 {
     let state: State = storage::stable_restore::<(State,)>().unwrap().0;
@@ -105,18 +105,18 @@ fn predict() -> f32 {
         return 0.0;
     }
 
-    let model = model::PricePredictor::<Autodiff<NdArray>>::from_weights(
-        state.weights.unwrap(),
-        state.bias.unwrap(),
-        SEQUENCE_LENGTH,
-    );
-    let last_sequence = &state.prices[state.prices.len() - SEQUENCE_LENGTH..];
-    let input = Tensor::<Autodiff<NdArray>, 1>::from_floats(&last_sequence[..], &NdArrayDevice::Cpu)
-        .reshape([1, SEQUENCE_LENGTH, 1])
-        .to_device(&NdArrayDevice::Cpu);
+    let weights = state.weights.unwrap();
+    let bias = state.bias.unwrap();
+    if weights.len() != 5 || bias.len() != 1 { // 调整为 5 和 1
+        ic_cdk::trap("Invalid weights or bias length");
+    }
 
-    let output = model.forward(input);
-    output.into_scalar()
+    let model = model::PricePredictor::<Autodiff<NdArray>>::from_weights(weights, bias, SEQUENCE_LENGTH);
+    let last_sequence = &state.prices[state.prices.len() - SEQUENCE_LENGTH..];
+    let input = Tensor::<Autodiff<NdArray>, 1>::from_floats(last_sequence, &NdArrayDevice::Cpu)
+        .reshape([1, SEQUENCE_LENGTH, 1]);
+    let output = model.forward(input); // [1, 1]
+    output.into_scalar() // 现在可以正确转换为标量
 }
 
 fn prepare_data(prices: &[f32]) -> (Tensor<Autodiff<NdArray>, 3>, Tensor<Autodiff<NdArray>, 2>) {
