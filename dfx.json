@@ -1,24 +1,24 @@
 {
   "canisters": {
-    "burn_price_backend": {
-      "candid": "src/burn_price_backend/burn_price_backend.did",
-      "package": "burn_price_backend",
+    "ic_burn_backend": {
+      "candid": "src/ic_burn_backend/ic_burn_backend.did",
+      "package": "ic_burn_backend",
       "type": "custom",
       "optimize": "cycles",
       "build": [
-        "RUSTFLAGS='--cfg getrandom_backend=\"custom\"' cargo build --target wasm32-unknown-unknown --release -p burn_price_backend"
+        "RUSTFLAGS='--cfg getrandom_backend=\"custom\"' cargo build --target wasm32-unknown-unknown --release -p ic_burn_backend"
       ],
-      "wasm": "target/wasm32-unknown-unknown/release/burn_price_backend.wasm"
+      "wasm": "target/wasm32-unknown-unknown/release/ic_burn_backend.wasm"
     },
-    "burn_price_frontend": {
+    "ic_burn_frontend": {
       "dependencies": [
-        "burn_price_backend"
+        "ic_burn_backend"
       ],
       "source": [
-        "src/burn_price_frontend/dist"
+        "src/ic_burn_frontend/dist"
       ],
       "type": "assets",
-      "workspace": "burn_price_frontend"
+      "workspace": "ic_burn_frontend"
     }
   },
   "defaults": {

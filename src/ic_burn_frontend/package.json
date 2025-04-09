@@ -1,10 +1,10 @@
 {
-  "name": "burn_price_frontend",
+  "name": "ic_burn_frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "setup": "npm i && dfx canister create burn_price_backend && dfx generate burn_price_backend && dfx deploy",
+    "setup": "npm i && dfx canister create ic_burn_backend && dfx generate ic_burn_backend && dfx deploy",
     "start": "vite --port 3000",
     "prebuild": "dfx generate",
     "build": "tsc && vite build",
