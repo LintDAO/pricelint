@@ -3,42 +3,34 @@ use burn::{
     tensor::{backend::Backend, Tensor},
     tensor::backend::AutodiffBackend,
     nn::{Linear, LinearConfig},
+    nn::lstm::{Lstm, LstmConfig},
     optim::{Optimizer, SgdConfig, GradientsParams},
 };
 use ic_cdk;
 
-
 #[derive(Module, Debug)]
 pub struct PricePredictor<B: Backend> {
+    lstm: Lstm<B>,
     linear: Linear<B>,
     sequence_length: usize,
 }
 
-impl<B: Backend> PricePredictor<B> where B: AutodiffBackend<Device = burn::backend::ndarray::NdArrayDevice> {
-    pub fn new(input_size: usize, output_size: usize, sequence_length: usize) -> Self {
-        let linear = LinearConfig::new(input_size * sequence_length, output_size) // [6 * 50, 1]
+impl<B: AutodiffBackend<Device = burn::backend::ndarray::NdArrayDevice>> PricePredictor<B> {
+    pub fn new(input_size: usize, hidden_size: usize, output_size: usize, sequence_length: usize) -> Self {
+        let lstm = LstmConfig::new(input_size, hidden_size, false) // 单向 LSTM
+            .init(&burn::backend::ndarray::NdArrayDevice::Cpu);
+        let linear = LinearConfig::new(hidden_size, output_size)
             .with_bias(true)
             .init(&burn::backend::ndarray::NdArrayDevice::Cpu);
-        Self { linear, sequence_length }
-    }
-
-    pub fn from_weights(weights: Vec<f32>, bias: Vec<f32>, sequence_length: usize) -> Self {
-        let input_size = 6;
-        let output_size = bias.len();
-        let weight_tensor = Tensor::<B, 1>::from_floats(weights.as_slice(), &burn::backend::ndarray::NdArrayDevice::Cpu)
-            .reshape([input_size * sequence_length, output_size]);
-        let bias_tensor = Tensor::<B, 1>::from_floats(bias.as_slice(), &burn::backend::ndarray::NdArrayDevice::Cpu);
-        let linear = Linear {
-            weight: Param::from_tensor(weight_tensor),
-            bias: Some(Param::from_tensor(bias_tensor)),
-        };
-        Self { linear, sequence_length }
+        Self { lstm, linear, sequence_length }
     }
 
     pub fn forward(&self, input: Tensor<B, 3>) -> Tensor<B, 2> {
-        let [batch, seq, features] = input.dims();
-        let input = input.reshape([batch, seq * features]);
-        self.linear.forward(input)
+        let [batch, seq, _] = input.dims();
+        let (output, _) = self.lstm.forward(input, None); // 初始状态为 None
+        let last_output = output.slice([0..batch, seq - 1..seq]); // 取最后一个时间步
+        let last_output_dim = last_output.dims()[2]; // 先获取维度
+        self.linear.forward(last_output.reshape([batch, last_output_dim])) // [batch, output_size]
     }
 
     pub fn train(&mut self, inputs: Tensor<B, 3>, targets: Tensor<B, 2>, learning_rate: f32, epochs: usize) {
@@ -48,10 +40,12 @@ impl<B: Backend> PricePredictor<B> where B: AutodiffBackend<Device = burn::backe
             let predictions = self.forward(inputs.clone());
             let loss = predictions.sub(targets.clone()).powf_scalar(2.0).mean();
             ic_cdk::println!("Epoch {}: Loss = {}", epoch + 1, loss.clone().into_scalar());
-            let grad = GradientsParams::from_grads(loss.backward(), &self.linear);
-            self.linear = optimizer.step(learning_rate as f64, self.linear.clone(), grad);
+            let grad = loss.backward();
+            let grads = GradientsParams::from_grads(grad, self);
+            *self = optimizer.step(learning_rate as f64, self.clone(), grads);
         }
     }
+
     pub fn get_weights(&self) -> &Param<Tensor<B, 2>> {
         &self.linear.weight
     }
