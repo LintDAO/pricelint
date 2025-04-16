@@ -1,0 +1,24 @@
+type PriceData = record {
+  open: float32;
+  high: float32;
+  low: float32;
+  close: float32;
+  volume: float32;
+  price_diff: float32;
+};
+
+type State = record {
+  weights: opt vec float32;
+  bias: opt vec float32;
+  prices: vec PriceData;
+  min_values: vec float32;
+  max_values: vec float32;
+};
+
+service : {
+  "add_price": (PriceData) -> ();
+  "get_state": () -> (State) query;
+  "predict": () -> (float32) query;
+  "train": (nat64) -> ();
+  "upload_json_file": (vec nat8) -> ();
+}

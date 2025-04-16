@@ -1,5 +1,5 @@
 [workspace]
 members = [
-    "src/burn_price_backend"
+    "src/ic_burn_backend"
 ]
 resolver = "2"

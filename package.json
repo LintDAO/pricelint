@@ -13,6 +13,6 @@
   },
   "type": "module",
   "workspaces": [
-    "src/burn_price_frontend"
+    "src/ic_burn_frontend"
   ]
 }
