@@ -431,6 +431,7 @@ dependencies = [
  "getrandom 0.3.2",
  "ic-cdk",
  "ic-cdk-macros 0.13.3",
+ "rand",
  "serde",
 ]
 

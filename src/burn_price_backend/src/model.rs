@@ -13,6 +13,8 @@ pub struct PricePredictor<B: Backend> {
 }
 
 impl<B: Backend> PricePredictor<B> where B: AutodiffBackend<Device = burn::backend::ndarray::NdArrayDevice> {
+    
+    //实例
     pub fn new(input_size: usize, output_size: usize, sequence_length: usize) -> Self {
         let linear = LinearConfig::new(input_size * sequence_length, output_size) // [5, 1]
             .with_bias(true)
@@ -20,6 +22,7 @@ impl<B: Backend> PricePredictor<B> where B: AutodiffBackend<Device = burn::backe
         Self { linear, sequence_length }
     }
 
+    //权重和偏置实例
     pub fn from_weights(weights: Vec<f32>, bias: Vec<f32>, sequence_length: usize) -> Self {
         let input_size = 1;
         let output_size = bias.len(); // 应为 1
@@ -33,12 +36,14 @@ impl<B: Backend> PricePredictor<B> where B: AutodiffBackend<Device = burn::backe
         Self { linear, sequence_length }
     }
 
+    //前向传播
     pub fn forward(&self, input: Tensor<B, 3>) -> Tensor<B, 2> {
         let [batch, seq, features] = input.dims();
         let input = input.reshape([batch, seq * features]); // [1, 5]
         self.linear.forward(input) // 输出 [1, 1]
     }
 
+    //训练
     pub fn train(&mut self, inputs: Tensor<B, 3>, targets: Tensor<B, 2>, learning_rate: f32, epochs: usize) {
         let config = SgdConfig::new();
         let mut optimizer = config.init();

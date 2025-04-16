@@ -1,4 +1,10 @@
 {
+  "networks": {
+    "local": {
+      "bind": "0.0.0.0:4943",
+      "type": "ephemeral"
+    }
+  },
   "canisters": {
     "burn_price_backend": {
       "candid": "src/burn_price_backend/burn_price_backend.did",
