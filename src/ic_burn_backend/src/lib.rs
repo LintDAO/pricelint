@@ -1,5 +1,6 @@
 use ic_cdk::storage;
 use ic_cdk_macros::{init, update, query};
+use ic_cdk::api::management_canister::main::raw_rand;
 use candid::{CandidType};
 use serde::{Serialize, Deserialize};
 use burn::backend::ndarray::{NdArray, NdArrayDevice};
@@ -18,8 +19,7 @@ unsafe extern "Rust" fn __getrandom_v03_custom(dest: *mut u8, len: usize) -> Res
     RANDOM_BUFFER.with(|buffer| {
         let mut buffer = buffer.borrow_mut();
         if buffer.len() < len {
-            let needed = len - buffer.len();
-            buffer.extend(vec![42; needed]);
+            return Err(getrandom::Error::new_custom(1)); 
         }
         let slice = core::slice::from_raw_parts_mut(dest, len);
         slice.copy_from_slice(&buffer[..len]);
@@ -52,13 +52,22 @@ struct State {
 }
 
 #[init]
-fn init() {
+async fn init() {
+    // 使用 raw_rand 填充 RANDOM_BUFFER
+    let random_bytes = raw_rand()
+        .await
+        .map(|(bytes,)| bytes)
+        .map_err(|_| getrandom::Error::new_custom(1)) 
+        .expect("Failed to generate random bytes");
+    
     RANDOM_BUFFER.with(|buffer| {
-        buffer.borrow_mut().extend_from_slice(&[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+        let mut buffer = buffer.borrow_mut();
+        buffer.extend_from_slice(&random_bytes);
+        ic_cdk::println!("Initialized RANDOM_BUFFER with bytes: {:?}", &random_bytes); // 打印随机字节
     });
 
     let mut state = State::default();
-    let model = model::PricePredictor::<Autodiff<NdArray>>::new(6, 16, 1, SEQUENCE_LENGTH); // input_size=6, hidden_size=16, output_size=1
+    let model = model::PricePredictor::<Autodiff<NdArray>>::new(6, 16, 1, SEQUENCE_LENGTH);
     state.weights = Some(model.get_weights().val().into_data().to_vec().unwrap());
     state.bias = Some(model.get_bias().unwrap().val().into_data().to_vec().unwrap());
     state.prices = vec![PriceData { open: 100.0, high: 101.0, low: 99.0, close: 100.5, volume: 1000.0, price_diff: 0.5 }; 50];
@@ -67,6 +76,23 @@ fn init() {
     state.max_values = max_vals;
     storage::stable_save((state,)).unwrap();
 }
+
+#[update]
+async fn refill_random_buffer() {
+    // 补充 RANDOM_BUFFER 的随机字节
+    let random_bytes = raw_rand()
+        .await
+        .map(|(bytes,)| bytes)
+        .map_err(|_| getrandom::Error::new_custom(1)) 
+        .expect("Failed to generate random bytes");
+    
+    RANDOM_BUFFER.with(|buffer| {
+        let mut buffer = buffer.borrow_mut();
+        buffer.extend_from_slice(&random_bytes);
+        ic_cdk::println!("Refilled RANDOM_BUFFER with bytes: {:?}", &random_bytes); // 打印随机字节
+    });
+}
+
 
 #[update]
 fn upload_json_file(file_content: Vec<u8>) {
