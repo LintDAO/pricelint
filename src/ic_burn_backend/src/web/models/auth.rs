@@ -20,8 +20,16 @@ pub enum ThirdPartAuthenticationType{
     Solana,
     MSQLibrary
 }
-
-
+impl Default for AuthType {
+    fn default() -> Self {
+        AuthType::ICP( ICPAuthenticationType::InternetIdentity)
+    }
+}
+impl Default for ICPAuthenticationType {
+    fn default() -> Self {
+        ICPAuthenticationType::InternetIdentity
+    }
+}
 
 pub trait Authentication<T> {
     // 1. 认证相关方法

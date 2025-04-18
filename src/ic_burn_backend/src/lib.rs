@@ -1,18 +1,51 @@
-use ic_cdk::storage;
-use ic_cdk_macros::{init, update, query};
-use candid::{CandidType};
-use serde::{Serialize, Deserialize};
+use std::borrow::Cow;
+use crate::ml::model::save_and_load;
+use crate::web::models::context::Context;
+use crate::web::models::user_model::User;
 use burn::backend::ndarray::{NdArray, NdArrayDevice};
 use burn::backend::Autodiff;
+use burn::record::{PrecisionSettings, Record, Recorder};
 use burn::tensor::Tensor;
+use candid::CandidType;
+use ic_cdk::storage;
+use ic_cdk_macros::{init, query, update};
+use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory};
+use ic_stable_structures::{DefaultMemoryImpl, StableBTreeMap, Storable};
+use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_json::Value;
 use std::cell::RefCell;
+use std::clone::Clone;
+use ic_stable_structures::storable::Bound;
+
+type Memory = VirtualMemory<DefaultMemoryImpl>;
 
 thread_local! {
     static RANDOM_BUFFER: RefCell<Vec<u8>> = RefCell::new(Vec::new());
 }
+// 全局内存管理器
 
+thread_local! {
+      static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> =RefCell::new(MemoryManager::init(DefaultMemoryImpl::default()));
+
+      static MODEL_MAP: RefCell<StableBTreeMap<String, Vec<u8>, Memory>> = RefCell::new(StableBTreeMap::init(
+            MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(0)))
+        ));
+      static STATE_MAP: RefCell<StableBTreeMap<String, State, Memory>> = RefCell::new(StableBTreeMap::init(
+            MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
+        ));
+
+
+}
+
+//存储于内存的context上下文
+thread_local! {
+    pub static USER_CONTEXT: RefCell<Context<User>> = RefCell::new(Context::new(User::default()));
+    //todo 各个上下文数据的交互贯通 user ,wallet 等
+    //todo 登录注册
+    //todo 备份
+    //todo===========数据存储于sqlite
+}
 #[no_mangle]
 unsafe extern "Rust" fn __getrandom_v03_custom(dest: *mut u8, len: usize) -> Result<(), getrandom::Error> {
     RANDOM_BUFFER.with(|buffer| {
@@ -28,7 +61,10 @@ unsafe extern "Rust" fn __getrandom_v03_custom(dest: *mut u8, len: usize) -> Res
     })
 }
 
+mod common;
+mod ml;
 mod model;
+mod web;
 
 const SEQUENCE_LENGTH: usize = 50;
 
@@ -50,6 +86,21 @@ struct State {
     min_values: Vec<f32>,
     max_values: Vec<f32>,
 }
+impl Storable for State {
+    fn to_bytes(&self) -> Cow<[u8]> {
+        let bytes = bincode::serialize(self).expect("Failed to serialize State");
+        Cow::Owned(bytes)
+    }
+
+    fn from_bytes(bytes: Cow<[u8]>) -> Self {
+        bincode::deserialize(&bytes).expect("Failed to deserialize State")
+    }
+
+    const BOUND: Bound = Bound::Bounded {
+        max_size: 10_000_000, // 调整为 State 的最大预期大小（字节）
+        is_fixed_size: false,
+    };
+}
 
 #[init]
 fn init() {
@@ -65,12 +116,18 @@ fn init() {
     let (min_vals, max_vals) = compute_min_max(&state.prices);
     state.min_values = min_vals;
     state.max_values = max_vals;
-    storage::stable_save((state,)).unwrap();
+    // storage::stable_save((state,)).unwrap();
+    STATE_MAP.with(|map|{
+        map.borrow_mut().insert(String::from("state"), state);
+    });
 }
 
 #[update]
 fn upload_json_file(file_content: Vec<u8>) {
-    let mut state: State = storage::stable_restore::<(State,)>().unwrap().0;
+    // let mut state: State = storage::stable_restore::<(State,)>().unwrap().0;
+    let mut state:State=STATE_MAP.with(|map|{
+        map.borrow_mut().get(&String::from("state")).unwrap()
+    });
     let json_str = String::from_utf8(file_content).expect("Invalid UTF-8");
     let raw_data: Value = serde_json::from_str(&json_str).expect("Invalid JSON format");
     let raw_array = raw_data.as_array().expect("JSON must be an array");
@@ -102,19 +159,44 @@ fn upload_json_file(file_content: Vec<u8>) {
     let (min_vals, max_vals) = compute_min_max(&state.prices);
     state.min_values = min_vals;
     state.max_values = max_vals;
-    storage::stable_save((state,)).unwrap();
+    // storage::stable_save((state,)).unwrap();
+    STATE_MAP.with(|map|{
+        map.borrow_mut().insert(String::from("state"), state);
+    });
 }
 
 #[update]
 fn add_price(data: PriceData) {
-    let mut state: State = storage::stable_restore::<(State,)>().unwrap().0;
+    // let mut state: State = storage::stable_restore::<(State,)>().unwrap().0;
+    let mut state:State=STATE_MAP.with(|map|{
+        map.borrow_mut().get(&String::from("state")).unwrap()
+    });
     state.prices.push(data);
-    storage::stable_save((state,)).unwrap();
+    // storage::stable_save((state,)).unwrap();
+    STATE_MAP.with(|map|{
+        map.borrow_mut().insert(String::from("state"), state);
+    });
 }
 
 #[update]
 fn train(epochs: u64) {
-    let mut state: State = storage::stable_restore::<(State,)>().unwrap().0;
+    let mut state=STATE_MAP.with(|map|{
+        let state = map.borrow_mut().get(&String::from("state"));
+        let result= state.unwrap_or_else(|| {
+            ic_cdk::println!("Failed to restore state");
+            State::default() // 提供默认状态
+        });
+        result
+    });
+    // let mut state = match storage::stable_restore::<(State,)>()
+    //
+    // {
+    //     Ok((state,)) => state,
+    //     Err(e) => {
+    //         ic_cdk::println!("Failed to restore state: {:?}", e);
+    //         State::default() // 提供默认状态
+    //     }
+    // };
     if state.prices.len() < SEQUENCE_LENGTH + 1 {
         ic_cdk::trap("Not enough data to train");
     }
@@ -132,12 +214,21 @@ fn train(epochs: u64) {
 
     state.weights = Some(model.get_weights().val().into_data().to_vec().unwrap());
     state.bias = Some(model.get_bias().unwrap().val().into_data().to_vec().unwrap());
-    storage::stable_save((state,)).unwrap();
+    // storage::stable_save((state,)).unwrap();
+    STATE_MAP.with(|map|{
+        map.borrow_mut().insert(String::from("state"), state);
+    });
+
+    //todo 先暂时在训练后自动保存,实际使用根据用户的需要手动保存和加载
+    save_and_load::save_model(model);
 }
 
 #[query]
 fn predict() -> f32 {
-    let state: State = storage::stable_restore::<(State,)>().unwrap().0;
+    // let state: State = storage::stable_restore::<(State,)>().unwrap().0;
+    let mut state:State=STATE_MAP.with(|map|{
+        map.borrow_mut().get(&String::from("state")).unwrap()
+    });
     if state.prices.len() < SEQUENCE_LENGTH || state.weights.is_none() || state.bias.is_none() {
         return 0.0;
     }
@@ -148,7 +239,10 @@ fn predict() -> f32 {
         ic_cdk::trap("Invalid weights or bias length");
     }
 
-    let model = model::PricePredictor::<Autodiff<NdArray>>::new(6, 16, 1, SEQUENCE_LENGTH);
+    // let model = model::PricePredictor::<Autodiff<NdArray>>::new(6, 16, 1, SEQUENCE_LENGTH);
+
+    //todo 先暂时在训练后自动保存,实际使用根据用户的需要手动保存和加载
+    let model = save_and_load::load_model();
     let last_sequence = &state.prices[state.prices.len() - SEQUENCE_LENGTH..];
     let input = normalize_sequence(last_sequence, &state.min_values, &state.max_values);
     let output = model.forward(input);
@@ -216,7 +310,10 @@ fn prepare_data(prices: &[PriceData], min_values: &[f32], max_values: &[f32]) ->
 
 #[query]
 fn get_state() -> State {
-    let state = storage::stable_restore::<(State,)>().unwrap().0;
+    // let state = storage::stable_restore::<(State,)>().unwrap().0;
+    let mut state:State=STATE_MAP.with(|map|{
+        map.borrow_mut().get(&String::from("state")).unwrap()
+    });
     ic_cdk::println!("Prices length: {}", state.prices.len());
     state
 }

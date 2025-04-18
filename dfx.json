@@ -1,9 +1,5 @@
 {
   "networks": {
-    "local": {
-      "bind": "0.0.0.0:4943",
-      "type": "ephemeral"
-    }
   },
   "canisters": {
     "ic_burn_backend": {
