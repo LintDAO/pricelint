@@ -4,8 +4,6 @@ use std::ptr::hash;
 use candid::Principal;
 use ic_cdk::api::time;
 use ic_cdk::caller;
-use rand::distr::Alphanumeric;
-use rand::{random, rng, Rng};
 
 pub struct  User{
     pub owner: Principal ,

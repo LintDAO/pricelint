@@ -2,7 +2,6 @@ use std::borrow::Cow;
 use crate::ml::model::save_and_load;
 use crate::web::models::context::Context;
 use crate::web::models::user_model::User;
-use ic_cdk::storage;
 use ic_cdk_macros::{init, update, query};
 use ic_cdk::api::management_canister::main::raw_rand;
 use candid::{CandidType};
@@ -17,6 +16,7 @@ use serde_json;
 use serde_json::Value;
 use std::cell::RefCell;
 use std::clone::Clone;
+use ic_cdk::{post_upgrade, pre_upgrade};
 use ic_stable_structures::storable::Bound;
 
 type Memory = VirtualMemory<DefaultMemoryImpl>;
@@ -112,7 +112,6 @@ fn init() {
     let (min_vals, max_vals) = compute_min_max(&state.prices);
     state.min_values = min_vals;
     state.max_values = max_vals;
-    storage::stable_save((state,)).unwrap();
     // storage::stable_save((state,)).unwrap();
     STATE_MAP.with(|map|{
         map.borrow_mut().insert(String::from("state"), state);
@@ -238,7 +237,6 @@ async fn train(epochs: u64) {
     model.train(inputs, targets, 0.001, epochs_per_call);
     state.weights = Some(model.get_weights().val().into_data().to_vec().unwrap());
     state.bias = Some(model.get_bias().unwrap().val().into_data().to_vec().unwrap());
-    storage::stable_save((state,)).unwrap();
     ic_cdk::println!("Train consumed {} cycles", initial_cycles - ic_cdk::api::canister_balance());
     // storage::stable_save((state,)).unwrap();
     STATE_MAP.with(|map|{
@@ -334,6 +332,15 @@ fn prepare_data(prices: &[PriceData], min_values: &[f32], max_values: &[f32]) ->
     (inputs, targets)
 }
 
+#[pre_upgrade]
+fn pre_upgrade(){
+
+}
+
+#[post_upgrade]
+fn post_upgrade(){
+
+}
 #[query]
 fn get_state() -> State {
     // let state = storage::stable_restore::<(State,)>().unwrap().0;
