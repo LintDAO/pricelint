@@ -11,12 +11,8 @@ use burn::backend::ndarray::{NdArray, NdArrayDevice};
 use burn::backend::Autodiff;
 use burn::record::{PrecisionSettings, Record, Recorder};
 use burn::tensor::Tensor;
-use candid::CandidType;
-use ic_cdk::storage;
-use ic_cdk_macros::{init, query, update};
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory};
 use ic_stable_structures::{DefaultMemoryImpl, StableBTreeMap, Storable};
-use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_json::Value;
 use std::cell::RefCell;
@@ -56,10 +52,12 @@ unsafe extern "Rust" fn __getrandom_v03_custom(dest: *mut u8, len: usize) -> Res
     RANDOM_BUFFER.with(|buffer| {
         let mut buffer = buffer.borrow_mut();
         if buffer.len() < len {
+            ic_cdk::println!("RANDOM_BUFFER insufficient, needed: {}, available: {}", len, buffer.len());
             return Err(getrandom::Error::new_custom(1));
         }
         let slice = core::slice::from_raw_parts_mut(dest, len);
         slice.copy_from_slice(&buffer[..len]);
+        ic_cdk::println!("Consumed {} bytes from RANDOM_BUFFER: {:?}", len, &buffer[..len]);
         buffer.drain(..len);
         Ok(())
     })
@@ -107,48 +105,36 @@ impl Storable for State {
 }
 
 #[init]
-async fn init() {
-    // 使用 raw_rand 填充 RANDOM_BUFFER
-    let random_bytes = raw_rand()
-        .await
-        .map(|(bytes,)| bytes)
-        .map_err(|_| getrandom::Error::new_custom(1))
-        .expect("Failed to generate random bytes");
-
-    RANDOM_BUFFER.with(|buffer| {
-        let mut buffer = buffer.borrow_mut();
-        buffer.extend_from_slice(&random_bytes);
-        ic_cdk::println!("Initialized RANDOM_BUFFER with bytes: {:?}", &random_bytes); // 打印随机字节
-    });
-
+fn init() {
     let mut state = State::default();
-    let model = model::PricePredictor::<Autodiff<NdArray>>::new(6, 16, 1, SEQUENCE_LENGTH);
-    state.weights = Some(model.get_weights().val().into_data().to_vec().unwrap());
-    state.bias = Some(model.get_bias().unwrap().val().into_data().to_vec().unwrap());
+
     state.prices = vec![PriceData { open: 100.0, high: 101.0, low: 99.0, close: 100.5, volume: 1000.0, price_diff: 0.5 }; 50];
     let (min_vals, max_vals) = compute_min_max(&state.prices);
     state.min_values = min_vals;
     state.max_values = max_vals;
+    storage::stable_save((state,)).unwrap();
     // storage::stable_save((state,)).unwrap();
     STATE_MAP.with(|map|{
         map.borrow_mut().insert(String::from("state"), state);
     });
 }
 
-#[update]
-async fn refill_random_buffer() {
-    // 补充 RANDOM_BUFFER 的随机字节
-    let random_bytes = raw_rand()
-        .await
-        .map(|(bytes,)| bytes)
-        .map_err(|_| getrandom::Error::new_custom(1))
-        .expect("Failed to generate random bytes");
 
-    RANDOM_BUFFER.with(|buffer| {
-        let mut buffer = buffer.borrow_mut();
-        buffer.extend_from_slice(&random_bytes);
-        ic_cdk::println!("Refilled RANDOM_BUFFER with bytes: {:?}", &random_bytes); // 打印随机字节
-    });
+#[update]
+async fn refill_random_buffer(count: u32) {
+    let initial_cycles = ic_cdk::api::canister_balance();
+    for _ in 0..count {
+        let random_bytes = raw_rand()
+            .await
+            .map(|(bytes,)| bytes)
+            .map_err(|_| getrandom::Error::new_custom(1))
+            .expect("Failed to generate random bytes");
+        RANDOM_BUFFER.with(|buffer| {
+            buffer.borrow_mut().extend_from_slice(&random_bytes);
+        });
+    }
+    ic_cdk::println!("Refilled RANDOM_BUFFER with {} bytes", count * 32);
+    ic_cdk::println!("refill_random_buffer consumed {} cycles", initial_cycles - ic_cdk::api::canister_balance());
 }
 
 
@@ -209,7 +195,26 @@ fn add_price(data: PriceData) {
 }
 
 #[update]
-fn train(epochs: u64) {
+async fn train(epochs: u64) {
+    let initial_cycles = ic_cdk::api::canister_balance();
+    // 检查并填充 RANDOM_BUFFER
+    let needs_fill = RANDOM_BUFFER.with(|buffer| buffer.borrow().len() < 32);
+    if needs_fill {
+        let mut random_bytes = Vec::new();
+        for _ in 0..10 { // 填充 320 字节
+            let bytes = raw_rand()
+                .await
+                .map(|(bytes,)| bytes)
+                .map_err(|_| getrandom::Error::new_custom(1))
+                .expect("Failed to generate random bytes");
+            random_bytes.extend_from_slice(&bytes);
+        }
+        RANDOM_BUFFER.with(|buffer| {
+            buffer.borrow_mut().extend_from_slice(&random_bytes);
+            ic_cdk::println!("Train initialized RANDOM_BUFFER with 320 bytes: {:?}", &random_bytes);
+        });
+    }
+
     let mut state=STATE_MAP.with(|map|{
         let state = map.borrow_mut().get(&String::from("state"));
         let result= state.unwrap_or_else(|| {
@@ -218,15 +223,7 @@ fn train(epochs: u64) {
         });
         result
     });
-    // let mut state = match storage::stable_restore::<(State,)>()
-    //
-    // {
-    //     Ok((state,)) => state,
-    //     Err(e) => {
-    //         ic_cdk::println!("Failed to restore state: {:?}", e);
-    //         State::default() // 提供默认状态
-    //     }
-    // };
+
     if state.prices.len() < SEQUENCE_LENGTH + 1 {
         ic_cdk::trap("Not enough data to train");
     }
@@ -236,14 +233,13 @@ fn train(epochs: u64) {
     if let (Some(weights), Some(bias)) = (&state.weights, &state.bias) {
         // 这里可以添加逻辑加载权重和偏置到模型中（当前仅保存 Linear 层的权重）
     }
-
     let (inputs, targets) = prepare_data(&state.prices, &state.min_values, &state.max_values);
-    // 单次调用只执行 5 个 epoch，避免指令限制
     let epochs_per_call = 5.min(epochs as usize);
-    model.train(inputs, targets, 0.001, epochs_per_call); // 提高学习率到 0.001
-
+    model.train(inputs, targets, 0.001, epochs_per_call);
     state.weights = Some(model.get_weights().val().into_data().to_vec().unwrap());
     state.bias = Some(model.get_bias().unwrap().val().into_data().to_vec().unwrap());
+    storage::stable_save((state,)).unwrap();
+    ic_cdk::println!("Train consumed {} cycles", initial_cycles - ic_cdk::api::canister_balance());
     // storage::stable_save((state,)).unwrap();
     STATE_MAP.with(|map|{
         map.borrow_mut().insert(String::from("state"), state);
