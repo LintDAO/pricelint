@@ -1694,6 +1694,8 @@ dependencies = [
  "ic-cdk",
  "ic-cdk-macros 0.13.3",
  "ic-stable-structures",
+ "ic0",
+ "lazy_static",
  "serde",
  "serde_json",
 ]

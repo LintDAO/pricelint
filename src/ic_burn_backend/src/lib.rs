@@ -1,11 +1,11 @@
 use std::borrow::Cow;
-use crate::ml::model::save_and_load;
+use crate::ml::model::{default_model, record};
 use crate::web::models::context::Context;
 use crate::web::models::user_model::User;
-use ic_cdk_macros::{init, update, query};
+use ic_cdk_macros::{init, query, update};
 use ic_cdk::api::management_canister::main::raw_rand;
-use candid::{CandidType};
-use serde::{Serialize, Deserialize};
+use candid::CandidType;
+use serde::{Deserialize, Serialize};
 use burn::backend::ndarray::{NdArray, NdArrayDevice};
 use burn::backend::Autodiff;
 use burn::record::{PrecisionSettings, Record, Recorder};
@@ -29,12 +29,9 @@ thread_local! {
 thread_local! {
       static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> =RefCell::new(MemoryManager::init(DefaultMemoryImpl::default()));
 
-      static MODEL_MAP: RefCell<StableBTreeMap<String, Vec<u8>, Memory>> = RefCell::new(StableBTreeMap::init(
-            MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(0)))
-        ));
-      static STATE_MAP: RefCell<StableBTreeMap<String, State, Memory>> = RefCell::new(StableBTreeMap::init(
-            MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
-        ));
+      static MODEL_MAP: RefCell<StableBTreeMap<String, Vec<u8>, Memory>> = RefCell::new(StableBTreeMap::init(MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(0)))));
+      static STATE_MAP: RefCell<StableBTreeMap<String, State, Memory>> = RefCell::new(StableBTreeMap::init(MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))));
+      static USER_MAP: RefCell<StableBTreeMap<String, State, Memory>> = RefCell::new(StableBTreeMap::init(MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(2)))));
 
 
 }
@@ -45,7 +42,6 @@ thread_local! {
     //todo 各个上下文数据的交互贯通 user ,wallet 等
     //todo 登录注册
     //todo 备份
-    //todo===========数据存储于sqlite
 }
 #[no_mangle]
 unsafe extern "Rust" fn __getrandom_v03_custom(dest: *mut u8, len: usize) -> Result<(), getrandom::Error> {
@@ -65,7 +61,6 @@ unsafe extern "Rust" fn __getrandom_v03_custom(dest: *mut u8, len: usize) -> Res
 
 mod common;
 mod ml;
-mod model;
 mod web;
 
 const SEQUENCE_LENGTH: usize = 50;
@@ -196,6 +191,7 @@ fn add_price(data: PriceData) {
 #[update]
 async fn train(epochs: u64) {
     let initial_cycles = ic_cdk::api::canister_balance();
+    ic_cdk::println!("Cycles init{}", initial_cycles );
     // 检查并填充 RANDOM_BUFFER
     let needs_fill = RANDOM_BUFFER.with(|buffer| buffer.borrow().len() < 32);
     if needs_fill {
@@ -226,7 +222,7 @@ async fn train(epochs: u64) {
     if state.prices.len() < SEQUENCE_LENGTH + 1 {
         ic_cdk::trap("Not enough data to train");
     }
-    let mut model = model::PricePredictor::<Autodiff<NdArray>>::new(6, 16, 1, SEQUENCE_LENGTH);
+    let mut model = default_model::PricePredictor::<Autodiff<NdArray>>::new(6, 16, 1, SEQUENCE_LENGTH);
 
     // 如果已有权重和偏置，加载它们（可选）
     if let (Some(weights), Some(bias)) = (&state.weights, &state.bias) {
@@ -244,11 +240,15 @@ async fn train(epochs: u64) {
     });
 
     //todo 先暂时在训练后自动保存,实际使用根据用户的需要手动保存和加载
-    save_and_load::save_model(model);
+    record::save_model(model);
+
+    ic_cdk::println!("Cycles used end: {}", ic_cdk::api::canister_balance());
 }
 
 #[query]
 fn predict() -> f32 {
+    let initial_cycles = ic_cdk::api::canister_balance();
+
     // let state: State = storage::stable_restore::<(State,)>().unwrap().0;
     let mut state:State=STATE_MAP.with(|map|{
         map.borrow_mut().get(&String::from("state")).unwrap()
@@ -266,10 +266,11 @@ fn predict() -> f32 {
     // let model = model::PricePredictor::<Autodiff<NdArray>>::new(6, 16, 1, SEQUENCE_LENGTH);
 
     //todo 先暂时在训练后自动保存,实际使用根据用户的需要手动保存和加载
-    let model = save_and_load::load_model();
+    let model = record::load_model();
     let last_sequence = &state.prices[state.prices.len() - SEQUENCE_LENGTH..];
     let input = normalize_sequence(last_sequence, &state.min_values, &state.max_values);
     let output = model.forward(input);
+    ic_cdk::println!("Cycles used end: {}", ic_cdk::api::canister_balance());
     denormalize(output.into_scalar(), state.min_values[3], state.max_values[3])
 }
 

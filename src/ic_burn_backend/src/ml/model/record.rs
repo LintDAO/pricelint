@@ -1,20 +1,10 @@
 use crate::ml::model::common::ModelCategories;
 use crate::ml::model::common::RNN;
-use crate::model::{PricePredictor, PricePredictorRecord};
-use crate::{model, MODEL_MAP, SEQUENCE_LENGTH};
-use burn::module::{ConstantRecord, Module};
-use burn::record::{
-    BinBytesRecorder, BinFileRecorder, FileRecorder, FullPrecisionSettings, HalfPrecisionSettings,
-    NamedMpkFileRecorder, Record, Recorder,
-};
+use crate::ml::model::default_model::{PricePredictor, PricePredictorRecord};
+use crate::{MODEL_MAP, SEQUENCE_LENGTH};
+use burn::module::Module;
+use burn::record::{BinBytesRecorder, FullPrecisionSettings, Recorder};
 use burn::tensor::backend::AutodiffBackend;
-use ic_cdk::api::stable;
-use ic_cdk::storage::{stable_restore, stable_save};
-use ic_cdk::{print, storage};
-use serde::__private::de::IdentifierDeserializer;
-use std::io::Read;
-use std::str::from_utf8;
-
 // 保存模型
 pub fn save_model<B>(model: PricePredictor<B>)
 where
@@ -33,8 +23,7 @@ where
                     .expect("Failed to save LSTM model");
                 MODEL_MAP.with(|map| {
                     let mut ref_mut = map.borrow_mut();
-                    ref_mut.insert("model".to_string(),bytes);
-                   
+                    ref_mut.insert("model".to_string(), bytes);
                 })
             }
         },
