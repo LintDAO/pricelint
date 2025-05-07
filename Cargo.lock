@@ -1696,6 +1696,7 @@ dependencies = [
  "ic-stable-structures",
  "ic0",
  "lazy_static",
+ "proc_macro",
  "serde",
  "serde_json",
 ]
@@ -2228,6 +2229,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a31971752e70b8b2686d7e46ec17fb38dad4051d94024c88df49b667caea9c84"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "proc_macro"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn 2.0.100",
 ]
 
 [[package]]

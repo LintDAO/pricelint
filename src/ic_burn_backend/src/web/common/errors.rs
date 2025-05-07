@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use serde::{Deserialize, Serialize};
+use crate::impl_error;
 
 // 认证错误类型
 #[derive(Serialize, Deserialize, Debug)]
@@ -9,15 +10,18 @@ pub enum AuthenticationError {
     Unauthorized=2,
     UnsupportedAuthenticationType=3,
 }
-impl Display for AuthenticationError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "AuthenticationError:{:?}", self)
-    }
-}
-impl Error for AuthenticationError {}
-impl From<AuthenticationError> for std::fmt::Error {
-    fn from(_err: AuthenticationError) -> std::fmt::Error {
-        std::fmt::Error
-    }
-}
+impl_error!(AuthenticationError);
 
+
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum UserError {
+
+}
+impl_error!(UserError);
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum WalletError {
+
+}
+impl_error!(WalletError);
