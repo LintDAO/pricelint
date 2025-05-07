@@ -2,25 +2,25 @@
   "networks": {
   },
   "canisters": {
-    "ic_burn_backend": {
-      "candid": "src/ic_burn_backend/ic_burn_backend.did",
-      "package": "ic_burn_backend",
+    "backend": {
+      "candid": "src/backend/backend.did",
+      "package": "backend",
       "type": "custom",
       "optimize": "cycles",
       "build": [
-        "RUSTFLAGS='--cfg getrandom_backend=\"custom\"' cargo build --target wasm32-unknown-unknown --release -p ic_burn_backend"
+        "RUSTFLAGS='--cfg getrandom_backend=\"custom\"' cargo build --target wasm32-unknown-unknown --release -p backend"
       ],
-      "wasm": "target/wasm32-unknown-unknown/release/ic_burn_backend.wasm"
+      "wasm": "target/wasm32-unknown-unknown/release/backend.wasm"
     },
-    "ic_burn_frontend": {
+    "frontend": {
       "dependencies": [
-        "ic_burn_backend"
+        "backend"
       ],
       "source": [
-        "src/ic_burn_frontend/dist"
+        "src/frontend/dist"
       ],
       "type": "assets",
-      "workspace": "ic_burn_frontend"
+      "workspace": "frontend"
     }
   },
   "defaults": {
