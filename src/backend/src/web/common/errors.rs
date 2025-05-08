@@ -25,3 +25,18 @@ pub enum WalletError {
 
 }
 impl_error!(WalletError);
+
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum PredictorError {
+    NotExistedPredictions=1,
+    UnknownError =999
+}
+impl_error!(PredictorError);
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum GuardError {
+    IsNotAdministrator,
+    IsAnonymousUser,
+}
+impl_error!(GuardError);
