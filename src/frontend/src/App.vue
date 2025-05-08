@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import { ic_burn_backend } from "declarations/ic_burn_backend"; // 导入 canister 接口
+import { backend } from "declarations/backend"; // 导入 canister 接口
 
 export default {
   name: "App",
@@ -34,7 +34,7 @@ export default {
         const bytes = new Uint8Array(arrayBuffer);
 
         // 调用 canister 的 upload_json_file 函数
-        await ic_burn_backend .upload_json_file(Array.from(bytes));
+        await backend .upload_json_file(Array.from(bytes));
         this.message = "File uploaded successfully!";
       } catch (error) {
         this.message = `Upload failed: ${error.message}`;
