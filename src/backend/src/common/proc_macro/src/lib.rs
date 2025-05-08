@@ -9,7 +9,9 @@ pub fn generate_service_trait(input: TokenStream) -> TokenStream {
     let name = parse_macro_input!(input as Ident);
 
     let lower_case = input_clone.to_string().to_lowercase();
-    let create_fun_token = format!("{}_{}", "create_deafult", lower_case).parse().unwrap();
+    let create_fun_token = format!("{}_{}", "create_deafult", lower_case)
+        .parse()
+        .unwrap();
     let create_fun_ident = parse_macro_input!(create_fun_token as Ident);
 
     let update_fun_token = format!("{}_{}", "update", lower_case).parse().unwrap();
@@ -23,27 +25,24 @@ pub fn generate_service_trait(input: TokenStream) -> TokenStream {
     let ident = parse_macro_input!(tt as Ident);
     quote! {
         pub trait #ident {
-            const  MAP:&'static LocalKey<RefCell<ic_stable_structures::btreemap::BTreeMap<String, Context<#name>, Memory>>>;
 
             type Output;
 
-            fn is_exist(principal: Principal) -> bool;
-
             fn #create_fun_ident() -> Option<Self::Output>;
 
-            fn #delete_fun_ident(&self);
+            fn #delete_fun_ident(id:String)->bool;
 
             fn #update_fun_ident(data:Context<Self::Output>);
 
-            fn find_all()->Vec<Self::Output>;
+            fn create_with_context(context:Self::Output);
 
-            fn find_one_by_id(id:String)->Self::Output;
+            fn find_all()->Option<Vec<Self::Output>>;
 
-            fn find_list_by_id(id:String)->Vec<Self::Output>;
+            fn find_one_by_id(id:String)->Option<Self::Output>;
 
-            fn find_one_by_principal(principal:Principal)->Self::Output;
+            fn find_one_by_principal(principal:Principal)->Option<Self::Output>;
 
-            fn find_list_by_principal(principal:Principal)->Vec<Self::Output>;
+            fn find_list_by_principal(principal:Principal)->Option<Vec<Self::Output>>;
         }
 
     }
@@ -61,13 +60,13 @@ pub fn generate_service_impl(input: TokenStream) -> TokenStream {
 
     let lower_case = type_name.to_string().to_lowercase();
 
-    let create_fun_token = format!("{}_{}", "create_deafult", lower_case).parse().unwrap();
+    let create_fun_token = format!("{}_{}", "create_deafult", lower_case)
+        .parse()
+        .unwrap();
     let create_fun_ident = parse_macro_input!(create_fun_token as Ident);
-
 
     let update_fun_token = format!("{}_{}", "update", lower_case).parse().unwrap();
     let update_fun_ident = parse_macro_input!(update_fun_token as Ident);
-
 
     let delete_fun_token = format!("{}_{}", "delete", lower_case).parse().unwrap();
     let delete_fun_ident = parse_macro_input!(delete_fun_token as Ident);
@@ -76,18 +75,19 @@ pub fn generate_service_impl(input: TokenStream) -> TokenStream {
     let tt = service.parse().unwrap();
     let ident = parse_macro_input!(tt as Ident);
     quote! {
+    lazy_static!{
+        static ref MAP:&'static LocalKey<RefCell<ic_stable_structures::btreemap::BTreeMap<String, Context<#type_name>, Memory>>>=&#map_name;
+    }
     impl #ident for #type_name {
-
-            const  MAP:&'static LocalKey<RefCell<ic_stable_structures::btreemap::BTreeMap<String, Context<#type_name>, Memory>>>=&#map_name;
 
             type Output=#type_name;
 
             fn #create_fun_ident()->Option<Self::Output> {
                 let context = Context::new(Self::Output::default());
                 let ret=map_insert!(
-                    Self::MAP,
-                    context.owner.unwrap().to_string(),
-                    context
+                    MAP,
+                    context.id.clone().unwrap(),
+                    context.clone()
                 );
                 ret.unwrap().context
             }
@@ -104,6 +104,7 @@ pub fn generate_service_impl(input: TokenStream) -> TokenStream {
                     Some(_) => true,
                 }
             }
+
             fn #update_fun_ident(data:Context<Self::Output>){
                 let update = MAP.with(|map| {
                 let mut bm = map.borrow_mut();
@@ -111,46 +112,49 @@ pub fn generate_service_impl(input: TokenStream) -> TokenStream {
                 });
                 update
             }
-
-            fn create_with_context(context:Self::Output){
-               let context = Context::new(context);
-                    let ret=map_insert!(
-                        Self::MAP,
-                        context.owner.unwrap().to_string(),
-                        context
-                    );
-                ret.unwrap().context
+           fn create_with_context(context_detail:Self::Output){
+                let ctx = Context::new(context_detail);
+                 let ret=map_insert!(
+                     MAP,
+                     ctx.id.clone().unwrap(),
+                     ctx
+                 );
             }
 
-            fn find_all()->Vec<Self::Output>{
-                MAP.with(|map| map.borrow_mut().values().cloned().into())
-            }
-
-            fn find_by_id(id:String)->Option<Self::Output>{
+            fn find_all()->Option<Vec<Self::Output>>{
                 MAP.with(|map| {
-                    map.borrow_mut()
-                        .find(|&(k, v)| v.id.unwrap() == id)
-                        .iter()
-                        .collect()
+                    let mut borrowed_map = map.borrow_mut();
+                    borrowed_map.values().map(|x| {
+                        x.context
+                    }).collect()
                 })
             }
 
-
-
-            fn find_one_by_principal(principal:Principal)-><Option<Self::Output>>{
-                MAP.with(|map| {
-                    map.borrow_mut()
-                        .find(|&(k, v)| v.owner.unwrap() == principal)
-                        .iter()
-                        .collect()
-                })
+            fn find_one_by_id(id:String)->Option<Self::Output>{
+               let ret= map_get!(MAP,&id);
+                match ret{
+                    Some(val)=>val.context,
+                    None=>None
+                }
             }
 
-            fn find_list_by_principal(principal:Principal)->Option<Vec<Self::Output>>{
+
+
+            fn find_one_by_principal(principal:Principal)->Option<Self::Output>{
+                MAP.with(|map| {
+                        map.borrow_mut()
+                            .iter()
+                            .find(|(_, user)| user.owner.unwrap()==principal)
+                            .map(|(_, user)| user.context.clone().unwrap())
+                    })
+            }
+
+             fn find_list_by_principal(principal:Principal)->Option<Vec<Self::Output>>{
                 MAP.with(|map| {
                     map.borrow_mut()
-                        .find(|&(k, v)| v.owner.unwrap() == principal)
                         .iter()
+                        .filter(|(_, ctx)| ctx.owner.unwrap()==principal) // 示例条件
+                        .map(|(_, ctx)| ctx.context.clone())
                         .collect()
                 })
             }

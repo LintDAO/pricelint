@@ -1,11 +1,19 @@
-use crate::State;
-use crate::web::models::context::Context;
-use crate::web::models::user_model::User;
 
 #[macro_export]
 macro_rules! map_get {
-    ($map:expr,$key: expr) => {
-        $map.with(|map| map.borrow_mut().get($key))
+    ($map:expr ,$key: expr) => {
+       $map.with(|map| {
+            let mut value=map.borrow_mut().get($key);
+            value
+        })
+    };
+    (ref $map:expr, $key:expr) => {{
+        $map.with(|map| map.deref_mut().borrow_mut().get($key))
+    }};
+    ($map:expr, $key:expr,$t:lifetime) => {
+        $map.with(|map| {
+            map.borrow::<$t>().get($key).cloned()
+        })
     };
 }
 #[macro_export]
@@ -13,19 +21,25 @@ macro_rules! map_insert {
     ($map: expr,$key: expr,$data: expr) => {
         $map.with(|map| map.borrow_mut().insert($key, $data))
     };
+    (ref $map:expr, $key:expr) => {{
+        $map.with(|map| map.deref_mut().borrow_mut().insert($key, $data))
+    }};
 }
 macro_rules! map_remove {
     ($map: expr,$key: expr) => {
         $map.with(|map| map.borrow_mut().remove($key))
     };
+    (ref $map:expr, $key:expr) => {{
+        $map.with(|map| map.deref_mut().borrow_mut().remove($key))
+    }};
 }
+
 
 #[macro_export]
 macro_rules! impl_storable {
+
     ($type:ident <$gen:ident >) => {
-        use ic_stable_structures::storable::Bound;
-        use ic_stable_structures::Storable;
-        use std::borrow::Cow;
+
 
         impl Storable for $type<$gen> {
             fn to_bytes(&self) -> Cow<[u8]> {
@@ -45,9 +59,6 @@ macro_rules! impl_storable {
     };
 
     ($type:ident) => {
-        use ic_stable_structures::storable::Bound;
-        use ic_stable_structures::Storable;
-        use std::borrow::Cow;
 
         impl Storable for $type {
             fn to_bytes(&self) -> Cow<[u8]> {
@@ -67,31 +78,15 @@ macro_rules! impl_storable {
     };
 }
 
-#[macro_export]
-macro_rules! generate_generic_service_trait {
-    ($x:ident) => {
-            pub trait $x {
-                type Output;
 
-                fn create() -> Option<Self::Output>;
-
-                fn is_exist(principal: Principal) -> bool;
-
-                fn get(principal: Principal) -> Option<Self::Output>;
-
-                fn delete(&self);
-            }
-
-    };
-}
 
 #[macro_export]
 macro_rules! impl_error {
     ($entity:ident) => {
         impl Display for $entity {
             fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-                let str=stringify!($entity).from();
-                write!(f,str+":{:?}", self)
+                let entity_name = stringify!($entity);
+                write!(f, "{}:{:?}", entity_name, self)
             }
         }
         impl Error for $entity {}
