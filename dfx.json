@@ -1,9 +1,8 @@
 {
-  "networks": {
-  },
+  "networks": {},
   "canisters": {
     "backend": {
-      "candid": "src/backend/backend.did",
+      "candid": "backend/backend.did",
       "package": "backend",
       "type": "custom",
       "optimize": "cycles",
@@ -13,12 +12,8 @@
       "wasm": "target/wasm32-unknown-unknown/release/backend.wasm"
     },
     "frontend": {
-      "dependencies": [
-        "backend"
-      ],
-      "source": [
-        "src/frontend/dist"
-      ],
+      "dependencies": ["backend"],
+      "source": ["frontend/dist"],
       "type": "assets",
       "workspace": "frontend"
     }
