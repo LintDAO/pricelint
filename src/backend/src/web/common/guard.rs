@@ -36,8 +36,8 @@ pub fn is_admin<'admin>() -> Result<(), String> {
 
 pub fn is_named_user<'user>() -> Result<(), String>{
     let current_user=caller();
-    let normal_users=map_get!(ROLE_USER_TREE,&OWNER_ROLE_TAG.to_string(),'user);
-    if  normal_users.unwrap().contains(&current_user){
+    let named_users=map_get!(ROLE_USER_TREE,&OWNER_ROLE_TAG.to_string(),'user);
+    if  named_users.unwrap().contains(&current_user){
         return Ok(());
     }
     Err(GuardError::IsAnonymousUser.to_string())
