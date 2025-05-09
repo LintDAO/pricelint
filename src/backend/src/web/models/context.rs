@@ -1,13 +1,18 @@
-use candid::Principal;
+use candid::{CandidType, Principal};
 use ic_cdk::api::time;
 use ic_cdk::caller;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use burn::tensor::T;
 use serde::{Deserialize, Serialize};
 use crate::impl_storable;
+use crate::web::models::predictor_model::Predictor;
 use crate::web::models::user_model::User;
+use crate::web::models::wallet_model::Wallet;
+use ic_stable_structures::storable::Bound;
+use ic_stable_structures::Storable;
+use std::borrow::Cow;
 
-#[derive(Serialize,Deserialize,Debug,Clone)]
+#[derive(Serialize,Deserialize,Debug,Clone,CandidType)]
 pub struct Context<T> {
     pub id: Option<String>,
     pub context: Option<T>,
@@ -39,3 +44,5 @@ impl<T> Context<T> {
 }
 
 impl_storable!(Context<User>);
+impl_storable!(Context<Wallet>);
+impl_storable!(Context<Predictor>);
