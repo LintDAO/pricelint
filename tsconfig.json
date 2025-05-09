@@ -1,11 +1,35 @@
 {
-    "compilerOptions": {
-        "strict": true,
-        "target": "ES2020",
-        "experimentalDecorators": true,
-        "strictPropertyInitialization": false,
-        "moduleResolution": "node",
-        "allowJs": true,
-        "outDir": "HACK_BECAUSE_OF_ALLOW_JS"
-    }
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "strict": true,
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "jsx": "preserve",
+    "sourceMap": true,
+    "allowJs": true,
+    "checkJs": false,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "lib": ["esnext", "dom"],
+    "useDefineForClassFields": true,
+    "outDir": "./dist",
+    "types": ["vite/client"],
+    "paths": {
+      "@/*": ["frontend/*"],
+      "canisters/backend": ["./.dfx/ic/canisters/backend"]
+    },
+    "baseUrl": ".",
+    "importsNotUsedAsValues": "error",
+    "ignoreDeprecations": "5.0", //忽略ts新版本对importsNotUsedAsValues的报错
+    "isolatedModules": true
+  },
+  "include": [
+    "frontend/**/*.ts",
+    "frontend/**/*.d.ts",
+    "frontend/**/*.tsx",
+    "frontend/**/*.vue",
+    "frontend/types/*.d.ts"
+  ]
 }

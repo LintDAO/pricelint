@@ -1,0 +1,137 @@
+html,
+body {
+  height: 100%;
+}
+a {
+  color: #007bff;
+  text-decoration: none;
+  background-color: transparent;
+}
+a:hover {
+  cursor: pointer;
+}
+
+/*垂直居中*/
+.flex-y-center {
+  display: flex;
+  align-items: center;
+}
+/* 无阴影，圆角更圆润的扁平化q-card*/
+.flat-card {
+  box-shadow: none !important;
+  border-radius: 0.75em !important;
+}
+// 为qcard扁平化的同时添加适度阴影
+.flat-qcard-shadow {
+  box-shadow: none !important;
+  border-radius: 0.75em !important;
+  .q-card__section {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* 修改quasar组件样式 */
+.q-table__grid-item-value {
+  word-wrap: break-word;
+}
+.q-item__label {
+  word-wrap: break-word;
+}
+
+.q-tooltip--style {
+  font-size: 12px !important; //默认的font-size 10px太小了，这里强制12px大一点
+}
+/* 修改element+组件样式 */
+.el-picker__popper {
+  z-index: 6001 !important; //quasar弹窗z-index为6000，所以element的日期选择器需要更高一点
+}
+
+.el-date-editor {
+  height: 56px !important;
+  font-size: 16px !important;
+  line-height: 20px;
+  .el-icon,
+  .el-range-input {
+    font-size: 16px;
+    line-height: 20px;
+  }
+}
+
+.el-date-range-picker .el-picker-panel__sidebar {
+  width: 120px;
+}
+
+.head-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.selected-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* 页面适配 */
+.container-xxl,
+.container-xl,
+.container-lg,
+.container-md,
+.container-sm,
+.container {
+  padding-left: 0;
+  padding-right: 0;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+@media (min-width: 576px) {
+  .container-sm,
+  .container {
+    max-width: 540px;
+  }
+}
+@media (min-width: 768px) {
+  .container-md,
+  .container-sm,
+  .container {
+    max-width: 720px;
+  }
+}
+@media (min-width: 992px) {
+  .container-lg,
+  .container-md,
+  .container-sm,
+  .container {
+    max-width: 960px;
+  }
+}
+@media (min-width: 1200px) {
+  .container-xl,
+  .container-lg,
+  .container-md,
+  .container-sm,
+  .container {
+    max-width: 1140px;
+  }
+}
+@media (min-width: 1400px) {
+  .container-xxl,
+  .container-xl,
+  .container-lg,
+  .container-md,
+  .container-sm,
+  .container {
+    //max-width: 1320px;
+    max-width: 1200px; /* 网站设计风格 用 1200 宽度 */
+  }
+}
+@media (min-width: 1440px) {
+  .container-xl {
+    max-width: 1440px;
+  }
+}
+
+/* 点击效果 */
+.clickable {
+  cursor: pointer;
+}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+  <meta name="keywords" content="<%- keywords %>" />
+  <meta name="author" content="<%- author %>" />
+  <meta name="description" content="<%- description %>" />
+  <link rel="icon" type="image/svg+xml" href="/frontend/assets/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title><%- title %></title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="module">
+      /**
+       * @dfinity/agent requires this. Can be removed once it's fixed
+       */
+      import { Buffer } from "buffer"
+
+      window.global = window
+      window.Buffer = Buffer
+    </script>
+    <script type="module" src="/frontend/main.ts"></script>
+</body>
+</html>
