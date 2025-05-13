@@ -5,7 +5,7 @@
 .VSCodeCounter/
 
 
-##frontend code----------------------------------
+## frontend code----------------------------------
 # dependencies:
 node_modules/
 # compiled frontend for distribution , such as .vue->.js .scss->.css
@@ -13,27 +13,30 @@ dist/
 # front-end dependency analysis files
 dependency-analysis.html
 
-##backend codes------------------------------
+## backend codes------------------------------
 # binary file , debug file 
 target/
 # anywhere of folder named target
 
-#share .dfx folder for delicated development
+# share .dfx folder for delicated development
 # TODO
 # in the .dfx folder
 # exclusive track and  upload 
 # 1. .dfx/ic/canisters/
 # 2. .dfx/ic/canister_ids.json
 # .dfx
-.dfx
+# 忽略 .dfx 下的所有内容
+
+
+# 例外：跟踪本地环境的 backend 相关文件
 !/.dfx/local/canisters/backend/backend.did
-!/.dfx/local/canisters/backend/backend.did.d.ts  
+!/.dfx/local/canisters/backend/backend.did.d.ts
 !/.dfx/local/canisters/backend/backend.did.js
 !/.dfx/local/canisters/backend/index.js
 
-
+# 例外：跟踪主网环境的 backend 相关文件
 !/.dfx/ic/canisters/backend/backend.did
-!/.dfx/ic/canisters/backend/backend.did.d.ts  
+!/.dfx/ic/canisters/backend/backend.did.d.ts
 !/.dfx/ic/canisters/backend/backend.did.js
 !/.dfx/ic/canisters/backend/index.js
 .log
