@@ -47,3 +47,4 @@ Cargo.lock
 
 # testing framewrok binary 
 pocket-ic*
+package-lock.json

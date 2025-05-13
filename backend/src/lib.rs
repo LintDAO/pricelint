@@ -9,7 +9,7 @@ use burn::record::{PrecisionSettings, Record, Recorder};
 use burn::tensor::Tensor;
 use candid::{CandidType, Principal};
 use ic_cdk::api::management_canister::main::raw_rand;
-use ic_cdk::{post_upgrade, pre_upgrade};
+use ic_cdk::{export_candid, post_upgrade, pre_upgrade};
 use ic_cdk_macros::{init, query, update};
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory};
 use ic_stable_structures::storable::Bound;
@@ -431,3 +431,5 @@ fn get_state() -> State {
     ic_cdk::println!("Prices length: {}", state.prices.len());
     state
 }
+
+ic_cdk::export_candid!();
