@@ -18,7 +18,7 @@
     "types": ["vite/client"],
     "paths": {
       "@/*": ["frontend/*"],
-      "canisters/backend": ["./.dfx/ic/canisters/backend"]
+      "canisters/backend": [".dfx/ic/canisters/backend"]
     },
     "baseUrl": ".",
     "importsNotUsedAsValues": "error",
@@ -30,6 +30,8 @@
     "frontend/**/*.d.ts",
     "frontend/**/*.tsx",
     "frontend/**/*.vue",
-    "frontend/types/*.d.ts"
+    "frontend/types/*.d.ts",
+    ".dfx/ic/canisters/backend/*.d.ts",
+    ".dfx/ic/canisters/backend/*.js"
   ]
 }
