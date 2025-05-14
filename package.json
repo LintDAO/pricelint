@@ -22,7 +22,6 @@
     "@dfinity/sns": "^3.0.0",
     "@dfinity/utils": "^2.5.0",
     "@infu/icblast": "^2.0.46",
-    "@psychedelic/dab-js": "^1.6.0-alpha.2",
     "@quasar/extras": "^1.16.5",
     "axios": "^1.6.2",
     "echarts": "^5.4.3",
