@@ -17,6 +17,7 @@
       "frontend": {
         "entrypoint": "dist/index.html"
       }
+    }
   },
   "defaults": {
     "build": {
