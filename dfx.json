@@ -12,11 +12,11 @@
       "wasm": "target/wasm32-unknown-unknown/release/backend.wasm"
     },
     "frontend": {
-      "dependencies": ["backend"],
-      "source": ["frontend/dist"],
       "type": "assets",
-      "workspace": "frontend"
-    }
+      "source": ["dist/"],
+      "frontend": {
+        "entrypoint": "dist/index.html"
+      }
   },
   "defaults": {
     "build": {
