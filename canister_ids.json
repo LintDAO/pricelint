@@ -1,8 +1,8 @@
 {
-  "frontend": {
-    "ic": ""
-  },
   "backend": {
+    "ic": "eov5t-niaaa-aaaah-arepa-cai"
+  },
+  "frontend": {
     "ic": ""
   }
 }
