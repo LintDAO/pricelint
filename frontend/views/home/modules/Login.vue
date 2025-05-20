@@ -4,18 +4,18 @@
       <div class="description row">
         <div class="col-12 col-md-6">
           <h4 style="margin-top: 0; margin-bottom: 10px">
-            Welcome to TallyLint🧾
+            Welcome to PriceLint🧾
           </h4>
           <div class="q-mb-xl">
             <div>
               <span class="text-body1">
-                TallyLint is a 100% decentralized on-chain app that enables ICP
+                PriceLint is a 100% decentralized on-chain app that enables ICP
                 users to track the value of every transaction with precision.
               </span>
               <br />
               <span class="text-body1">
                 Offering private and secure services through smart contracts,
-                TallyLint makes asset management effortless and efficient.
+                PriceLint makes asset management effortless and efficient.
               </span>
             </div>
             <q-btn

@@ -30,12 +30,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref } from "vue";
 const comments = ref([
   {
     author: "Adam K.",
     from: "X",
-    description: `TallyLint is going to save me at least 10 hours on filing my taxes this year.
+    description: `PriceLint is going to save me at least 10 hours on filing my taxes this year.
     You can sort by ICP wallet and get your cost basis in USD using FIFO as required by the IRS.`,
   },
   {
@@ -47,9 +47,9 @@ const comments = ref([
     author: "Jerry",
     from: "Builder",
     description: `Holding multiple wallets makes it difficult for me to manage all my possessions at once, 
-    and using TallyLint makes it much easier.`,
+    and using PriceLint makes it much easier.`,
   },
-])
+]);
 </script>
 
 <style lang="scss" scoped>
