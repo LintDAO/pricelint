@@ -1,11 +1,11 @@
-interface PredictionData {
+export type PredictionData = {
   staked: number;
   up: number;
   down: number;
-}
+};
 
-interface TimePoint {
+export type TimePoint = {
   price: number;
-  trend: "Up" | "Down";
+  trend: string;
   pred: PredictionData | null;
-}
+};

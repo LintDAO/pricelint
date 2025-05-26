@@ -6,31 +6,54 @@
           <q-card flat bordered>
             <q-item>
               <q-item-section>
-                <q-item-label caption style="font-size: 1rem">
-                  Holdings
-                </q-item-label>
                 <q-table
-                  title="Predictions"
+                  title="Accurate price predictions for your favorite crypto assets"
                   :rows="rows"
                   :columns="columns"
                   row-key="id"
                   flat
                 >
                   <template #body-cell-asset="props">
-                    <q-td :props="props">
-                      <q-icon
-                        v-if="props.row.source.icon"
-                        :name="props.row.source.icon"
-                        size="sm"
-                        class="q-mr-sm"
-                      />
-                      <q-icon
-                        v-else
-                        name="mdi-help-circle"
-                        size="sm"
-                        class="q-mr-sm"
-                      />
-                      {{ props.row.name }} ({{ props.row.source.name }})
+                    <q-td :props="props" class="token">
+                      <q-item dense>
+                        <q-item-section class="token-logo">
+                          <q-icon
+                            :name="'img:' + props.row.token.logo"
+                            size="28px"
+                          />
+                        </q-item-section>
+
+                        <q-item-section>
+                          <q-item-label class="text-subtitle2">
+                            {{ props.row.token.name }}
+                          </q-item-label>
+                          <q-item-label caption>
+                            <q-icon
+                              :name="'img:' + props.row.source.logo"
+                              size="10px"
+                            />
+                            {{ props.row.source.name }}
+                          </q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    </q-td>
+                  </template>
+                  <!-- 预测插槽 -->
+                  <template
+                    v-for="colName in ['last_2', 'last_1', 'now', 'next']"
+                    :key="colName"
+                    v-slot:[`body-cell-${colName}`]="props"
+                  >
+                    <q-td :props="props" class="text-center q-py-xs">
+                      <div>${{ props.value?.price?.toFixed(2) ?? "-" }}</div>
+                      <div v-if="colName !== 'now'" class="text-caption">
+                        Pred
+                        {{
+                          props.value?.pred
+                            ? `↑${props.value.pred.up}% ↓${props.value.pred.down}%`
+                            : "-"
+                        }}
+                      </div>
                     </q-td>
                   </template>
                   <template #body-cell-stake="props">
@@ -42,7 +65,8 @@
                           : 'text-negative'
                       "
                     >
-                      {{ props.value.amount.toFixed(2) }} USDT (
+                      {{ props.value.amount }}
+                      USDT (
                       <q-icon
                         :name="
                           props.value.change > 0
@@ -52,7 +76,7 @@
                         size="xs"
                       />
                       {{ props.value.change > 0 ? "+" : ""
-                      }}{{ props.value.change.toFixed(1) }}%)
+                      }}{{ props.value.change }}%)
                     </q-td>
                   </template>
                 </q-table>
@@ -71,8 +95,10 @@
 <script lang="ts" setup>
 import { IdentityInfo, initAuth, signIn } from "@/api/auth";
 import { setCurrentIdentity } from "@/api/canister_pool";
+import { MARKETS } from "@/api/constants/markets";
 import { useUserStore } from "@/stores/user";
 import type { TableColumn } from "@/types/model";
+import type { TimePoint } from "@/types/predict";
 import { debounce } from "quasar";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -82,8 +108,8 @@ const userStore = useUserStore();
 
 interface RowData {
   id: number;
-  name: string;
-  source: { name: string; icon: string };
+  token: { name: string; logo: string };
+  source: { name: string; logo: string };
   last_2: TimePoint;
   last_1: TimePoint;
   now: TimePoint;
@@ -116,47 +142,31 @@ const updateTable = debounce(() => {
     },
     {
       name: "last_2",
-      label: times[0],
+      label: times[0], // 01:35
       field: "last_2",
       align: "center",
-      format: (val) =>
-        `${val.price.toFixed(2)} ${val.trend} ${
-          val.pred
-            ? `(PredUp ${val.pred.up}% Up, ${val.pred.down}% Down, Staked ${val.pred.staked} USDT)`
-            : ""
-        }`,
+      sortable: true,
     },
     {
       name: "last_1",
-      label: times[1],
+      label: times[1], // 01:40
       field: "last_1",
       align: "center",
-      format: (val) =>
-        `${val.price.toFixed(2)} ${val.trend} ${
-          val.pred
-            ? `(PredUp ${val.pred.up}% Up, ${val.pred.down}% Down, Staked ${val.pred.staked} USDT)`
-            : ""
-        }`,
+      sortable: true,
     },
     {
       name: "now",
-      label: times[2],
+      label: times[2], // 01:50
       field: "now",
       align: "center",
-      format: (val) =>
-        `${val.price.toFixed(2)} ${val.trend} ${
-          val.pred
-            ? `(PredUp ${val.pred.up}% Up, ${val.pred.down}% Down, Staked ${val.pred.staked} USDT)`
-            : ""
-        }`,
+      sortable: true,
     },
     {
       name: "next",
-      label: `${times[3]} (Predictions)`,
+      label: `${times[3]}`, // 01:50 (预测)
       field: "next",
       align: "center",
-      format: (val) =>
-        val ? `${val.trend} staked (Pred ${val.pred.staked} USDT)` : "?",
+      sortable: true,
     },
     {
       name: "accuracy",
@@ -182,8 +192,8 @@ const updateTable = debounce(() => {
   rows.value = [
     {
       id: 1,
-      name: "BTC-USDT",
-      source: { name: "BINANCE", icon: "img:https://example.com/binance.png" },
+      token: { name: "BTC-USDT", logo: "/frontend/assets/icons/BTC.svg" },
+      source: { name: "BINANCE" },
       last_2: {
         price: 105133.25,
         trend: "Down",
@@ -201,8 +211,8 @@ const updateTable = debounce(() => {
     },
     {
       id: 2,
-      name: "ETH-USDT",
-      source: { name: "BINANCE", icon: "" },
+      token: { name: "ETH-USDT", logo: "/frontend/assets/icons/ETH.svg" },
+      source: { name: "BINANCE" },
       last_2: {
         price: 3200.45,
         trend: "Up",
@@ -218,7 +228,13 @@ const updateTable = debounce(() => {
       accuracy: 62.3,
       stake: { amount: 16000, change: 5.2 },
     },
-  ];
+  ].map((item) => ({
+    ...item,
+    source: {
+      name: item.source.name,
+      logo: MARKETS[item.source.name]?.logo,
+    },
+  }));
 }, 500);
 
 // 计算时间标签
@@ -243,6 +259,7 @@ const getTimeLabels = (now: Date) => {
       hour12: false,
       hour: "2-digit",
       minute: "2-digit",
+      second: "2-digit",
     }), // now
     new Date(baseTime.getTime() + 5 * 60 * 1000).toLocaleTimeString("en-US", {
       hour12: false,
@@ -255,7 +272,7 @@ const getTimeLabels = (now: Date) => {
 // 初始化和定时更新
 onMounted(() => {
   updateTable();
-  setInterval(updateTable, 60 * 1000); // 每分钟更新
+  // setInterval(updateTable, 60 * 1000); // 每分钟更新
 });
 
 const onLogin = async () => {
@@ -337,6 +354,14 @@ const loginSuccess = (ii: IdentityInfo) => {
     position: absolute;
     bottom: 0;
     left: 0;
+  }
+}
+.token {
+  .q-item {
+    padding-left: 0;
+    .token-logo {
+      max-width: 28px;
+    }
   }
 }
 </style>
