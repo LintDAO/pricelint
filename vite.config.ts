@@ -288,7 +288,7 @@ function initAlias(canisterIds: {}, network: string, apiPositions: {}) {
       );
     } else {
       //前端容器没有api 自然不需要报警
-      if (canister !== "assets") {
+      if (canister !== "frontend") {
         console.error(`canister ${canister} api position is missing.`);
       }
     }
