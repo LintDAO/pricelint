@@ -3,16 +3,34 @@
     <div class="container login-container">
       <div class="description row">
         <div class="col-12">
+          <h5>Accurate price predictions for your favorite crypto assets</h5>
           <q-card flat bordered>
             <q-item>
               <q-item-section>
                 <q-table
-                  title="Accurate price predictions for your favorite crypto assets"
                   :rows="rows"
                   :columns="columns"
                   row-key="id"
                   flat
+                  :pagination="{ rowsPerPage: 0 }"
+                  hide-bottom
                 >
+                  <template
+                    v-for="col in columns"
+                    :key="col.name"
+                    v-slot:[`header-cell-${col.name}`]="props"
+                  >
+                    <q-th
+                      :props="props"
+                      class="text-weight-bolder"
+                      style="font-size: 16px"
+                    >
+                      {{ props.col.label }}!
+                      <q-tooltip>{{
+                        columnTooltips[col.name] || "无描述"
+                      }}</q-tooltip>
+                    </q-th>
+                  </template>
                   <template #body-cell-asset="props">
                     <q-td :props="props" class="token">
                       <q-item dense>
@@ -45,38 +63,64 @@
                     v-slot:[`body-cell-${colName}`]="props"
                   >
                     <q-td :props="props" class="text-center q-py-xs">
-                      <div>${{ props.value?.price?.toFixed(2) ?? "-" }}</div>
+                      <!-- 上面的一行：价格或stake -->
+                      <div class="flex-y-center justify-center">
+                        <span
+                          v-if="colName !== 'next'"
+                          class="flex-y-center text-subtitle1"
+                        >
+                          ${{ props.row[colName].price.toFixed(2) }}
+                          <ArrowIcon
+                            :direction="props.row[colName].trend"
+                            size="12px"
+                          />
+                        </span>
+                        <span v-else>
+                          {{
+                            props.row[colName]?.pred?.staked.toFixed(2) ?? "0"
+                          }}
+                          staked
+                        </span>
+                      </div>
+                      <!-- 下面的一行：预测（now 除外） -->
                       <div v-if="colName !== 'now'" class="text-caption">
                         Pred
-                        {{
-                          props.value?.pred
-                            ? `↑${props.value.pred.up}% ↓${props.value.pred.down}%`
-                            : "-"
-                        }}
+                        <ArrowIcon
+                          :direction="props.row[colName]?.pred?.trend"
+                          size="12px"
+                        />
+                        <span>
+                          {{
+                            props.row[colName]?.pred
+                              ? `${props.row[colName].pred.up}↑ ${props.row[colName].pred.down}↓`
+                              : "-"
+                          }}
+                        </span>
                       </div>
                     </q-td>
                   </template>
                   <template #body-cell-stake="props">
-                    <q-td
-                      :props="props"
-                      :class="
-                        props.row.stake.change > 0
-                          ? 'text-positive'
-                          : 'text-negative'
-                      "
-                    >
-                      {{ props.value.amount }}
-                      USDT (
-                      <q-icon
-                        :name="
-                          props.value.change > 0
-                            ? 'mdi-arrow-up'
-                            : 'mdi-arrow-down'
+                    <q-td :props="props">
+                      <span class="text-subtitle1">
+                        {{ props.row.stake.amount.toFixed(1) }}&nbsp;
+                      </span>
+                      <span
+                        :class="
+                          props.row.stake.change > 0
+                            ? 'text-positive'
+                            : 'text-negative'
                         "
-                        size="xs"
-                      />
-                      {{ props.value.change > 0 ? "+" : ""
-                      }}{{ props.value.change }}%)
+                      >
+                        {{ props.row.stake.change > 0 ? "+" : "" }}
+                        {{ props.row.stake.change }}%
+                      </span>
+                    </q-td>
+                  </template>
+                  <template #body-cell-accuracy="props">
+                    <q-td :props="props">
+                      <span class="text-subtitle1">
+                        {{ props.row.accuracy + " %" }}
+                      </span>
                     </q-td>
                   </template>
                 </q-table>
@@ -84,7 +128,7 @@
             </q-item>
           </q-card>
         </div>
-        <div class="logo">
+        <div class="logo q-mt-md flex justify-center">
           <img alt="logo" src="@/assets/on-chain.svg" />
         </div>
       </div>
@@ -96,6 +140,7 @@
 import { IdentityInfo, initAuth, signIn } from "@/api/auth";
 import { setCurrentIdentity } from "@/api/canister_pool";
 import { MARKETS } from "@/api/constants/markets";
+import ArrowIcon from "@/components/ArrowIcon.vue";
 import { useUserStore } from "@/stores/user";
 import type { TableColumn } from "@/types/model";
 import type { TimePoint } from "@/types/predict";
@@ -120,6 +165,15 @@ interface RowData {
 
 const columns = ref<TableColumn[]>([]);
 const rows = ref<RowData[]>([]);
+const columnTooltips: Record<string, string> = {
+  asset: "显示交易对和来源交易所",
+  last_2: "10分钟前的价格和预测（02:20）",
+  last_1: "5分钟前的价格和预测（02:25）",
+  now: "当前价格（02:32）",
+  next: "下一时间点的预测（02:35）",
+  accuracy: "过去一周预测准确率",
+  stake: "最近24小时的质押金额和变化",
+};
 
 onMounted(() => {
   // getOKInfo()
@@ -145,46 +199,36 @@ const updateTable = debounce(() => {
       label: times[0], // 01:35
       field: "last_2",
       align: "center",
-      sortable: true,
     },
     {
       name: "last_1",
       label: times[1], // 01:40
       field: "last_1",
       align: "center",
-      sortable: true,
     },
     {
       name: "now",
       label: times[2], // 01:50
       field: "now",
       align: "center",
-      sortable: true,
     },
     {
       name: "next",
       label: `${times[3]}`, // 01:50 (预测)
       field: "next",
       align: "center",
-      sortable: true,
     },
     {
       name: "accuracy",
       label: "Accuracy (1 week)",
       field: "accuracy",
       align: "center",
-      sortable: true,
-      format: (val) => `${val}%`,
     },
     {
       name: "stake",
       label: "Stake (24h)",
       field: "stake",
       align: "center",
-      format: (val) =>
-        `${val.amount.toFixed(2)} USDT (${
-          val.change > 0 ? "+" : ""
-        }${val.change.toFixed(1)}%)`,
     },
   ];
 
@@ -197,15 +241,18 @@ const updateTable = debounce(() => {
       last_2: {
         price: 105133.25,
         trend: "Down",
-        pred: { staked: 100.5, up: 39.091, down: 36.109 },
+        pred: { staked: 100.5, up: 39.091, down: 36.109, trend: "Up" },
       },
       last_1: {
         price: 105223.01,
         trend: "Down",
-        pred: { staked: 100.5, up: 39.091, down: 36.109 },
+        pred: { staked: 100.5, up: 39.091, down: 36.109, trend: "Up" },
       },
       now: { price: 105248.65, trend: "Up", pred: null },
-      next: { trend: "Up", pred: { staked: 76.2, up: 45.5, down: 30.2 } },
+      next: {
+        trend: "Up",
+        pred: { staked: 76.2, up: 45.5, down: 30.2, trend: "Up" },
+      },
       accuracy: 51.9,
       stake: { amount: 23786.0, change: 5.2 },
     },
@@ -216,15 +263,18 @@ const updateTable = debounce(() => {
       last_2: {
         price: 3200.45,
         trend: "Up",
-        pred: { staked: 76.2, up: 45.5, down: 30.2 },
+        pred: { staked: 76.2, up: 45.5, down: 30.2, trend: "Up" },
       },
       last_1: {
         price: 3210.12,
         trend: "Up",
-        pred: { staked: 76.2, up: 46.0, down: 29.8 },
+        pred: { staked: 76.2, up: 46.0, down: 29.8, trend: "Up" },
       },
       now: { price: 3195.78, trend: "Down", pred: null },
-      next: { trend: "Up", pred: { staked: 76.2, up: 45.5, down: 30.2 } },
+      next: {
+        trend: "Up",
+        pred: { staked: 76.2, up: 45.5, down: 30.2, trend: "Up" },
+      },
       accuracy: 62.3,
       stake: { amount: 16000, change: 5.2 },
     },
@@ -341,19 +391,10 @@ const loginSuccess = (ii: IdentityInfo) => {
   }
 }
 .login-container {
-  padding-top: 100px;
+  padding-top: 50px;
   padding-bottom: 250px;
-
-  .description > div {
-    position: relative;
-  }
-  .login-button {
-    margin-top: 50px;
-  }
   .logo {
-    position: absolute;
-    bottom: 0;
-    left: 0;
+    width: 100%;
   }
 }
 .token {
