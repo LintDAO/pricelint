@@ -32,6 +32,7 @@ export declare interface ViteEnv {
 export type TableColumn = {
   name: string;
   required?: boolean;
+  subtitle?: string;
   label: string;
   field: string | ((row: any) => any);
   align?: "left" | "right" | "center";
