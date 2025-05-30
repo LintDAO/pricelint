@@ -21,7 +21,7 @@
           :loading="loading"
           no-caps
         >
-          Launch app
+          Start Predicting
         </q-btn>
       </div>
     </q-toolbar>

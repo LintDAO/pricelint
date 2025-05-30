@@ -3,9 +3,11 @@
     <div class="container login-container">
       <div class="description row">
         <div class="col-12">
-          <h5>Accurate price predictions for your favorite crypto assets</h5>
+          <div class="text-h5 q-my-md">
+            Accurate price predictions for your favorite crypto assets
+          </div>
           <q-card flat bordered>
-            <q-item>
+            <q-item style="padding-top: 0; padding-bottom: 0">
               <q-item-section>
                 <q-table
                   :rows="rows"
@@ -15,6 +17,7 @@
                   :pagination="{ rowsPerPage: 0 }"
                   hide-bottom
                 >
+                  <!-- 表头 -->
                   <template
                     v-for="col in columns"
                     :key="col.name"
@@ -22,13 +25,46 @@
                   >
                     <q-th
                       :props="props"
-                      class="text-weight-bolder"
+                      class="text-bold"
                       style="font-size: 16px"
                     >
-                      {{ props.col.label }}!
-                      <q-tooltip>{{
-                        columnTooltips[col.name] || "无描述"
-                      }}</q-tooltip>
+                      <div
+                        class="row items-center"
+                        :class="{
+                          'justify-center': props.col.align === 'center',
+                          'justify-start': props.col.align === 'left',
+                        }"
+                        style="gap: 8px"
+                      >
+                        <!-- 左侧文字部分 -->
+                        <div class="column" style="line-height: 1">
+                          <span>{{ props.col.label }}</span>
+                          <span
+                            v-if="props.col.subtitle"
+                            class="text-caption"
+                            style="font-size: 11px"
+                          >
+                            {{ props.col.subtitle }}
+                          </span>
+                        </div>
+                        <!-- 右侧图标，仅当有 tooltip 时显示 -->
+                        <el-tooltip
+                          v-if="columnTooltips[col.name]"
+                          effect="dark"
+                          placement="bottom"
+                        >
+                          <template #content>
+                            <span style="white-space: pre-wrap">
+                              {{ columnTooltips[col.name] }}
+                            </span>
+                          </template>
+                          <q-icon
+                            name="error_outline"
+                            size="16px"
+                            class="cursor-pointer"
+                          />
+                        </el-tooltip>
+                      </div>
                     </q-th>
                   </template>
                   <template #body-cell-asset="props">
@@ -128,7 +164,7 @@
             </q-item>
           </q-card>
         </div>
-        <div class="logo q-mt-md flex justify-center">
+        <div class="logo q-mt-lg flex justify-center">
           <img alt="logo" src="@/assets/on-chain.svg" />
         </div>
       </div>
@@ -166,13 +202,15 @@ interface RowData {
 const columns = ref<TableColumn[]>([]);
 const rows = ref<RowData[]>([]);
 const columnTooltips: Record<string, string> = {
-  asset: "显示交易对和来源交易所",
-  last_2: "10分钟前的价格和预测（02:20）",
-  last_1: "5分钟前的价格和预测（02:25）",
-  now: "当前价格（02:32）",
-  next: "下一时间点的预测（02:35）",
-  accuracy: "过去一周预测准确率",
-  stake: "最近24小时的质押金额和变化",
+  last_2:
+    "Price at the specified time with direction compared to previous prediction time price. \nIf subscribed, the prediction data it's going to be displayed.",
+  last_1:
+    "Price at the specified time with direction compared to previous prediction time price. \nIf subscribed, the prediction data it's going to be displayed.",
+  now: "Live price and direction compared to previous prediction time price. \nPrice is refreshed every 60 seconds.",
+  next: "Predicted price direction for the time specified time. Check PCL staked and stake directions for a higher confidence.",
+  accuracy: "Percentage of accurate predictions over the last 1 week.",
+  stake:
+    "The percentage difference in the total number of PCL tokens invested in the past 24 hours compared to the previous day.",
 };
 
 onMounted(() => {
@@ -217,18 +255,21 @@ const updateTable = debounce(() => {
       label: `${times[3]}`, // 01:50 (预测)
       field: "next",
       align: "center",
+      subtitle: "Predictions",
     },
     {
       name: "accuracy",
-      label: "Accuracy (1 week)",
+      label: "Accuracy ",
       field: "accuracy",
       align: "center",
+      subtitle: "1 week",
     },
     {
       name: "stake",
-      label: "Stake (24h)",
+      label: "Stake",
       field: "stake",
       align: "center",
+      subtitle: "24h",
     },
   ];
 

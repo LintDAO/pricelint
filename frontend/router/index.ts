@@ -1,6 +1,10 @@
-import Home from "@/views/home/Home.vue"
-import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router"
-import errors from "./modules/errors"
+import { initAuth } from "@/api/auth";
+import { setCurrentIdentity } from "@/api/canister_pool";
+import App from "@/views/app/AppHome.vue";
+import DashBoard from "@/views/app/modules/Dashboard.vue";
+import Home from "@/views/home/Home.vue";
+import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
+import errors from "./modules/errors";
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -8,24 +12,37 @@ const routes: Array<RouteRecordRaw> = [
     name: "Home",
     component: Home,
   },
-  // {
-  //   path: "/market",
-  //   component: MarketLayout, // 只是一个布局容器
-  //   children: [
-  //     { path: "", name: "Market", component: Market }, // /market
-  //     { path: "post", name: "Post", component: PostPredict }, // /market/post
-  //   ],
-  // }
+  {
+    path: "/app",
+    // name: 'App',
+    component: App,
+    beforeEnter: async (to, from, next) => {
+      //校验权限，提前准备好canister的连接，以免出现调用canister时没有认证用户的情况
+      try {
+        const ai = await initAuth();
+        if (ai.info) {
+          setCurrentIdentity(ai.info.identity, ai.info.principal);
+        }
+        next();
+      } catch (error) {
+        // 处理错误情况
+        console.error("beforeEnter Err:", error);
+        // 没有登录的情况下，重定向到登录页面
+        next("/");
+      }
+    },
+    children: [{ name: "App", path: "", component: DashBoard }],
+  },
   ...errors,
   {
     path: "/:catchAll(.*)",
     redirect: "/error/404",
   },
-]
+];
 
 const router = createRouter({
   history: createWebHistory("/"),
   routes,
-})
+});
 
-export default router
+export default router;
