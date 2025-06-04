@@ -7,6 +7,7 @@
       "type": "custom",
       "optimize": "cycles",
       "build": [
+        "candid-extractor target/wasm32-unknown-unknown/release/backend.wasm > backend/backend.did",
         "RUSTFLAGS='--cfg getrandom_backend=\"custom\"' cargo build --target wasm32-unknown-unknown --release -p backend"
       ],
       "wasm": "target/wasm32-unknown-unknown/release/backend.wasm"

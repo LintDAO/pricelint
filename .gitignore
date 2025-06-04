@@ -27,8 +27,7 @@ target/
 # .dfx
 # 忽略 .dfx 下的所有内容
 
-.dfx
-
+/.dfx/*
 # 例外：跟踪本地环境的 service 相关文件
 !/.dfx/local/canisters/backend/service.did
 !/.dfx/local/canisters/backend/service.did.d.ts
@@ -46,7 +45,7 @@ target/
 
 # only git repo root folder call .env ignore. anywhere else dont .
 /.env
-
+/temp
 Cargo.lock
 
 # testing framewrok binary 

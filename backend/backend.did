@@ -1,24 +1,63 @@
+type Pred = record {
+  up : float64;
+  staked : float64;
+  trend : text;
+  down : float64;
+};
+type Predictor = record {
+  id : text;
+  trend : opt text;
+  name : text;
+  pred : Pred;
+  stake : record { float64; float64 };
+  create_time : nat64;
+  price : float64;
+};
+type PredictorView = record {
+  id : text;
+  now : opt Predictor;
+  next : opt Predictor;
+  last_1 : opt Predictor;
+  last_2 : opt Predictor;
+  stake : record { float64; float64 };
+  create_time : nat64;
+  accuracy : float64;
+};
 type PriceData = record {
-  open: float32;
-  high: float32;
-  low: float32;
-  close: float32;
-  volume: float32;
-  price_diff: float32;
+  low : float32;
+  high : float32;
+  close : float32;
+  open : float32;
+  volume : float32;
+  price_diff : float32;
 };
-
+type Result = variant { Ok : PredictorView; Err : text };
+type Result_1 = variant { Ok : vec Predictor; Err : text };
+type Result_2 = variant { Ok : bool; Err : text };
 type State = record {
-  weights: opt vec float32;
-  bias: opt vec float32;
-  prices: vec PriceData;
-  min_values: vec float32;
-  max_values: vec float32;
+  bias : opt vec float32;
+  max_values : vec float32;
+  weights : opt vec float32;
+  prices : vec PriceData;
+  min_values : vec float32;
 };
-
-service : {
-  "add_price": (PriceData) -> ();
-  "get_state": () -> (State) query;
-  "predict": () -> (float32) query;
-  "train": (nat64) -> ();
-  "upload_json_file": (vec nat8) -> ();
+type User = record {
+  id : text;
+  owner : principal;
+  name : text;
+  create_time : nat64;
+};
+service : () -> {
+  add_price : (PriceData) -> ();
+  create_user : () -> ();
+  find_user_lists : () -> (vec User) query;
+  get_state : () -> (State) query;
+  pred : () -> (Result) query;
+  predict : () -> (float32) query;
+  refill_random_buffer : (nat32) -> ();
+  show_predictions : () -> (Result_1) query;
+  test : () -> (nat32) query;
+  train : (nat64) -> ();
+  upload_json_file : (blob) -> ();
+  user_login : () -> (Result_2) query;
 }
