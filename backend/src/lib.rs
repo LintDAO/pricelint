@@ -94,7 +94,7 @@ unsafe extern "Rust" fn __getrandom_v03_custom(
 
 mod common;
 mod ml;
-mod web;
+pub mod web;
 
 const SEQUENCE_LENGTH: usize = 50;
 
@@ -308,9 +308,6 @@ async fn train(epochs: u64) {
 
 #[query]
 fn predict() -> f32 {
-    let initial_cycles = ic_cdk::api::canister_balance();
-
-    // let state: State = storage::stable_restore::<(State,)>().unwrap().0;
     let mut state: State =
         STATE_MAP.with(|map| map.borrow_mut().get(&String::from("state")).unwrap());
     if state.prices.len() < SEQUENCE_LENGTH || state.weights.is_none() || state.bias.is_none() {
@@ -325,13 +322,11 @@ fn predict() -> f32 {
     }
 
     // let model = model::PricePredictor::<Autodiff<NdArray>>::new(6, 16, 1, SEQUENCE_LENGTH);
-
     //todo 先暂时在训练后自动保存,实际使用根据用户的需要手动保存和加载
     let model = record::load_model();
     let last_sequence = &state.prices[state.prices.len() - SEQUENCE_LENGTH..];
     let input = normalize_sequence(last_sequence, &state.min_values, &state.max_values);
     let output = model.forward(input);
-    ic_cdk::println!("Cycles used end: {}", ic_cdk::api::canister_balance());
     denormalize(
         output.into_scalar(),
         state.min_values[3],
@@ -431,5 +426,18 @@ fn get_state() -> State {
     ic_cdk::println!("Prices length: {}", state.prices.len());
     state
 }
+#[query]
+fn test()->u32{
+    123
+}
+pub mod export{
+    use ic_cdk::{export_candid, query};
+    use crate::web::models::predictor_model::{PredictorView,Predictor};
+    use crate::web::models::user_model::{User};
+    use super::PriceData;
+    use  super::State;
 
-ic_cdk::export_candid!();
+
+    export_candid!();
+}
+
