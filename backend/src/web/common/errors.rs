@@ -22,7 +22,9 @@ impl_error!(UserError);
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum WalletError {
-
+    GetICPBalanceFailed,
+    GetCyclesFailed,
+    UnknownError
 }
 impl_error!(WalletError);
 
@@ -40,3 +42,11 @@ pub enum GuardError {
     IsAnonymousUser,
 }
 impl_error!(GuardError);
+
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum CanisterError {
+    CreateCanisterFailed,
+    InsufficientCycles,
+}
+impl_error!(CanisterError);
