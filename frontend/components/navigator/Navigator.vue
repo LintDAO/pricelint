@@ -1,12 +1,7 @@
 <template>
   <div class="navigator-container">
     <q-toolbar class="navbar">
-      <img
-        alt="logo"
-        src="@/assets/tallylint.png"
-        class="cursor-pointer"
-        @click="onHome"
-      />
+      <span class="text-h4">PriceLint</span>
 
       <div class="flex-y-center">
         <!-- <router-link :to="'/market'">
