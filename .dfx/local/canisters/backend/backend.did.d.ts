@@ -39,7 +39,7 @@ export type Result = { 'Ok' : PredictorView } |
   { 'Err' : string };
 export type Result_1 = { 'Ok' : Array<Predictor> } |
   { 'Err' : string };
-export type Result_2 = { 'Ok' : boolean } |
+export type Result_2 = { 'Ok' : [] | [User] } |
   { 'Err' : string };
 export interface State {
   'bias' : [] | [Array<number>],
@@ -56,7 +56,7 @@ export interface User {
 }
 export interface _SERVICE {
   'add_price' : ActorMethod<[PriceData], undefined>,
-  'create_user' : ActorMethod<[], undefined>,
+  'create_user' : ActorMethod<[], [] | [User]>,
   'find_user_lists' : ActorMethod<[], Array<User>>,
   'get_state' : ActorMethod<[], State>,
   'pred' : ActorMethod<[], Result>,

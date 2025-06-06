@@ -47,10 +47,10 @@ export const idlFactory = ({ IDL }) => {
   });
   const Result = IDL.Variant({ 'Ok' : PredictorView, 'Err' : IDL.Text });
   const Result_1 = IDL.Variant({ 'Ok' : IDL.Vec(Predictor), 'Err' : IDL.Text });
-  const Result_2 = IDL.Variant({ 'Ok' : IDL.Bool, 'Err' : IDL.Text });
+  const Result_2 = IDL.Variant({ 'Ok' : IDL.Opt(User), 'Err' : IDL.Text });
   return IDL.Service({
     'add_price' : IDL.Func([PriceData], [], []),
-    'create_user' : IDL.Func([], [], []),
+    'create_user' : IDL.Func([], [IDL.Opt(User)], []),
     'find_user_lists' : IDL.Func([], [IDL.Vec(User)], ['query']),
     'get_state' : IDL.Func([], [State], ['query']),
     'pred' : IDL.Func([], [Result], ['query']),
