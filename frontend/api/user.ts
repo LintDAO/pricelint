@@ -8,8 +8,9 @@ const userTTL = TTL.hour12; //用户自身信息缓存时长。
 export async function getUserAutoRegister(): Promise<ApiResult<ApiUserInfo>> {
   return await getCache({
     key: "USER_INFO_" + getCurrentPrincipal().toUpperCase(),
-    execute: () => getBackend().get_state(),
+    execute: () => getBackend().user_login(),
     ttl: userTTL,
-    isLocal: true, // 需要本地存储
+    console: true,
+    // isLocal: true, // 需要本地存储
   });
 }
