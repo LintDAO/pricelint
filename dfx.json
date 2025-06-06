@@ -1,14 +1,14 @@
 {
   "networks": {},
   "canisters": {
-    "backend": {
+    "service": {
       "candid": "backend/backend.did",
       "package": "backend",
       "type": "custom",
       "optimize": "cycles",
       "build": [
-        "candid-extractor target/wasm32-unknown-unknown/release/backend.wasm > backend/backend.did",
-        "RUSTFLAGS='--cfg getrandom_backend=\"custom\"' cargo build --target wasm32-unknown-unknown --release -p backend"
+        "RUSTFLAGS='--cfg getrandom_backend=\"custom\"' cargo build --target wasm32-unknown-unknown --release -p backend",
+        "candid-extractor target/wasm32-unknown-unknown/release/backend.wasm > backend/backend.did"
       ],
       "wasm": "target/wasm32-unknown-unknown/release/backend.wasm"
     },
