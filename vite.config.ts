@@ -7,6 +7,7 @@ import { ElementPlusResolver } from "unplugin-vue-components/resolvers";
 import Components from "unplugin-vue-components/vite";
 import { createVitePlugins } from "./frontend/build/vite/plugins";
 import type { ViteEnv } from "./frontend/types/model";
+import {ServerOptions as HttpsServerOptions} from "node:https";
 
 enum ConfigMode {
   development = 1, // 防止 0 情况 if 出错 启用本地后端，只能通过匿名用户进入，并且需要对应local文件夹里的canister_id.json文件
@@ -138,6 +139,10 @@ export default defineConfig(({ command, mode }) => {
     console.log(`process.env.NODE_ENV -> no env node_env load`);
   }
 
+  const httpsOptions = {
+    key: fs.readFileSync(path.resolve(__dirname, 'ssl/localhost.key')),
+    cert: fs.readFileSync(path.resolve(__dirname, 'ssl/localhost.crt'))
+  };
   if (!isBuild) {
     return {
       // serve 独有配置 开发模式
@@ -153,6 +158,7 @@ export default defineConfig(({ command, mode }) => {
         port: 3000,
         cors: true,
         host: "0.0.0.0",
+        https:httpsOptions
       },
     };
   } else {
