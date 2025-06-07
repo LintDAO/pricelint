@@ -5,7 +5,7 @@ import {
   canisterId as canisterIdBackend,
   idlFactory as idlFactoryBackend,
 } from "canisters/backend";
-import type { _SERVICE } from ".dfx/ic/canisters/backend/service.did";
+import type { _SERVICE } from ".dfx/ic/canisters/backend/backend.did";
 import type { ActorSubclass } from "@dfinity/agent";
 
 const createActor = (canisterId: string, idlFactory: any, options: any) => {

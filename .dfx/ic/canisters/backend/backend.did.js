@@ -51,6 +51,7 @@ export const idlFactory = ({ IDL }) => {
   return IDL.Service({
     'add_price' : IDL.Func([PriceData], [], []),
     'create_user' : IDL.Func([], [IDL.Opt(User)], []),
+    'data_clear' : IDL.Func([], [], []),
     'find_user_lists' : IDL.Func([], [IDL.Vec(User)], ['query']),
     'get_state' : IDL.Func([], [State], ['query']),
     'pred' : IDL.Func([], [Result], ['query']),

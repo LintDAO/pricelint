@@ -50,13 +50,13 @@ type User = record {
 service : {
   add_price : (PriceData) -> ();
   create_user : () -> (opt User);
+  data_clear : () -> ();
   find_user_lists : () -> (vec User) query;
   get_state : () -> (State) query;
   pred : () -> (Result) query;
   predict : () -> (float32) query;
   refill_random_buffer : (nat32) -> ();
   show_predictions : () -> (Result_1) query;
-  test : () -> (nat32) query;
   train : (nat64) -> ();
   upload_json_file : (blob) -> ();
   user_login : () -> (Result_2) query;

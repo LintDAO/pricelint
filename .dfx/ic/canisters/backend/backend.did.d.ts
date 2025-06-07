@@ -57,6 +57,7 @@ export interface User {
 export interface _SERVICE {
   'add_price' : ActorMethod<[PriceData], undefined>,
   'create_user' : ActorMethod<[], [] | [User]>,
+  'data_clear' : ActorMethod<[], undefined>,
   'find_user_lists' : ActorMethod<[], Array<User>>,
   'get_state' : ActorMethod<[], State>,
   'pred' : ActorMethod<[], Result>,

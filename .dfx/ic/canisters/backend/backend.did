@@ -50,6 +50,7 @@ type User = record {
 service : {
   add_price : (PriceData) -> ();
   create_user : () -> (opt User);
+  data_clear : () -> ();
   find_user_lists : () -> (vec User) query;
   get_state : () -> (State) query;
   pred : () -> (Result) query;
