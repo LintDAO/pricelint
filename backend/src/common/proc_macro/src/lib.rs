@@ -83,13 +83,11 @@ pub fn generate_service_impl(input: TokenStream) -> TokenStream {
             type Output=#type_name;
 
             fn #create_fun_ident()->Option<Self::Output> {
-                let context = Context::new(Self::Output::default());
-                let ret=map_insert!(
-                    MAP,
-                    context.id.clone().unwrap(),
-                    context.clone()
-                );
-                ret.unwrap().context
+                let ctx=Self::Output::default();
+                let mut context = Context::new(ctx.clone());
+                context.id=Some(ctx.clone().id);
+                map_insert!(MAP, context.id.clone().unwrap(), context);
+                Some(ctx)
             }
 
 
