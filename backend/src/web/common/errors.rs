@@ -16,6 +16,7 @@ impl_error!(AuthenticationError);
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum UserError {
+    CreateUserFailed
 
 }
 impl_error!(UserError);
