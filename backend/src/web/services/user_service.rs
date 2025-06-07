@@ -16,6 +16,7 @@ pub trait ExtendUserService: UserService {
     fn is_exist(principal: Principal) -> bool;
     fn f1() -> Option<Self::Output>;
     fn f2() -> Option<Vec<Self::Output>>;
+    fn f3() -> Option<Self::Output>;
 }
 impl ExtendUserService for User {
     fn is_exist(principal: Principal) -> bool {
@@ -38,9 +39,16 @@ impl ExtendUserService for User {
         MAP.with(|map| {
             map.borrow_mut()
                 .iter()
-                .filter(|(_, ctx)| ctx.owner.unwrap()==caller()) // 示例条件
+                .filter(|(_, ctx)| ctx.owner.unwrap() == caller()) // 示例条件
                 .map(|(_, ctx)| ctx.context.clone())
                 .collect()
         })
+    }
+    fn f3() -> Option<Self::Output> {
+        let ctx=Self::Output::default();
+        let mut context = Context::new(ctx.clone());
+        context.id=Some(ctx.clone().id);
+        map_insert!(MAP, context.id.clone().unwrap(), context);
+        Some(ctx)
     }
 }
