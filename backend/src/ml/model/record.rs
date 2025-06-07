@@ -1,10 +1,12 @@
 use crate::ml::model::common::ModelCategories;
 use crate::ml::model::common::RNN;
 use crate::ml::model::default_model::{PricePredictor, PricePredictorRecord};
-use crate::{MODEL_MAP, SEQUENCE_LENGTH};
+use crate::{MODEL_MAP};
 use burn::module::Module;
 use burn::record::{BinBytesRecorder, FullPrecisionSettings, Recorder};
 use burn::tensor::backend::AutodiffBackend;
+use crate::ml::api::default_api::SEQUENCE_LENGTH;
+
 // 保存模型
 pub fn save_model<B>(model: PricePredictor<B>)
 where
