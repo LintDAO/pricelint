@@ -11,7 +11,13 @@
         "bash ./scripts/generate_did.sh",
         "bash ./scripts/rename_did.sh"
       ],
-      "wasm": "target/wasm32-unknown-unknown/release/backend.wasm"
+      "wasm": "target/wasm32-unknown-unknown/release/backend.wasm",
+      "metadata": [
+        {
+          "name": "candid:service",
+          "visibility": "public"
+        }
+      ]
     },
     "frontend": {
       "type": "assets",
