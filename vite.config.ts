@@ -139,10 +139,7 @@ export default defineConfig(({ command, mode }) => {
     console.log(`process.env.NODE_ENV -> no env node_env load`);
   }
 
-  const httpsOptions = {
-    key: fs.readFileSync(path.resolve(__dirname, 'ssl/localhost.key')),
-    cert: fs.readFileSync(path.resolve(__dirname, 'ssl/localhost.crt'))
-  };
+
   if (!isBuild) {
     return {
       // serve 独有配置 开发模式
@@ -157,8 +154,7 @@ export default defineConfig(({ command, mode }) => {
         },
         port: 3000,
         cors: true,
-        host: "0.0.0.0",
-        https:httpsOptions
+        host: "0.0.0.0"
       },
     };
   } else {
