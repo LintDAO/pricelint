@@ -39,6 +39,7 @@ unsafe extern "Rust" fn __getrandom_v03_custom(
 }
 pub const SEQUENCE_LENGTH: usize = 50;
 
+
 #[derive(CandidType, Serialize, Deserialize, Clone, Default, Debug)]
 pub struct PriceData {
     open: f32,
@@ -57,26 +58,8 @@ pub struct State {
     min_values: Vec<f32>,
     max_values: Vec<f32>,
 }
-impl Storable for State {
-    fn to_bytes(&self) -> Cow<[u8]> {
-        let bytes = bincode::serialize(self).expect("Failed to serialize State");
-        Cow::Owned(bytes)
-    }
-
-    fn from_bytes(bytes: Cow<[u8]>) -> Self {
-        bincode::deserialize(&bytes).expect("Failed to deserialize State")
-    }
-
-    const BOUND: Bound = Bound::Bounded {
-        max_size: 10_000_000, // 调整为 State 的最大预期大小（字节）
-        is_fixed_size: false,
-    };
-}
-
-#[init]
-fn init() {
+pub fn init(){
     let mut state = State::default();
-
     state.prices = vec![
         PriceData {
             open: 100.0,
@@ -96,6 +79,23 @@ fn init() {
         map.borrow_mut().insert(String::from("state"), state);
     });
 }
+impl Storable for State {
+    fn to_bytes(&self) -> Cow<[u8]> {
+        let bytes = bincode::serialize(self).expect("Failed to serialize State");
+        Cow::Owned(bytes)
+    }
+
+    fn from_bytes(bytes: Cow<[u8]>) -> Self {
+        bincode::deserialize(&bytes).expect("Failed to deserialize State")
+    }
+
+    const BOUND: Bound = Bound::Bounded {
+        max_size: 10_000_000, // 调整为 State 的最大预期大小（字节）
+        is_fixed_size: false,
+    };
+}
+
+
 
 #[update]
 async fn refill_random_buffer(count: u32) {

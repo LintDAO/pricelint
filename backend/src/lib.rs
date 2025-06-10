@@ -1,3 +1,5 @@
+use crate::impl_storable::StringVec;
+use crate::ml::api::default_api::State;
 use crate::ml::model::{default_model, record};
 use crate::web::models::context::Context;
 use crate::web::models::predictor_model::Predictor;
@@ -21,7 +23,6 @@ use std::borrow::Cow;
 use std::cell::RefCell;
 use std::clone::Clone;
 use std::collections::BTreeMap;
-use crate::ml::api::default_api::State;
 
 type Memory = VirtualMemory<DefaultMemoryImpl>;
 
@@ -55,35 +56,37 @@ thread_local! {
         MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(4)))
     ));
 
-
-
-
+     static ROLE_USER_TREE: RefCell<StableBTreeMap<String,  StringVec, Memory>> = RefCell::new(StableBTreeMap::init(
+        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(5)))
+    ));
 }
 
 //存储于内存的context上下文
 thread_local! {
-    //todo 各个上下文数据的交互贯通 user ,wallet 等
-    //todo 登录注册
     //todo 备份
 }
-
 
 mod common;
 mod ml;
 mod web;
 
-#[pre_upgrade]
-fn pre_upgrade() {}
+pub mod impl_storable {
+    use crate::impl_storable;
+    use candid::Principal;
+    use ic_stable_structures::storable::Bound;
+    use ic_stable_structures::Storable;
+    use serde::{Deserialize, Serialize};
+    use std::borrow::Cow;
 
-#[post_upgrade]
-fn post_upgrade() {}
-
-
-pub mod export_candid{
+    #[derive(Deserialize, Serialize, Clone)]
+    pub struct StringVec(pub Vec<String>);
+    impl_storable!(StringVec);
+}
+pub mod export_candid {
+    use crate::ml::api::default_api::{PriceData, State};
+    use crate::web::models::predictor_model::{Predictor, PredictorView};
+    use crate::web::models::user_model::User;
     use ic_cdk::{export_candid, query};
-    use crate::web::models::predictor_model::{PredictorView,Predictor};
-    use crate::web::models::user_model::{User};
-    use crate::ml::api::default_api::{State,PriceData};
     export_candid!();
 }
 //TODO: lifecycles和api canid 导出先写到一起  后续需要分canisters再进行重构分离

@@ -1,9 +1,8 @@
-
 #[macro_export]
 macro_rules! map_get {
     ($map:expr ,$key: expr) => {
-       $map.with(|map| {
-            let mut value=map.borrow_mut().get($key);
+        $map.with(|map| {
+            let mut value = map.borrow_mut().get($key);
             value
         })
     };
@@ -11,9 +10,7 @@ macro_rules! map_get {
         $map.with(|map| map.deref_mut().borrow_mut().get($key))
     }};
     ($map:expr, $key:expr,$t:lifetime) => {
-        $map.with(|map| {
-            map.borrow::<$t>().get($key).cloned()
-        })
+        $map.with(|map| map.borrow::<$t>().get($key))
     };
 }
 #[macro_export]
@@ -33,7 +30,6 @@ macro_rules! map_remove {
         $map.with(|map| map.deref_mut().borrow_mut().remove($key))
     }};
 }
-
 
 #[macro_export]
 macro_rules! impl_storable {
@@ -78,15 +74,13 @@ macro_rules! impl_storable {
     };
 }
 
-
-
 #[macro_export]
 macro_rules! impl_error {
     ($entity:ident) => {
         impl Display for $entity {
             fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
                 let entity_name = stringify!($entity);
-                write!(f, "{}:{:?}", entity_name, self)
+                write!(f, "[error type]:{} ,[result]:{:?}", entity_name, self)
             }
         }
         impl Error for $entity {}

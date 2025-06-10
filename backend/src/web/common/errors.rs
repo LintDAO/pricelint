@@ -41,6 +41,8 @@ impl_error!(PredictorError);
 pub enum GuardError {
     IsNotAdministrator,
     IsAnonymousUser,
+    UnknownEmptyAdminLists,
+    UnknownEmptyUserLists,
 }
 impl_error!(GuardError);
 

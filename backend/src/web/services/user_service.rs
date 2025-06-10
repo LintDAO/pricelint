@@ -14,17 +14,17 @@ generate_service_impl!(User, USER_CONTEXT);
 
 pub trait ExtendUserService: UserService {
     fn is_exist(principal: Principal) -> bool;
+
     fn f1() -> Option<Self::Output>;
     fn f2() -> Option<Vec<Self::Output>>;
     fn f3() -> Option<Self::Output>;
+    fn f4()->Option<Vec<Self::Output>>;
 }
+use std::collections::BTreeMap;
 impl ExtendUserService for User {
     fn is_exist(principal: Principal) -> bool {
-        let ret = map_get!(MAP, &principal.to_string());
-        match ret {
-            None => false,
-            Some(_) => true,
-        }
+        let ret = Self::find_one_by_principal(principal);
+        ret.is_some()
     }
     fn f1() -> Option<Self::Output> {
         MAP.with(|map| {
@@ -48,7 +48,19 @@ impl ExtendUserService for User {
         let ctx=Self::Output::default();
         let mut context = Context::new(ctx.clone());
         context.id=Some(ctx.clone().id);
+        context.create_time=Some(ctx.clone().create_time);
+        context.owner=Some(ctx.clone().owner);
         map_insert!(MAP, context.id.clone().unwrap(), context);
         Some(ctx)
+    }
+
+    fn f4()->Option<Vec<Self::Output>>{
+        MAP.with(|map| {
+            let mut borrowed_map = map.borrow_mut();
+            let x= borrowed_map.values().map(|x| {
+                x.context
+            }).collect();
+            x
+        })
     }
 }
