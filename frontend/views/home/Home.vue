@@ -1,7 +1,7 @@
 <template>
   <div class="home-container">
     <Navigator />
-    <Login />
+    <PredictTable />
     <Footer />
   </div>
 </template>
@@ -9,7 +9,7 @@
 <script lang="ts" setup>
 import Footer from "@/components/home/Footer.vue";
 import Navigator from "@/components/navigator/Navigator.vue";
-import Login from "./modules/Login.vue";
+import PredictTable from "./modules/PredictTable.vue";
 </script>
 
 <style lang="scss">
