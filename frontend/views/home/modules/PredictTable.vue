@@ -176,6 +176,7 @@
 import { IdentityInfo, initAuth, signIn } from "@/api/auth";
 import { setCurrentIdentity } from "@/api/canister_pool";
 import { MARKETS } from "@/api/constants/markets";
+import { TOKENS } from "@/api/constants/tokens";
 import ArrowIcon from "@/components/ArrowIcon.vue";
 import { useUserStore } from "@/stores/user";
 import type { TableColumn } from "@/types/model";
@@ -277,7 +278,7 @@ const updateTable = debounce(() => {
   rows.value = [
     {
       id: 1,
-      token: { name: "BTC-USDT", logo: "/frontend/assets/icons/BTC.svg" },
+      token: { name: "BTC-USDT", logo: "" },
       source: { name: "BINANCE" },
       last_2: {
         price: 105133.25,
@@ -299,7 +300,7 @@ const updateTable = debounce(() => {
     },
     {
       id: 2,
-      token: { name: "ETH-USDT", logo: "/frontend/assets/icons/ETH.svg" },
+      token: { name: "ICP-USDT", logo: "" },
       source: { name: "BINANCE" },
       last_2: {
         price: 3200.45,
@@ -319,14 +320,26 @@ const updateTable = debounce(() => {
       accuracy: 62.3,
       stake: { amount: 16000, change: 5.2 },
     },
-  ].map((item) => ({
-    ...item,
-    source: {
-      name: item.source.name,
-      logo: MARKETS[item.source.name]?.logo,
-    },
-  }));
+  ].map((item) => {
+    const symbol = getTokenSymbol(item.token.name); // 提取 BTC 或 ETH
+    return {
+      ...item,
+      token: {
+        ...item.token,
+        logo: TOKENS[symbol]?.meta.logo || "/assets/default-icon.png", // 使用 TOKENS 中的 logo
+      },
+      source: {
+        name: item.source.name,
+        logo: MARKETS[item.source.name]?.logo || "/assets/default-icon.png",
+      },
+    };
+  });
 }, 500);
+// 提取代币符号的辅助函数
+const getTokenSymbol = (pair: string): string => {
+  // 假设 token.name 是如 "BTC-USDT" 的格式，返回 "BTC"
+  return pair.split("-")[0].toUpperCase();
+};
 
 // 计算时间标签
 const getTimeLabels = (now: Date) => {

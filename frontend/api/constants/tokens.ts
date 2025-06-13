@@ -1,7 +1,9 @@
-import icpLogo from "@/assets/dfinity.svg"
-import { LEDGER_CANISTER_ID } from "./ic"
+import icpLogo from "@/assets/dfinity.svg";
+import btcLogo from "@/assets/icons/BTC.svg";
+import ethLogo from "@/assets/icons/ETH.svg";
+import { LEDGER_CANISTER_ID } from "./ic";
 
-export const ICP_LOGO = icpLogo
+export const ICP_LOGO = icpLogo;
 export const TOKENS = {
   ICP: {
     canisters: {
@@ -12,44 +14,33 @@ export const TOKENS = {
       swap: "",
     },
     symbol: "ICP",
-    name: "Internet Computer",
     decimals: 8,
     fee: 10000,
     meta: {
       description: "",
       logo: icpLogo,
-      name: "",
+      name: "Internet Computer",
       url: "https://dashboard.internetcomputer.org/",
     },
   },
-  XTC: {
-    symbol: "XTC",
-    canisterId: "aanaa-xaaaa-aaaah-aaeiq-cai",
-    name: "Cycles",
-    decimals: 12,
+  BTC: {
+    symbol: "BTC",
+    canisterId: "",
+    meta: {
+      description: "",
+      logo: btcLogo,
+      name: "Bitcoin",
+      url: "",
+    },
   },
-  WTC: {
-    symbol: "WTC",
-    canisterId: "5ymop-yyaaa-aaaah-qaa4q-cai",
-    name: "Wrapped Cycles",
-    decimals: 12,
+  ETH: {
+    symbol: "ETH",
+    canisterId: "",
+    meta: {
+      description: "",
+      logo: ethLogo,
+      name: "Ethereum",
+      url: "",
+    },
   },
-  WICP: {
-    symbol: "WICP",
-    canisterId: "utozz-siaaa-aaaam-qaaxq-cai",
-    name: "Wrapped ICP",
-    decimals: 8,
-  },
-  BTKN: {
-    symbol: "BTKN",
-    canisterId: "cfoim-fqaaa-aaaai-qbcmq-cai",
-    name: "Beta Token",
-    decimals: 8,
-  },
-  DUST: {
-    symbol: "DUST",
-    canisterId: "4mvfv-piaaa-aaaak-aacia-cai",
-    name: "Dust Token",
-    decimals: 8,
-  },
-}
+};

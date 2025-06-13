@@ -28,6 +28,36 @@ const ongoingRequests: Record<string, Promise<any> | null> = {};
 //内存变量
 const CACHE_DATA = {};
 
+// 递归规范化数据中的 Principal 和 bigint， 将所有 Principal 全改为 string
+function normalizeData(value: any): any {
+  if (value === null || value === undefined) {
+    return value;
+  }
+  if (typeof value === "bigint") {
+    return Number(value);
+  }
+  if (
+    value &&
+    (value._isPrincipal || value?.constructor?.name === "Principal")
+  ) {
+    return value.toString();
+  }
+  if (value && typeof value === "object" && "__principal__" in value) {
+    return value.__principal__;
+  }
+  if (Array.isArray(value)) {
+    return value.map(normalizeData);
+  }
+  if (typeof value === "object") {
+    const result: Record<string, any> = {};
+    for (const key in value) {
+      result[key] = normalizeData(value[key]);
+    }
+    return result;
+  }
+  return value;
+}
+
 // 直接获取本地储存的带过期时间的数据进行验证，如果没有才发出网络请求
 //TODO 方法返回值必须是res.Ok才会激活本地缓存。注意，现在好像不是硬需求res.Ok也行了
 export async function getCache(info: {
@@ -50,19 +80,28 @@ export async function getCache(info: {
     data = null;
   } else {
     data = getExpiredData(key, info.isLocal || false);
+    if (data) {
+      data = normalizeData(data); // 规范化缓存数据
+    }
   }
   // data = null; // 启用则关闭缓存功能，方便测试
   // 如果缓存中已有数据，直接返回缓存
   if (data) {
-    console.log(info.execute.toString() + "cache have data", data);
+    console.log(info.execute.toString() + " cache have data", data);
     if (info.notice) info.notice(true);
     // 如果允许异步更新，则返回数据并异步更新
     if (info.update) {
       setTimeout(async () => {
         const d = await info.execute();
+        const normalizedD = normalizeData(d);
         if (d) {
-          setExpiredData(key, d, info.ttl || 60 * 60, info.isLocal || false);
-          if (info.updatedCallback) info.updatedCallback(d);
+          setExpiredData(
+            key,
+            normalizedD,
+            info.ttl || 60 * 60,
+            info.isLocal || false
+          );
+          if (info.updatedCallback) info.updatedCallback(normalizedD);
         }
       }, 0);
     }
@@ -90,10 +129,16 @@ export async function getCache(info: {
       .execute()
       .then((d) => {
         if (Date.now() <= start + timeout) {
+          const normalizedD = normalizeData(d); // 规范化执行结果
           if (d) {
-            setExpiredData(key, d, info.ttl || 60 * 60, info.isLocal || false);
+            setExpiredData(
+              key,
+              normalizedD,
+              info.ttl || 60 * 60,
+              info.isLocal || false
+            );
           }
-          resolve(d);
+          resolve(normalizedD);
         } else {
           timeoutCallback(); // 即使获取到内容，超时了，也不接受
         }
@@ -107,10 +152,10 @@ export async function getCache(info: {
 
   // 获取结果并返回
   try {
-    const result = await ongoingRequests[key];
+    data = await ongoingRequests[key];
     if (info.notice) info.notice(false);
-    console.log(info.execute.toString() + "result data", data);
-    return result;
+    console.log(info.execute.toString() + " result data", data);
+    return data;
   } catch (error) {
     if (info.notice) info.notice(false);
     throw error;
@@ -136,32 +181,9 @@ const setExpiredData = (
   };
   // 2. 将数据存在内存变量里，以便不用每次从 localStorage 中读取
   CACHE_DATA[key] = item;
-
-  //定义即将存入localStorage里的对象中每个value的替换方法，setItem时使用
-  function replacer(key, value) {
-    // console.log("value",key,value,typeof value)
-    if (typeof value === "bigint") {
-      return Number(value);
-    } else if (
-      typeof value === "object" &&
-      value?.constructor.name === "Principal"
-    ) {
-      // console.log("value object", key, value)
-      // console.log("value object", typeof value);
-      // 注意，value为null时，type为object
-      // 将Principal格式的value转换为字符串储存
-      // 以免JSON.stringify深拷贝时破坏Principal的constructor，导致无法转换成字符串
-      return value.toString();
-    } else if (value && value._isPrincipal) {
-      console.log("value._isPrincipal", key, value);
-      console.log("value._isPrincipal", value?.constructor.name);
-      return value.toString();
-    }
-    return value;
-  }
   // 3. 如果需要存储至 localStorage
   if (isLocal) {
-    localStorage.setItem(key, JSON.stringify(item, replacer));
+    localStorage.setItem(key, JSON.stringify(item));
   }
 };
 

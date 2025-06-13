@@ -46,8 +46,10 @@
                 <div class="text-body1">
                   {{ userData.cyclesBalance }} Cycles
                 </div>
-                <q-progress
-                  :percentage="cyclesPercentage"
+                <div class="text-body1">0.00001T / Day</div>
+                <q-linear-progress
+                  stripe
+                  :value="cyclesPercentage / 100"
                   style="height: 10px"
                   color="positive"
                 />
@@ -113,7 +115,27 @@
                   Your historical prediction accuracy
                 </div>
               </q-card-section>
-              <q-card-section class="q-pt-none">
+              <q-card-section class="q-pt-none q-gutter-md">
+                <q-circular-progress
+                  show-value
+                  :value="userData.predictionAccuracy"
+                  size="80px"
+                  :thickness="0.2"
+                  color="positive"
+                  track-color="grey-3"
+                >
+                  {{ userData.predictionAccuracy }}%
+                </q-circular-progress>
+                <q-circular-progress
+                  show-value
+                  :value="userData.predictionAccuracy"
+                  size="80px"
+                  :thickness="0.2"
+                  color="positive"
+                  track-color="grey-3"
+                >
+                  {{ userData.predictionAccuracy }}%
+                </q-circular-progress>
                 <q-circular-progress
                   show-value
                   :value="userData.predictionAccuracy"
@@ -307,7 +329,7 @@ const userData = ref<UserData>({
   ],
   stakedTokens: 1000,
   stakeLockEnd: "2025-12-31",
-  predictionAccuracy: 85,
+  predictionAccuracy: 51,
   predictionEarnings: 250.5,
   activePools: [
     { id: "pool1", asset: "BTC/USD", cycle: "Hourly" },

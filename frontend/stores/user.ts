@@ -1,67 +1,91 @@
+import { getUserAutoRegister } from "@/api/user";
+import type { ApiResult, ApiUserInfo } from "@/types/types";
 import { defineStore } from "pinia";
-import { UserInfo, UserInfoElement } from "@/types/user";
-import {
-    deleteUserInfoStorage,
-    getUserInfoStorage,
-    setUserInfoStorage
-} from "@/utils/storage";
 
 interface UserState {
-    principal: string;
-    user: UserInfo;
+  principal: string;
+  user: ApiUserInfo;
 }
 
-//从缓存中读取userInfo
-const getUserInfoByState = function (principal: string, user: UserInfo): UserInfo {
-    // console.log("getUserInfoByState",state.principal);
-    if (!principal) return new UserInfo(); // 还没有设置 principal 就都给空
-    if (user && user.owner == principal) return user;
-    // 缓存中没有，就读取
-    let readUser = getUserInfoStorage(principal);
-    if (!readUser) {
-        readUser = new UserInfo(); // 如果没有就新建一个空的
-        readUser.owner = principal;
-        console.log("readUser",readUser)
-        setUserInfoStorage(readUser);
-    }
-    return readUser;
-};
-
 export const useUserStore = defineStore({
-    id: "user",
-    state: (): UserState => ({
-        principal: "",
-        user: new UserInfo(),
-    }),
-    getters: {
-        getUserInfo: (state): UserInfo => {
-            state.user = getUserInfoByState(state.principal, state.user);
-            return state.user
-        },
+  id: "user",
+  state: (): UserState => ({
+    principal: "",
+    user: {
+      id: "",
+      owner: "", // 初始化为 string
+      name: "",
+      created_at: BigInt(0),
     },
-    actions: {
-        async setPrincipal(principal: string) {
-            if (principal === '') {
-                this.user = new UserInfo();
-                // 如果是清除用户登录信息 持久化的信息也应该清除
-                deleteUserInfoStorage(this.principal);
-                this.principal = principal;
-            } else if (principal !== this.principal) {
-                // 如果是设置新的用户身份 应当重新尝试获取信息
-                this.principal = principal;
-                getUserInfoByState(this.principal, this.user); // 更新对应 principal 的持久化信息
-            }
-            // 当前 principal 不用持久化
-        },
-        async setUserInfo(userInfo: UserInfoElement) {
-            this.user = {...this.user, ...userInfo};
-            setUserInfoStorage(this.user);
-        },
-        async setUsername(username: string) {
-            const userInfo = getUserInfoByState(this.principal, this.user);
-            userInfo.name = username;
-            setUserInfoStorage(userInfo);
-        },
-    }
-});
+  }),
+  getters: {
+    // 直接返回 state.user，确保 owner 是 string
+    getUserInfo: (state): ApiUserInfo => state.user,
+  },
+  actions: {
+    // 设置 principal 并获取用户信息
+    async setPrincipal(principal: string) {
+      if (principal === "") {
+        this.principal = "";
+        this.user = {
+          id: "",
+          owner: "",
+          name: "",
+          created_at: BigInt(0),
+        };
+        return;
+      }
 
+      if (principal !== this.principal) {
+        this.principal = principal;
+        await this.fetchUserInfo();
+      }
+    },
+
+    // 异步获取用户信息，规范化 owner 为 string
+    async fetchUserInfo() {
+      if (!this.principal) {
+        this.user = {
+          id: "",
+          owner: "",
+          name: "",
+          created_at: BigInt(0),
+        };
+        return;
+      }
+
+      try {
+        const response: ApiResult<ApiUserInfo> = await getUserAutoRegister();
+        if (response.Ok) {
+          this.user = {
+            ...response.Ok,
+          };
+        } else {
+          console.error("Failed to fetch user info:", response.Err);
+          this.user = {
+            id: "",
+            owner: this.principal, // 使用 principal 作为默认 owner
+            name: "",
+            created_at: BigInt(0),
+          };
+        }
+      } catch (error) {
+        console.error("Error fetching user info:", error);
+        this.user = {
+          id: "",
+          owner: this.principal,
+          name: "",
+          created_at: BigInt(0),
+        };
+      }
+    },
+
+    // 更新用户名
+    async setUsername(username: string) {
+      this.user.name = username;
+      // 如果需要持久化，调用后端 API 并刷新缓存
+      // await updateUserInfo({ ...this.user, name: username });
+      await this.fetchUserInfo();
+    },
+  },
+});
