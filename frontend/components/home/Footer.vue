@@ -15,7 +15,7 @@
     </div>
     <div class="footer-bottom row justify-between items-center q-mt-md">
       <div class="footer-bottom-left col-auto">
-        <p>© PriceLint 2023-2024. All Rights Reserved.</p>
+        <p>© PriceLint 2023-2025. All Rights Reserved.</p>
       </div>
       <div class="footer-bottom-right col-auto row items-center q-gutter-md">
         <q-chip icon="bookmark">give us more suggestions!</q-chip>

@@ -261,38 +261,27 @@
 </template>
 
 <script lang="ts" setup>
+import { useUserStore } from "@/stores/user";
 import { useQuasar } from "quasar";
-import { computed, ref } from "vue";
-
-// 定义 QuickStart 列表项的类型
-interface QuickStartItem {
-  id: number;
-  title: string;
-  description: string;
-  icon: string;
-  status: string;
-  statusColor: string;
-}
-
-// 定义用户数据类型
-interface UserData {
-  address: string;
-  cyclesBalance: number;
-  runningCanisters: { id: string; name: string; status: string }[];
-  stakedTokens: number;
-  stakeLockEnd: string;
-  predictionAccuracy: number;
-  predictionEarnings: number;
-  activePools: { id: string; asset: string; cycle: string }[];
-  leaderboardRank: number;
-  rankTrend: "up" | "down";
-}
+import { computed, onMounted, ref } from "vue";
 
 // 初始化 Quasar
 const $q = useQuasar();
+const userStore = useUserStore();
+const loading = ref(true);
+
+// 初始化时获取数据
+onMounted(async () => {
+  // 如果不存在用户信息则进行同步
+  if (!userStore.principal) {
+    console.log("userStore");
+    await userStore.fetchUserInfo();
+  }
+  loading.value = false;
+});
 
 // 模拟 Quick Start 数据
-const quickStartItems = ref<QuickStartItem[]>([
+const quickStartItems = ref([
   {
     id: 1,
     title: "Recharge cycles",
@@ -320,8 +309,8 @@ const quickStartItems = ref<QuickStartItem[]>([
 ]);
 
 // 模拟用户数据
-const userData = ref<UserData>({
-  address: "icp1-abcde-fghij-klmno-pqrst-uvwxyz1234567890",
+const userData = ref({
+  address: computed(() => userStore.principal || ""),
   cyclesBalance: 5000000,
   runningCanisters: [
     { id: "can1", name: "Prediction Model", status: "Running" },
@@ -362,7 +351,7 @@ const copyToClipboard = async (text: string) => {
   }
 };
 // 处理列表项点击事件
-const handleItemClick = (item: QuickStartItem) => {
+const handleItemClick = (item) => {
   $q.notify({
     message: `Clicked: ${item.title}`,
     color: "positive",

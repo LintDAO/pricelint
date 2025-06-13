@@ -161,18 +161,18 @@ const copyPid = () => {
 
 const onLogOut = async () => {
   console.log("onLogout");
-  const auth = await initAuth();
-  signedIn.value = false;
-  clearCurrentIdentity();
-  await signOut(auth.client);
+  // const auth = await initAuth();
+  // signedIn.value = false;
+  // clearCurrentIdentity();
+  // await signOut(auth.client);
 
-  goHome(router);
-  // TODO 返回首页还要刷新页面，感觉不是很友好
-  //返回首页后，刷新页面，防止出现缓存问题。
-  // 如果不刷新页面，会导致A用户登出后，再登录B用户的账号，结果会读取A用户缓存的问题
-  setTimeout(() => {
-    window.location.reload();
-  }, 500);
+  // goHome(router);
+  // // TODO 返回首页还要刷新页面，感觉不是很友好
+  // //返回首页后，刷新页面，防止出现缓存问题。
+  // // 如果不刷新页面，会导致A用户登出后，再登录B用户的账号，结果会读取A用户缓存的问题
+  // setTimeout(() => {
+  //   window.location.reload();
+  // }, 500);
 };
 
 const toggleLeftDrawer = () => {
