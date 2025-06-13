@@ -13,6 +13,7 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'create_time' : IDL.Nat64,
   });
+  const Result = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
   const State = IDL.Record({
     'bias' : IDL.Opt(IDL.Vec(IDL.Float32)),
     'max_values' : IDL.Vec(IDL.Float32),
@@ -45,22 +46,23 @@ export const idlFactory = ({ IDL }) => {
     'create_time' : IDL.Nat64,
     'accuracy' : IDL.Float64,
   });
-  const Result = IDL.Variant({ 'Ok' : PredictorView, 'Err' : IDL.Text });
-  const Result_1 = IDL.Variant({ 'Ok' : IDL.Vec(Predictor), 'Err' : IDL.Text });
-  const Result_2 = IDL.Variant({ 'Ok' : IDL.Opt(User), 'Err' : IDL.Text });
+  const Result_1 = IDL.Variant({ 'Ok' : PredictorView, 'Err' : IDL.Text });
+  const Result_2 = IDL.Variant({ 'Ok' : IDL.Vec(Predictor), 'Err' : IDL.Text });
+  const Result_3 = IDL.Variant({ 'Ok' : IDL.Opt(User), 'Err' : IDL.Text });
   return IDL.Service({
     'add_price' : IDL.Func([PriceData], [], []),
-    'create_user' : IDL.Func([], [IDL.Opt(User)], []),
-    'data_clear' : IDL.Func([], [], []),
     'find_user_lists' : IDL.Func([], [IDL.Vec(User)], ['query']),
+    'get_canister_info' : IDL.Func([], [Result], []),
+    'get_canister_info1' : IDL.Func([], [Result], []),
     'get_state' : IDL.Func([], [State], ['query']),
-    'pred' : IDL.Func([], [Result], ['query']),
+    'pred' : IDL.Func([], [Result_1], ['query']),
     'predict' : IDL.Func([], [IDL.Float32], ['query']),
     'refill_random_buffer' : IDL.Func([IDL.Nat32], [], []),
-    'show_predictions' : IDL.Func([], [Result_1], ['query']),
+    'show_predictions' : IDL.Func([], [Result_2], ['query']),
     'train' : IDL.Func([IDL.Nat64], [], []),
     'upload_json_file' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
-    'user_login' : IDL.Func([], [Result_2], ['query']),
+    'user_login' : IDL.Func([], [Result_3], ['query']),
+    'user_register' : IDL.Func([], [Result_3], []),
   });
 };
 export const init = ({ IDL }) => { return []; };

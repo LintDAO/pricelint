@@ -35,11 +35,13 @@ export interface PriceData {
   'volume' : number,
   'price_diff' : number,
 }
-export type Result = { 'Ok' : PredictorView } |
+export type Result = { 'Ok' : string } |
   { 'Err' : string };
-export type Result_1 = { 'Ok' : Array<Predictor> } |
+export type Result_1 = { 'Ok' : PredictorView } |
   { 'Err' : string };
-export type Result_2 = { 'Ok' : [] | [User] } |
+export type Result_2 = { 'Ok' : Array<Predictor> } |
+  { 'Err' : string };
+export type Result_3 = { 'Ok' : [] | [User] } |
   { 'Err' : string };
 export interface State {
   'bias' : [] | [Array<number>],
@@ -56,17 +58,18 @@ export interface User {
 }
 export interface _SERVICE {
   'add_price' : ActorMethod<[PriceData], undefined>,
-  'create_user' : ActorMethod<[], [] | [User]>,
-  'data_clear' : ActorMethod<[], undefined>,
   'find_user_lists' : ActorMethod<[], Array<User>>,
+  'get_canister_info' : ActorMethod<[], Result>,
+  'get_canister_info1' : ActorMethod<[], Result>,
   'get_state' : ActorMethod<[], State>,
-  'pred' : ActorMethod<[], Result>,
+  'pred' : ActorMethod<[], Result_1>,
   'predict' : ActorMethod<[], number>,
   'refill_random_buffer' : ActorMethod<[number], undefined>,
-  'show_predictions' : ActorMethod<[], Result_1>,
+  'show_predictions' : ActorMethod<[], Result_2>,
   'train' : ActorMethod<[bigint], undefined>,
   'upload_json_file' : ActorMethod<[Uint8Array | number[]], undefined>,
-  'user_login' : ActorMethod<[], Result_2>,
+  'user_login' : ActorMethod<[], Result_3>,
+  'user_register' : ActorMethod<[], Result_3>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];
