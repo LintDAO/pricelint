@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
+use candid::CandidType;
 use serde::{Deserialize, Serialize};
 use crate::impl_error;
 
@@ -16,7 +17,9 @@ impl_error!(AuthenticationError);
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum UserError {
-    CreateUserFailed
+    CreateUserFailed,
+    UserIsNotExist,
+    RegisterUserHasExist
 
 }
 impl_error!(UserError);

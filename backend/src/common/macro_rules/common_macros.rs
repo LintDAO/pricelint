@@ -80,7 +80,8 @@ macro_rules! impl_error {
         impl Display for $entity {
             fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
                 let entity_name = stringify!($entity);
-                write!(f, "[error type]:{} ,[result]:{:?}", entity_name, self)
+                // write!(f, "[error type]:{} ,[result]:{:?}", entity_name, self)
+                write!(f, "{:?}", self)
             }
         }
         impl Error for $entity {}

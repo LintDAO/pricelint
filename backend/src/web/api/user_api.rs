@@ -8,40 +8,36 @@ use ic_cdk::{call, caller, query, update};
 use crate::web::common::constants::OWNER_ROLE_TAG;
 use crate::web::services::user_service::{ExtendUserService, UserService};
 use crate::web::common::guard::{is_named_user, is_admin, band_role};
-#[update]
+#[query]
 async fn user_login() -> Result<Option<User>, String> {
     if caller() == Principal::anonymous() {
         return Err(AuthenticationError::AnonymousUser.to_string());
     }
     if !User::is_exist(caller()) {
-       let new_user=create_user();
-        match new_user {
-            None => {
-                return  Err(UserError::CreateUserFailed.to_string());
-            }
-            Some(_) => {
-                return Ok(new_user);
-            }
-        }
+        return Err(UserError::UserIsNotExist.to_string());
     };
-    Ok(None) //表示存在
+    Ok(None) //表示该用户存在  不用注册了
+}
+#[update]
+fn user_register()-> Result<Option<User>, String> {
+    if caller() == Principal::anonymous() {
+        return Err(AuthenticationError::AnonymousUser.to_string());
+    }
+    if !User::is_exist(caller()) {
+        let new_user=create_user().ok_or(UserError::CreateUserFailed.to_string())?;
+        return Ok(Some(new_user));
+    };
+   Err(UserError::RegisterUserHasExist.to_string()) //表示已存在 不需要注册了
 }
 
-#[update]
 //管理员使用用户身份创建 而不是用户直接创建
 fn create_user()->Option<User> {
     let user=User::create_deafult_user();
-    match user {
-        None => {
-            None
-        }
-        Some(_) => {
-            ic_cdk::println!("user{:?}",user);
-            //注册为用户角色
-            band_role( user.clone()?.owner.to_string(),OWNER_ROLE_TAG.to_string());
-            user
-        }
-    }
+    let user= user.map(|u| {
+        band_role( u.owner.to_string(),OWNER_ROLE_TAG.to_string());
+        return  u
+    });
+    user
 }
 
 #[query(guard = "is_admin")]
@@ -54,13 +50,4 @@ fn find_user_lists()->Vec<User>{
         }
     }
 }
-#[query(guard = "is_named_user")]
-fn f()->Vec<User>{
-    let option_users=User::find_all();
-    match option_users{
-        None => {vec![]}
-        Some(vec_users) => {
-            vec_users
-        }
-    }
-}
+

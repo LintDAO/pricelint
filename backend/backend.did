@@ -31,9 +31,10 @@ type PriceData = record {
   volume : float32;
   price_diff : float32;
 };
-type Result = variant { Ok : PredictorView; Err : text };
-type Result_1 = variant { Ok : vec Predictor; Err : text };
-type Result_2 = variant { Ok : opt User; Err : text };
+type Result = variant { Ok : text; Err : text };
+type Result_1 = variant { Ok : PredictorView; Err : text };
+type Result_2 = variant { Ok : vec Predictor; Err : text };
+type Result_3 = variant { Ok : opt User; Err : text };
 type State = record {
   bias : opt vec float32;
   max_values : vec float32;
@@ -49,15 +50,16 @@ type User = record {
 };
 service : () -> {
   add_price : (PriceData) -> ();
-  create_user : () -> (opt User);
   find_user_lists : () -> (vec User) query;
+  get_canister_info : () -> (Result);
+  get_canister_info1 : () -> (Result);
   get_state : () -> (State) query;
-  pred : () -> (Result) query;
+  pred : () -> (Result_1) query;
   predict : () -> (float32) query;
   refill_random_buffer : (nat32) -> ();
-  show_predictions : () -> (Result_1) query;
-  test : () -> (nat32) query;
+  show_predictions : () -> (Result_2) query;
   train : (nat64) -> ();
   upload_json_file : (blob) -> ();
-  user_login : () -> (Result_2) query;
+  user_login : () -> (Result_3) query;
+  user_register : () -> (Result_3);
 }

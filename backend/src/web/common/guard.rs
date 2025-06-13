@@ -18,7 +18,6 @@ pub fn band_role(principal: String, role_name: String) {
         }
         Some(StringVec(mut vec)) => {
             vec.push(principal);
-            ic_cdk::println!("role:{}  len:{}",role_name,vec.len());
             map_insert!(ROLE_USER_TREE, role_name, StringVec(vec));
         }
     }
