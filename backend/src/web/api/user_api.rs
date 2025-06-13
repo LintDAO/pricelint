@@ -9,23 +9,25 @@ use crate::web::common::constants::OWNER_ROLE_TAG;
 use crate::web::services::user_service::{ExtendUserService, UserService};
 use crate::web::common::guard::{is_named_user, is_admin, band_role};
 #[query]
-async fn user_login() -> Result<Option<User>, String> {
+async fn user_login() -> Result<User, String> {
     if caller() == Principal::anonymous() {
         return Err(AuthenticationError::AnonymousUser.to_string());
     }
     if !User::is_exist(caller()) {
         return Err(UserError::UserIsNotExist.to_string());
     };
-    Ok(None) //表示该用户存在  不用注册了
+    let user=User::find_one_by_principal(caller()).ok_or(UserError::UserIsNotFound.to_string())?;
+    Ok(user)
+    //表示该用户存在  不用注册了
 }
 #[update]
-fn user_register()-> Result<Option<User>, String> {
+fn user_register()-> Result<User, String> {
     if caller() == Principal::anonymous() {
         return Err(AuthenticationError::AnonymousUser.to_string());
     }
     if !User::is_exist(caller()) {
         let new_user=create_user().ok_or(UserError::CreateUserFailed.to_string())?;
-        return Ok(Some(new_user));
+        return Ok(new_user);
     };
    Err(UserError::RegisterUserHasExist.to_string()) //表示已存在 不需要注册了
 }

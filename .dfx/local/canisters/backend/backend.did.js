@@ -48,7 +48,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const Result_1 = IDL.Variant({ 'Ok' : PredictorView, 'Err' : IDL.Text });
   const Result_2 = IDL.Variant({ 'Ok' : IDL.Vec(Predictor), 'Err' : IDL.Text });
-  const Result_3 = IDL.Variant({ 'Ok' : IDL.Opt(User), 'Err' : IDL.Text });
+  const Result_3 = IDL.Variant({ 'Ok' : User, 'Err' : IDL.Text });
   return IDL.Service({
     'add_price' : IDL.Func([PriceData], [], []),
     'find_user_lists' : IDL.Func([], [IDL.Vec(User)], ['query']),

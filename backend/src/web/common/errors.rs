@@ -19,8 +19,8 @@ impl_error!(AuthenticationError);
 pub enum UserError {
     CreateUserFailed,
     UserIsNotExist,
-    RegisterUserHasExist
-
+    RegisterUserHasExist,
+    UserIsNotFound,
 }
 impl_error!(UserError);
 

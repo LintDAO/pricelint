@@ -41,7 +41,7 @@ export type Result_1 = { 'Ok' : PredictorView } |
   { 'Err' : string };
 export type Result_2 = { 'Ok' : Array<Predictor> } |
   { 'Err' : string };
-export type Result_3 = { 'Ok' : [] | [User] } |
+export type Result_3 = { 'Ok' : User } |
   { 'Err' : string };
 export interface State {
   'bias' : [] | [Array<number>],

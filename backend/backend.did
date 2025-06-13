@@ -34,7 +34,7 @@ type PriceData = record {
 type Result = variant { Ok : text; Err : text };
 type Result_1 = variant { Ok : PredictorView; Err : text };
 type Result_2 = variant { Ok : vec Predictor; Err : text };
-type Result_3 = variant { Ok : opt User; Err : text };
+type Result_3 = variant { Ok : User; Err : text };
 type State = record {
   bias : opt vec float32;
   max_values : vec float32;
