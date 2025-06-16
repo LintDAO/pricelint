@@ -80,11 +80,10 @@
 </template>
 
 <script lang="ts" setup>
-import { initAuth, signOut } from "@/api/auth";
-import { clearCurrentIdentity, setCurrentIdentity } from "@/api/canister_pool";
+import { initAuth } from "@/api/auth";
+import { setCurrentIdentity } from "@/api/canister_pool";
 import { DISCORD_URL } from "@/api/constants/docs";
 import { getUserAutoRegister } from "@/api/user";
-import { goHome } from "@/router/routers";
 import { useUserStore } from "@/stores/user";
 import {
   extractColorByName,
@@ -100,9 +99,9 @@ const userStore = useUserStore();
 const router = useRouter();
 
 const menuItems = [
-  { icon: "drafts", label: "Dashboard", route: "/app" },
-  { icon: "wallet", label: "Canisters", route: "/app/canisters" },
-  { icon: "settings", label: "Settings", route: "/app/settings" },
+  { icon: "analytics", label: "Dashboard", route: "/app" },
+  { icon: "memory", label: "Canisters", route: "/app/canisters" },
+  // { icon: "settings", label: "Settings", route: "/app/settings" },
 ];
 const leftDrawerOpen = ref(false);
 // 与 II 认证相关的信息
