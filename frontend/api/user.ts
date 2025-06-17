@@ -1,5 +1,6 @@
 import type { ApiResult, ApiUserInfo } from "@/types/types";
 import { TTL, getCache } from "@/utils/cache";
+import { showMessageError } from "@/utils/message";
 import { getBackend, getCurrentPrincipal } from "./canister_pool";
 
 const userTTL = TTL.hour12; //用户自身信息缓存时长。
@@ -21,17 +22,17 @@ export async function getUserAutoRegister(): Promise<ApiResult<ApiUserInfo>> {
       const loginResult = await userLogin();
       if (loginResult.Err === "UserIsNotExist") {
         const registerResult = await userRegister();
-        if (registerResult.Ok) {
-          return await userLogin(); // 注册成功后重新登录
-        }
+        if (registerResult.Ok) return registerResult; // 注册成功后直接返回registerResult，因为注册和登录返回值是一样的。
+
         return registerResult; // 注册失败，返回错误
       }
       return loginResult; // 登录成功或其他错误
     },
     ttl: userTTL,
-    console: true,
     isLocal: true, // 启用本地存储（根据需要）
     update: true, // 异步更新缓存（可选）
-    updatedCallback: (data) => console.log("User info cache updated:", data),
+  }).catch((error) => {
+    console.error("getUserAutoRegister Error:", error);
+    showMessageError("Login Failed: " + error);
   });
 }

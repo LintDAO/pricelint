@@ -178,16 +178,16 @@ const toggleLeftDrawer = () => {
   leftDrawerOpen.value = !leftDrawerOpen.value;
 };
 const showAvatar = computed<string>(() => {
-  const m = showAvatarName(username.value, principal.value);
+  const m = showAvatarName("", principal.value);
   return m ? m : "A";
 });
 // 根据名字，定义头像颜色
 const backgroundColor = computed<string>(() => {
-  return extractColorByName(username.value);
+  return extractColorByName(principal.value);
 });
 // 根据名字，定义用户名
 const showUser = computed<string>(() => {
-  return showUsername(username.value, principal.value);
+  return showUsername("", principal.value);
 });
 </script>
 

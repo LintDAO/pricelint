@@ -5,40 +5,39 @@
 
     <div class="row q-col-gutter-sm dashboard-container">
       <!-- 用户地址 -->
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md-6">
         <q-card class="dashboard-card">
           <q-card-section>
-            <div class="text-h6">User Address</div>
-            <div class="text-subtitle2 text-grey">
-              Your ICP principal address
+            <div class="text-h6">Treasury</div>
+            <div class="text-subtitle2 text-grey">Your ICP wallet info</div>
+            <div class="row items-center">
+              <div class="text-body1 text-break">
+                {{ userData.principal || "N/A" }}
+              </div>
+              <q-icon
+                name="content_copy"
+                color="primary"
+                class="cursor-pointer"
+                @click="copyToClipboard(userData.principal)"
+              >
+                <q-tooltip>Copy address</q-tooltip>
+              </q-icon>
             </div>
+            <div class="row items-center"></div>
           </q-card-section>
-          <q-card-section
-            class="q-pt-none q-gutter-sm row items-center no-wrap"
-          >
-            <q-icon
-              name="content_copy"
-              color="primary"
-              size="sm"
-              class="cursor-pointer"
-              @click="copyToClipboard(userData.address)"
-            >
-              <q-tooltip>Copy address</q-tooltip>
-            </q-icon>
-            <div class="text-body1 text-break">
-              {{ userData.address || "N/A" }}
-            </div>
+          <q-card-section class="q-pt-none q-gutter-sm row">
+            <div class="row items-center">Tokens</div>
           </q-card-section>
         </q-card>
       </div>
 
       <!-- 钱包Cycles余额 -->
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md-6">
         <q-card class="dashboard-card">
           <q-card-section>
-            <div class="text-h6">Wallet Cycles Balance</div>
+            <div class="text-h6">Cycles Balance</div>
             <div class="text-subtitle2 text-grey">
-              Available cycles for canisters
+              Canister consumes cycles as fuel every day
             </div>
           </q-card-section>
           <q-card-section class="q-pt-none">
@@ -248,7 +247,9 @@
 </template>
 
 <script lang="ts" setup>
+import { getICPBalance } from "@/api/icp";
 import { useUserStore } from "@/stores/user";
+import { p2a } from "@/utils/common";
 import { useQuasar } from "quasar";
 import { computed, onMounted, ref } from "vue";
 
@@ -264,8 +265,15 @@ onMounted(async () => {
     console.log("userStore");
     await userStore.fetchUserInfo();
   }
+  getUserInfo();
   loading.value = false;
 });
+
+const getUserInfo = () => {
+  userData.value.principal = userStore.principal;
+  userData.value.accountId = p2a(userStore.principal);
+  userData.value.balances.icp = getICPBalance(userData.value.accountId);
+};
 
 // 模拟 Quick Start 数据
 const quickStartItems = ref([
@@ -297,7 +305,16 @@ const quickStartItems = ref([
 
 // 模拟用户数据
 const userData = ref({
-  address: computed(() => userStore.principal || ""),
+  principal: "",
+  accountId: "",
+  balances: {
+    icp: {
+      logo: "",
+      amount: 0,
+    },
+    cycles: 0,
+    pcl: 0,
+  },
   cyclesBalance: 5000000,
   runningCanisters: [
     { id: "can1", name: "Prediction Model", status: "Running" },
@@ -369,6 +386,9 @@ const showEarningsTrend = () => {
   word-break: break-all; /* 长地址自动换行 */
 }
 .row.q-col-gutter-sm > .col-md-4:nth-child(3n + 1) {
+  padding-left: 0 !important;
+}
+.row.q-col-gutter-sm > .col-md-6:nth-child(2n + 1) {
   padding-left: 0 !important;
 }
 </style>
