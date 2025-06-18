@@ -11,7 +11,7 @@
             <div class="text-h6">Treasury</div>
             <div class="text-subtitle2 text-grey">Your ICP wallet info</div>
             <div class="row items-center">
-              <div class="text-body1 text-break">
+              <div class="text-body1">
                 {{ userData.principal || "N/A" }}
               </div>
               <q-icon
@@ -26,7 +26,26 @@
             <div class="row items-center"></div>
           </q-card-section>
           <q-card-section class="q-pt-none q-gutter-sm row">
-            <div class="row items-center">Tokens</div>
+            <q-list dense padding class="token-list">
+              <q-item v-for="(token, index) in userData.balances">
+                <!-- 遍历已添加的token -->
+                <q-item-section avatar>
+                  <q-avatar color="grey-4" size="40px" font-size="12px">
+                    <img :src="token.logo" />
+                  </q-avatar>
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>{{ token.name }}</q-item-label>
+                </q-item-section>
+
+                <q-item-section side>
+                  <q-item-label caption
+                    >{{ token.amount }} {{ token.symbol }}</q-item-label
+                  >
+                  <q-btn icon="delete_outline" flat round dense />
+                </q-item-section>
+              </q-item>
+            </q-list>
           </q-card-section>
         </q-card>
       </div>
@@ -247,6 +266,7 @@
 </template>
 
 <script lang="ts" setup>
+import { ICP_LOGO } from "@/api/constants/tokens";
 import { getICPBalance } from "@/api/icp";
 import { useUserStore } from "@/stores/user";
 import { p2a } from "@/utils/common";
@@ -257,6 +277,21 @@ import { computed, onMounted, ref } from "vue";
 const $q = useQuasar();
 const userStore = useUserStore();
 const loading = ref(true);
+const showSendDialog = ref(false);
+const selectedToken = ref<{
+  key: string;
+  name: string;
+  symbol: string;
+  amount: number;
+} | null>(null);
+
+const sendForm = ref<{
+  principal: string;
+  amount: number;
+}>({
+  principal: "",
+  amount: 0,
+});
 
 // 初始化时获取数据
 onMounted(async () => {
@@ -272,8 +307,12 @@ onMounted(async () => {
 const getUserInfo = () => {
   userData.value.principal = userStore.principal;
   userData.value.accountId = p2a(userStore.principal);
-  userData.value.balances.icp = getICPBalance(userData.value.accountId);
+  getICPBalance(userData.value.accountId).then((res) => {
+    userData.value.balances.icp.amount = res;
+  });
 };
+
+const sendToken = () => {};
 
 // 模拟 Quick Start 数据
 const quickStartItems = ref([
@@ -309,11 +348,23 @@ const userData = ref({
   accountId: "",
   balances: {
     icp: {
+      name: "Internet Computer",
+      symbol: "ICP",
+      logo: ICP_LOGO,
+      amount: 0,
+    },
+    cycles: {
+      name: "Cycles",
+      symbol: "CYC",
       logo: "",
       amount: 0,
     },
-    cycles: 0,
-    pcl: 0,
+    pcl: {
+      name: "PriceLint",
+      symbol: "PCL",
+      logo: "",
+      amount: 0,
+    },
   },
   cyclesBalance: 5000000,
   runningCanisters: [
@@ -354,6 +405,14 @@ const copyToClipboard = async (text: string) => {
     });
   }
 };
+
+// 打开发送对话框
+const openSendDialog = (tokenKey, token) => {
+  selectedToken.value = { ...token, key: tokenKey };
+  sendForm.value.principal = "";
+  sendForm.value.amount = 0;
+  showSendDialog.value = true;
+};
 // 处理列表项点击事件
 const handleItemClick = (item) => {
   $q.notify({
@@ -375,17 +434,22 @@ const showEarningsTrend = () => {
 
 <style lang="scss" scoped>
 .dashboard-card {
-  height: 180px; /* 固定卡片高度 */
+  // height: 180px; /* 固定卡片高度 */
   width: 100%; /* 填满分配的列宽 */
   transition: box-shadow 0.3s;
 }
 .dashboard-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-.text-break {
-  word-break: break-all; /* 长地址自动换行 */
+
+.token-list {
+  width: 100%;
+  .q-item {
+    padding-left: 0;
+  }
 }
-.row.q-col-gutter-sm > .col-md-4:nth-child(3n + 1) {
+
+.row.q-col-gutter-sm > .col-md-4:nth-child(3n) {
   padding-left: 0 !important;
 }
 .row.q-col-gutter-sm > .col-md-6:nth-child(2n + 1) {
