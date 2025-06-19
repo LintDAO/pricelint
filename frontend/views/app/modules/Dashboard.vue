@@ -9,7 +9,7 @@
         <q-card class="dashboard-card">
           <q-card-section>
             <div class="text-h6">Treasury</div>
-            <div class="text-subtitle2 text-grey">Your ICP wallet info</div>
+            <div class="text-subtitle2 text-grey">ICP wallet info</div>
             <div class="row items-center">
               <div class="text-body1">
                 {{ userData.principal || "N/A" }}
@@ -26,26 +26,73 @@
             <div class="row items-center"></div>
           </q-card-section>
           <q-card-section class="q-pt-none q-gutter-sm row">
-            <q-list dense padding class="token-list">
-              <q-item v-for="(token, index) in userData.balances">
+            <div class="text-subtitle2 text-grey">Balance</div>
+            <q-list dense padding class="token-list q-pt-none q-mt-none">
+              <q-item v-for="(token, index) in userData.balances" :key="index">
                 <!-- 遍历已添加的token -->
                 <q-item-section avatar>
-                  <q-avatar color="grey-4" size="40px" font-size="12px">
+                  <q-avatar size="40px" font-size="12px">
                     <img :src="token.logo" />
                   </q-avatar>
                 </q-item-section>
                 <q-item-section>
                   <q-item-label>{{ token.name }}</q-item-label>
                 </q-item-section>
-
                 <q-item-section side>
-                  <q-item-label caption
-                    >{{ token.amount }} {{ token.symbol }}</q-item-label
-                  >
-                  <q-btn icon="delete_outline" flat round dense />
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <q-item-label>
+                      {{ token.amount }} {{ token.symbol }}
+                    </q-item-label>
+                    <q-btn-dropdown flat round dense>
+                      <q-list dense>
+                        <q-item clickable v-close-popup>
+                          <q-item-section>
+                            <q-item-label @click="openSendDialog(token)">
+                              Send
+                            </q-item-label>
+                          </q-item-section>
+                        </q-item>
+                      </q-list>
+                    </q-btn-dropdown>
+                  </div>
                 </q-item-section>
               </q-item>
             </q-list>
+            <!-- 发送代币对话框 -->
+            <q-dialog v-model="showSendDialog" @hide="closeSendDialog()">
+              <q-card>
+                <q-card-section>
+                  <div class="text-h6">Send {{ selectedToken?.name }}</div>
+                </q-card-section>
+                <q-card-section>
+                  <q-input
+                    v-model="sendForm.principal"
+                    label="Recipient  Principal"
+                    filled
+                    class="q-mb-md"
+                  />
+                  <q-input
+                    v-model.number="sendForm.amount"
+                    label="amount"
+                    type="number"
+                    filled
+                    :suffix="selectedToken?.symbol"
+                    :rules="[
+                (val: number) => val > 0 && val <= (selectedToken?.amount ?? 0) || 'ineffective balance'
+              ]"
+                  />
+                </q-card-section>
+                <q-card-actions align="right">
+                  <q-btn flat label="cancel" v-close-popup />
+                  <q-btn
+                    color="primary"
+                    label="confirm"
+                    @click="sendToken"
+                    :disable="!sendForm.principal || sendForm.amount == null"
+                  />
+                </q-card-actions>
+              </q-card>
+            </q-dialog>
           </q-card-section>
         </q-card>
       </div>
@@ -61,7 +108,7 @@
           </q-card-section>
           <q-card-section class="q-pt-none">
             <div class="text-body1">{{ userData.cyclesBalance }} Cycles</div>
-            <div class="text-body1">0.00001T / Day</div>
+            <div class="text-body1">0.00000T / Day</div>
             <q-linear-progress
               stripe
               :value="cyclesPercentage / 100"
@@ -267,7 +314,7 @@
 
 <script lang="ts" setup>
 import { ICP_LOGO } from "@/api/constants/tokens";
-import { getICPBalance } from "@/api/icp";
+import { getCyclesBalance, getICPBalance } from "@/api/icp";
 import { useUserStore } from "@/stores/user";
 import { p2a } from "@/utils/common";
 import { useQuasar } from "quasar";
@@ -279,7 +326,6 @@ const userStore = useUserStore();
 const loading = ref(true);
 const showSendDialog = ref(false);
 const selectedToken = ref<{
-  key: string;
   name: string;
   symbol: string;
   amount: number;
@@ -310,6 +356,7 @@ const getUserInfo = () => {
   getICPBalance(userData.value.accountId).then((res) => {
     userData.value.balances.icp.amount = res;
   });
+  getCyclesBalance(userData.value.principal);
 };
 
 const sendToken = () => {};
@@ -353,25 +400,25 @@ const userData = ref({
       logo: ICP_LOGO,
       amount: 0,
     },
-    cycles: {
-      name: "Cycles",
-      symbol: "CYC",
-      logo: "",
-      amount: 0,
-    },
-    pcl: {
-      name: "PriceLint",
-      symbol: "PCL",
-      logo: "",
-      amount: 0,
-    },
+    // cycles: {
+    //   name: "Cycles",
+    //   symbol: "CYC",
+    //   logo: "",
+    //   amount: 0,
+    // },
+    // pcl: {
+    //   name: "PriceLint",
+    //   symbol: "PCL",
+    //   logo: "",
+    //   amount: 0,
+    // },
   },
-  cyclesBalance: 5000000,
+  cyclesBalance: 0,
   runningCanisters: [
     { id: "can1", name: "Prediction Model", status: "Running" },
     { id: "can2", name: "Data Processor", status: "Active" },
   ],
-  stakedTokens: 1000,
+  stakedTokens: 0,
   stakeLockEnd: "2025-12-31",
   predictionAccuracy: 51,
   predictionEarnings: 250.5,
@@ -407,12 +454,19 @@ const copyToClipboard = async (text: string) => {
 };
 
 // 打开发送对话框
-const openSendDialog = (tokenKey, token) => {
-  selectedToken.value = { ...token, key: tokenKey };
+const openSendDialog = (token) => {
+  selectedToken.value = { ...token };
   sendForm.value.principal = "";
   sendForm.value.amount = 0;
   showSendDialog.value = true;
 };
+// 不清理状态的话会导致切换代币时无法正常打开dialog
+const closeSendDialog = () => {
+  showSendDialog.value = false;
+  selectedToken.value = null;
+  sendForm.value = { principal: "", amount: 0 };
+};
+
 // 处理列表项点击事件
 const handleItemClick = (item) => {
   $q.notify({
@@ -434,7 +488,7 @@ const showEarningsTrend = () => {
 
 <style lang="scss" scoped>
 .dashboard-card {
-  // height: 180px; /* 固定卡片高度 */
+  min-height: 180px; /* 固定卡片高度 */
   width: 100%; /* 填满分配的列宽 */
   transition: box-shadow 0.3s;
 }

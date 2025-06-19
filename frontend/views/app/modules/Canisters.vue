@@ -1,5 +1,5 @@
 <template>
-  <div>canisters</div>
+  <div>You don't have any canister.</div>
 </template>
 
 <script setup lang="ts"></script>
