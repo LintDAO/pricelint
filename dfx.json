@@ -21,10 +21,22 @@
     },
     "frontend": {
       "type": "assets",
-      "source": ["dist/"],
+      "source": [
+        "dist/"
+      ],
       "frontend": {
         "entrypoint": "dist/index.html"
       }
+    },
+    "pred": {
+      "candid": "pred/pred.did",
+      "package": "pred",
+      "type": "custom",
+      "optimize": "cycles",
+      "build": [
+        "cargo build --target wasm32-unknown-unknown --release -p pred"
+      ],
+      "wasm": "target/wasm32-unknown-unknown/release/pred.wasm"
     }
   },
   "defaults": {
