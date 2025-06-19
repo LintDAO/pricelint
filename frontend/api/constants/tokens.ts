@@ -1,7 +1,7 @@
 import icpLogo from "@/assets/dfinity.svg";
 import btcLogo from "@/assets/icons/BTC.svg";
 import ethLogo from "@/assets/icons/ETH.svg";
-import { LEDGER_CANISTER_ID } from "./ic";
+import { ICP_LEDGER_CANISTER } from "./ic";
 
 export const ICP_LOGO = icpLogo;
 export const TOKENS = {
@@ -9,7 +9,7 @@ export const TOKENS = {
     canisters: {
       governance: "",
       index: "",
-      ledger: LEDGER_CANISTER_ID,
+      ledger: ICP_LEDGER_CANISTER,
       root: "",
       swap: "",
     },

@@ -87,7 +87,8 @@ export async function getCache(info: {
   // data = null; // 启用则关闭缓存功能，方便测试
   // 如果缓存中已有数据，直接返回缓存
   if (data) {
-    console.log(info.execute.toString() + " cache have data", data);
+    if (info.console)
+      console.log(info.execute.toString() + " cache have data", data);
     if (info.notice) info.notice(true);
     // 如果允许异步更新，则返回数据并异步更新
     if (info.update) {
@@ -154,7 +155,8 @@ export async function getCache(info: {
   try {
     data = await ongoingRequests[key];
     if (info.notice) info.notice(false);
-    console.log(info.execute.toString() + " result data", data);
+    if (info.console)
+      console.log(info.execute.toString() + " result data", data);
     return data;
   } catch (error) {
     if (info.notice) info.notice(false);

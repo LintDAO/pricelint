@@ -1,3 +1,5 @@
+import binanceLogo from "@/assets/icons/binance.svg";
+
 interface Market {
   name: string;
   logo: string;
@@ -6,6 +8,6 @@ interface Market {
 export const MARKETS: Record<string, Market> = {
   BINANCE: {
     name: "BINANCE",
-    logo: "/frontend/assets/icons/binance.svg",
+    logo: binanceLogo,
   },
 } as const;
