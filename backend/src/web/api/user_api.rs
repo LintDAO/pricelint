@@ -9,7 +9,7 @@ use crate::web::common::constants::OWNER_ROLE_TAG;
 use crate::web::services::user_service::{ExtendUserService, UserService};
 use crate::web::common::guard::{is_named_user, is_admin, band_role};
 #[query]
-async fn user_login() -> Result<User, String> {
+ fn user_login() -> Result<User, String> {
     if caller() == Principal::anonymous() {
         return Err(AuthenticationError::AnonymousUser.to_string());
     }
