@@ -107,7 +107,7 @@
             </div>
           </q-card-section>
           <q-card-section class="q-pt-none">
-            <div class="text-body1">{{ userData.cyclesBalance }} Cycles</div>
+            <div class="text-body1">{{ userData.cycles.amount }} Cycles</div>
             <div class="text-body1">0.00000T / Day</div>
             <q-linear-progress
               stripe
@@ -356,7 +356,9 @@ const getUserInfo = () => {
   getICPBalance(userData.value.accountId).then((res) => {
     userData.value.balances.icp.amount = res;
   });
-  getCyclesBalance(userData.value.principal);
+  getCyclesBalance(userData.value.principal).then((res) => {
+    userData.value.cycles.amount = Number(res);
+  });
 };
 
 const sendToken = () => {};
@@ -413,7 +415,9 @@ const userData = ref({
     //   amount: 0,
     // },
   },
-  cyclesBalance: 0,
+  cycles: {
+    amount: 0,
+  },
   runningCanisters: [
     { id: "can1", name: "Prediction Model", status: "Running" },
     { id: "can2", name: "Data Processor", status: "Active" },
@@ -432,7 +436,7 @@ const userData = ref({
 
 // 计算 Cycles 余额进度条百分比（假设最大值为 1000 万）
 const cyclesPercentage = computed(() =>
-  Math.min((userData.value.cyclesBalance / 10000000) * 100, 100)
+  Math.min((userData.value.cycles.amount / 10000000) * 100, 100)
 );
 
 // 复制地址到剪贴板

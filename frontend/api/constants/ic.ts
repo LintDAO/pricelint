@@ -1,6 +1,6 @@
 export const ICP_LEDGER_CANISTER = "ryjl3-tyaaa-aaaaa-aaaba-cai";
 export const NNS_CANISTER_ID = "qoctq-giaaa-aaaaa-aaaea-cai";
-export const CYCLES_LEDGER_CANISTER = "aanaa-xaaaa-aaaah-aaeiq-cai";
+export const CYCLES_LEDGER_CANISTER = "um5iw-rqaaa-aaaaq-qaaba-cai";
 
 export const NET_ID = {
   blockchain: "Internet Computer",

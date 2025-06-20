@@ -1,12 +1,11 @@
-import type { Identity } from "@dfinity/agent";
+import type { _SERVICE } from ".dfx/ic/canisters/backend/backend.did";
+import type { ActorSubclass, Identity } from "@dfinity/agent";
 import { Actor, HttpAgent } from "@dfinity/agent";
 import {
   backend as anonymousActorBackend,
   canisterId as canisterIdBackend,
   idlFactory as idlFactoryBackend,
 } from "canisters/backend";
-import type { _SERVICE } from ".dfx/ic/canisters/backend/backend.did";
-import type { ActorSubclass } from "@dfinity/agent";
 
 const createActor = (canisterId: string, idlFactory: any, options: any) => {
   const agent = new HttpAgent({ ...options?.agentOptions });
