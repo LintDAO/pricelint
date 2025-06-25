@@ -11,9 +11,7 @@ candid = "0.10"
 ic-cdk = "0.16"
 ic-cdk-macros = "0.13" 
 bincode = "1.3.3"
-burn = { git = "https://github.com/burn-rs/burn", default-features = false, features = ["std", "ndarray", "autodiff"] }
-burn-autodiff = "0.13"  # 自动微分支持
-burn-tch = "0.13"       # LibTorch 后端（可选 GPU 加速）
+burn = { git = "https://github.com/burn-rs/burn", default-features = false, features = ["std", "ndarray", "autodiff","dataset"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 getrandom = { version = "0.3.2", default-features = false }
