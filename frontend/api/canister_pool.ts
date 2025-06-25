@@ -6,6 +6,7 @@ import {
   canisterId as canisterIdBackend,
   idlFactory as idlFactoryBackend,
 } from "canisters/backend";
+import { getCurrentIdentity } from "./auth";
 
 const createActor = (canisterId: string, idlFactory: any, options: any) => {
   const agent = new HttpAgent({ ...options?.agentOptions });
@@ -67,4 +68,17 @@ export function clearCurrentIdentity() {
  */
 export const getBackend = (principal?: string): ActorSubclass<_SERVICE> => {
   return ACTOR_CACHE[principal ?? currentPrincipal].backend;
+};
+
+// Create HttpAgent with Identity
+export const createIIAgent = () => {
+  const identity = getCurrentIdentity();
+  if (!identity) throw new Error("unlogin, cant get Identity");
+  const agent = new HttpAgent({ host: "https://ic0.app" });
+  agent.replaceIdentity(identity);
+  console.log(
+    "Agent created with principal:",
+    identity.getPrincipal().toText()
+  );
+  return agent;
 };

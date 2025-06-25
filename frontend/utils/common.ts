@@ -2,9 +2,14 @@ import { AccountIdentifier } from "@dfinity/ledger-icp";
 import { Principal } from "@dfinity/principal";
 
 //根据精度计算对应的代币数值
-export function currencyCalculate(amount: string, decimals: number): number {
-  const floatValue = parseInt(amount) / Math.pow(10, decimals);
-  return floatValue;
+export function currencyCalculate(
+  amount: string | number,
+  decimals: number
+): number {
+  const parsedAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+
+  const result = parsedAmount / Math.pow(10, decimals);
+  return result;
 }
 
 //将 principal id 转换为 account id
