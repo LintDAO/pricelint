@@ -1,26 +1,26 @@
-import { deleteUserInfoStorage } from "@/utils/storage"
-import type { Identity } from "@dfinity/agent"
-import { AuthClient } from "@dfinity/auth-client"
+import { deleteUserInfoStorage } from "@/utils/storage";
+import type { Identity } from "@dfinity/agent";
+import { AuthClient } from "@dfinity/auth-client";
 
-let client: AuthClient | null = null
+let client: AuthClient | null = null;
 
 export class AuthInfo {
-  client: AuthClient
-  info?: IdentityInfo
+  client: AuthClient;
+  info?: IdentityInfo;
 
   constructor(client: AuthClient, info?: IdentityInfo) {
-    this.client = client
-    this.info = info
+    this.client = client;
+    this.info = info;
   }
 }
 
 export class IdentityInfo {
-  identity: Identity
-  principal: string
+  identity: Identity;
+  principal: string;
 
   constructor(identity: Identity, principal: string) {
-    this.identity = identity
-    this.principal = principal
+    this.identity = identity;
+    this.principal = principal;
   }
 }
 
@@ -38,16 +38,16 @@ export async function initAuth(): Promise<AuthInfo> {
         //     // 检测到闲置时的回调，默认为登出并且刷新页面，假如有此方法则会替代原来的方法
         // },
       },
-    }) // 创建链接对象;
+    }); // 创建链接对象;
   }
   // 链接对象已经准备好
   // 取得当前登录信息
-  const isAuthenticated = await client.isAuthenticated()
+  const isAuthenticated = await client.isAuthenticated();
   // console.log("isAuthenticated", isAuthenticated)
   if (isAuthenticated) {
     // 如果已经登录，取得信息
-    const identity = client.getIdentity()
-    const principal = identity.getPrincipal().toString()
+    const identity = client.getIdentity();
+    const principal = identity.getPrincipal().toString();
 
     // console.log('got identity by init auth', identity);
     // console.log('got principal by init auth', principal);
@@ -55,17 +55,17 @@ export async function initAuth(): Promise<AuthInfo> {
     return new AuthInfo(client, {
       identity: identity,
       principal: principal,
-    })
+    });
   }
 
-  return new AuthInfo(client)
+  return new AuthInfo(client);
 }
 
 // 登录动作
 export async function signIn(client: AuthClient): Promise<IdentityInfo> {
-  const days = BigInt(1)
-  const hours = BigInt(24)
-  const nanoseconds = BigInt(3600000000000)
+  const days = BigInt(1);
+  const hours = BigInt(24);
+  const nanoseconds = BigInt(3600000000000);
   const result: IdentityInfo = await new Promise((resolve, reject) => {
     // 进行登录
     client.login({
@@ -76,18 +76,18 @@ export async function signIn(client: AuthClient): Promise<IdentityInfo> {
       identityProvider: "https://identity.ic0.app", // 用线上的 II 认证，本地没法搭建II认证
       onSuccess: () => {
         // 登录成功后取出用户信息
-        const identity = client.getIdentity()
-        const principal = identity.getPrincipal().toString()
-        resolve(new IdentityInfo(identity, principal))
+        const identity = client.getIdentity();
+        const principal = identity.getPrincipal().toString();
+        resolve(new IdentityInfo(identity, principal));
       },
       onError: (err) => {
-        console.error("auth II have a error ", err)
-        reject(err)
+        console.error("auth II have a error ", err);
+        reject(err);
       },
       // Maximum authorization expiration is 8 days
       maxTimeToLive: days * hours * nanoseconds,
-    })
-  })
+    });
+  });
   // 持续打印II身份有效时间。
   // const authClient = await AuthClient.create()
   // if (await authClient.isAuthenticated()) {
@@ -102,22 +102,38 @@ export async function signIn(client: AuthClient): Promise<IdentityInfo> {
   // }
 
   // console.log('got identity by sign in', result.identity);
-  console.log("got principal by sign in", result.principal)
-  return result
+  console.log("got principal by sign in", result.principal);
+  return result;
 }
 
 // 登出动作
 export async function signOut(client: AuthClient): Promise<void> {
   if (client) {
-    const isAuthenticated = await client.isAuthenticated()
+    const isAuthenticated = await client.isAuthenticated();
     if (isAuthenticated) {
       // 如果已经登录，则同时移除登录缓存
-      const principal = client.getIdentity().getPrincipal().toString()
-      deleteUserInfoStorage(principal)
+      const principal = client.getIdentity().getPrincipal().toString();
+      deleteUserInfoStorage(principal);
       //TODO  登出时刷新页面应该就足够了，消除所有存储感觉不太合理
       // localStorage.clear()
       // sessionStorage.clear()
     }
-    await client.logout()
+    await client.logout();
+  }
+}
+
+export function getCurrentIdentity() {
+  if (!client) {
+    console.error("AuthClient not initialized");
+    return null;
+  }
+  try {
+    const identity = client.getIdentity();
+    const principal = identity.getPrincipal().toText();
+    console.log("Retrieved identity for principal:", principal);
+    return identity;
+  } catch (err) {
+    console.error("Failed to get identity:", err);
+    return null;
   }
 }
