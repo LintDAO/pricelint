@@ -1,7 +1,8 @@
-import { currencyCalculate, p2a } from "@/utils/common";
+import { fromTokenAmount, p2a, toTokenAmount } from "@/utils/common";
 import { showMessageError } from "@/utils/message";
 import { Actor } from "@dfinity/agent";
 import { CMCCanister } from "@dfinity/cmc";
+import { SubAccount } from "@dfinity/ledger-icp";
 import { IcrcLedgerCanister } from "@dfinity/ledger-icrc";
 import { Principal } from "@dfinity/principal";
 import axios from "axios";
@@ -40,6 +41,23 @@ const cyclesLedgerIdlFactory = ({ IDL }) => {
   });
 };
 
+/**
+ * 生成 CMC 操作的 memo 值（8 字节 Uint8Array）。
+ * @param method CMC 方法名称，支持以下三种：
+ * - "CREA": 用于 notify_create_canister，将 ICP 转换为 Cycles 并创建新 Canister，memo 为 blob "\43\52\45\41\00\00\00\00" (ASCII "CREA" + 4 个零字节)。
+ * - "TPUP": 用于 notify_top_up，将 ICP 转换为 Cycles 为现有 Canister 充值，memo 为 blob "\54\50\55\50\00\00\00\00" (ASCII "TPUP" + 4 个零字节)。
+ * - "MINT": 用于 notify_mint_cycles，将 ICP 转换为 Cycles 存入目标账户，memo 为 blob "\4d\49\4e\54\00\00\00\00" (ASCII "MINT" + 4 个零字节)。
+ * @returns 8 字节的 Uint8Array，表示对应方法的 memo。
+ */
+const getMemoCode = (method: string) => {
+  // 生成 memo
+  const encoder = new TextEncoder();
+  const methodBytes = encoder.encode(method); // 编码方法名（如 "CREA" -> [0x43, 0x52, 0x45, 0x41]）
+  const memo = new Uint8Array(8); // 创建 8 字节数组
+  memo.set(methodBytes, 0); // 将方法字节放入前 4 位，后 4 位自动为 0
+  return memo;
+};
+
 // 初始化 ICRC Ledger
 const initIcrcLedger = (canisterId: string) => {
   const agent = createIIAgent();
@@ -72,7 +90,7 @@ export const getICPBalance = async (accountId: string): Promise<number> => {
   try {
     const url = `${IC_LEDGER_URL}/accounts/${accountId}`;
     const res = await axios.get(url);
-    return currencyCalculate(res.data.balance, currency.decimals);
+    return fromTokenAmount(res.data.balance, currency.decimals);
   } catch (error) {
     if (error instanceof Error) {
       console.error("getICPBalance Error:", error);
@@ -95,6 +113,7 @@ export const getCyclesBalance = async (principal: string): Promise<number> => {
     return Number(balance) / 1_000_000_000_000; // Convert to T Cycles
   } catch (error) {
     console.error("Failed to get Cycles balance:", error);
+    showMessageError(`Failed to get Cycles balance: ${error}`);
     throw new Error(`Failed to get Cycles balance: ${error}`);
   }
 };
@@ -103,8 +122,9 @@ export const getCyclesBalance = async (principal: string): Promise<number> => {
 export const burnICP = async (icpAmount: number): Promise<boolean> => {
   try {
     const principal = getCurrentPrincipal();
-    console.log("princ", principal);
     if (!principal) throw new Error("未登录，无法获取 Principal");
+    const controller = Principal.fromText(principal);
+    const subaccount = SubAccount.fromPrincipal(controller).toUint8Array(); // 生成 subaccount 的 Uint8Array
 
     // 检查 ICP 余额
     const icpBalance = await getICPBalance(p2a(principal));
@@ -113,14 +133,9 @@ export const burnICP = async (icpAmount: number): Promise<boolean> => {
         `ICP 余额不足: 当前 ${icpBalance} ICP，需 ${icpAmount} ICP`
       );
 
-    //TODO 这数字不对，这是除，不是乘，应该乘
-    const amount = currencyCalculate(icpAmount, currency.decimals);
     // 将 ICP 转换为 e8s（1 ICP = 10^8 e8s）
-    const amountE8s = BigInt(Math.floor(icpAmount * 100_000_000));
-
-    console.log("amount", amount);
-
-    if (amountE8s < currencyCalculate(0.0001, currency.decimals))
+    const amountE8s = toTokenAmount(icpAmount, currency.decimals);
+    if (icpAmount < 0.0001)
       throw new Error("金额需至少 0.0001 ICP 以覆盖手续费");
     const ledger = initIcrcLedger(ICP_LEDGER_CANISTER);
 
@@ -128,18 +143,17 @@ export const burnICP = async (icpAmount: number): Promise<boolean> => {
     const blockindex = await ledger.transfer({
       to: {
         owner: Principal.fromText(CMC_CANISTER),
-        subaccount: [],
+        subaccount: [subaccount], // subaccount为新cycles的接收者的principal id
       },
       amount: amountE8s,
-      memo: new Uint8Array([80, 80]), // 0x5050
-      created_at_time: BigInt(Date.now() * 1_000_000),
+      memo: getMemoCode("CREA"),
     });
 
     console.log(`Converted ${icpAmount} ICP to cycles`, blockindex);
     const cmc = initCmc();
     const notifyResult = await cmc.notifyCreateCanister({
       block_index: blockindex,
-      controller: Principal.fromText(principal),
+      controller: controller,
       subnet_selection: [], // Default subnet
       settings: [], // Default settings
       subnet_type: [], // Default subnet type
@@ -161,8 +175,9 @@ export const createNewCanister = async (): Promise<boolean> => {
     // 检查 Cycles 余额
     const cyclesBalance = await getCyclesBalance(principal);
     if (cyclesBalance < 1) {
-      // 如果 Cycles 不足，转换 1 ICP
-      await burnICP(0.001);
+      // 如果 Cycles 不足，使用 1 ICP 转换为 Cycles 直接创建 Canister
+      await burnICP(0.25);
+      return true;
     }
 
     const cyclesLedger = initCyclesLedger();

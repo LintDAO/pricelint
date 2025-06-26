@@ -1,15 +1,34 @@
 import { AccountIdentifier } from "@dfinity/ledger-icp";
 import { Principal } from "@dfinity/principal";
 
-//根据精度计算对应的代币数值
-export function currencyCalculate(
+/**
+ * 将带精度的值转换为实际代币值。
+ * 例如：100000000 e8s (8位精度) 转换为 1 ICP。
+ * @param amount 带精度的值（字符串或数字，例如 100000000）
+ * @param decimals 精度（小数位数，例如 8）
+ * @returns 实际代币值（例如 1）
+ */
+export function fromTokenAmount(
   amount: string | number,
   decimals: number
 ): number {
   const parsedAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+  return parsedAmount / Math.pow(10, decimals);
+}
 
-  const result = parsedAmount / Math.pow(10, decimals);
-  return result;
+/**
+ * 将实际代币值转换为带精度的值。
+ * 例如：1 ICP 转换为 100000000 e8s (8位精度)。
+ * @param amount 实际代币值（例如 1）
+ * @param decimals 精度（小数位数，例如 8）
+ * @returns 带精度的值（例如 100000000）
+ */
+export function toTokenAmount(
+  amount: string | number,
+  decimals: number
+): bigint {
+  const parsedAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+  return BigInt(parsedAmount * Math.pow(10, decimals));
 }
 
 //将 principal id 转换为 account id

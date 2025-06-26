@@ -23,6 +23,19 @@
                 <q-tooltip>Copy address</q-tooltip>
               </q-icon>
             </div>
+            <div class="row items-center">
+              <div class="text-body1">
+                {{ userData.accountId || "N/A" }}
+              </div>
+              <q-icon
+                name="content_copy"
+                color="primary"
+                class="cursor-pointer"
+                @click="copyToClipboard(userData.accountId)"
+              >
+                <q-tooltip>Copy AccountId</q-tooltip>
+              </q-icon>
+            </div>
             <div class="row items-center"></div>
           </q-card-section>
           <q-card-section class="q-pt-none q-gutter-sm row">
