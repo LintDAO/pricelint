@@ -107,7 +107,6 @@ export default defineConfig(({ command, mode }) => {
               "@dfinity/ledger-icp",
               "@dfinity/ledger-icrc",
               "@dfinity/nns",
-              "@dfinity/nns-proto",
               "@dfinity/principal",
               "@dfinity/sns",
               "@dfinity/utils",

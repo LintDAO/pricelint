@@ -1,7 +1,9 @@
 import { fromTokenAmount, p2a, toTokenAmount } from "@/utils/common";
 import { showMessageError } from "@/utils/message";
+import { setArrayStorage } from "@/utils/storage";
 import { Actor } from "@dfinity/agent";
 import { CMCCanister } from "@dfinity/cmc";
+import { ICManagementCanister } from "@dfinity/ic-management";
 import { SubAccount } from "@dfinity/ledger-icp";
 import { IcrcLedgerCanister } from "@dfinity/ledger-icrc";
 import { Principal } from "@dfinity/principal";
@@ -15,6 +17,7 @@ import {
 } from "./constants/ic";
 
 const currency = { decimals: 8, symbol: "ICP" };
+const CONTROLLER_CANISTERS_KEY = "CONTROLLER_CANISTERS"; // 存储 Canister ID 数组的键
 
 // 最小化的Cycles Ledger Candid 接口
 const cyclesLedgerIdlFactory = ({ IDL }) => {
@@ -76,6 +79,14 @@ const initCmc = () => {
   });
 };
 
+// 初始化 管理罐子，可操作拥有控制权的罐子
+const initManage = () => {
+  const agent = createIIAgent();
+  return ICManagementCanister.create({
+    agent,
+  });
+};
+
 const initCyclesLedger = () => {
   const agent = createIIAgent();
   return Actor.createActor(cyclesLedgerIdlFactory, {
@@ -119,28 +130,30 @@ export const getCyclesBalance = async (principal: string): Promise<number> => {
 };
 
 //将当前principal id的ICP转换为Cycles
-export const burnICP = async (icpAmount: number): Promise<boolean> => {
+export const burnICPcreateCanister = async (
+  icpAmount: number
+): Promise<boolean> => {
   try {
     const principal = getCurrentPrincipal();
-    if (!principal) throw new Error("未登录，无法获取 Principal");
+    if (!principal)
+      throw new Error("User not authenticated: Principal not found");
     const controller = Principal.fromText(principal);
-    const subaccount = SubAccount.fromPrincipal(controller).toUint8Array(); // 生成 subaccount 的 Uint8Array
 
-    // 检查 ICP 余额
+    // 检查 ICP 余额够不够
     const icpBalance = await getICPBalance(p2a(principal));
-    if (icpBalance < icpAmount)
+    if (icpBalance < icpAmount) {
       throw new Error(
-        `ICP 余额不足: 当前 ${icpBalance} ICP，需 ${icpAmount} ICP`
+        `Insufficient ICP balance: ${icpBalance} ICP available, ${icpAmount} ICP required`
       );
+    }
 
     // 将 ICP 转换为 e8s（1 ICP = 10^8 e8s）
     const amountE8s = toTokenAmount(icpAmount, currency.decimals);
-    if (icpAmount < 0.0001)
-      throw new Error("金额需至少 0.0001 ICP 以覆盖手续费");
+    const subaccount = SubAccount.fromPrincipal(controller).toUint8Array(); // 生成 subaccount 的 Uint8Array
     const ledger = initIcrcLedger(ICP_LEDGER_CANISTER);
 
     // 调用 ICP ledger 的 transfer 方法，将 ICP 转到 CMC
-    const blockindex = await ledger.transfer({
+    const blockIndex = await ledger.transfer({
       to: {
         owner: Principal.fromText(CMC_CANISTER),
         subaccount: [subaccount], // subaccount为新cycles的接收者的principal id
@@ -149,16 +162,23 @@ export const burnICP = async (icpAmount: number): Promise<boolean> => {
       memo: getMemoCode("CREA"),
     });
 
-    console.log(`Converted ${icpAmount} ICP to cycles`, blockindex);
+    console.log(
+      `Successfully converted ${icpAmount} ICP to Cycles, block index: ${blockIndex}`
+    );
     const cmc = initCmc();
     const notifyResult = await cmc.notifyCreateCanister({
-      block_index: blockindex,
-      controller: controller,
+      block_index: blockIndex,
+      controller,
       subnet_selection: [], // Default subnet
       settings: [], // Default settings
       subnet_type: [], // Default subnet type
     });
     console.log("create new", notifyResult);
+    // 将 Canister ID 转换为字符串并存储到 localStorage
+    const canisterId = notifyResult.toString();
+    if (canisterId) {
+      setArrayStorage(CONTROLLER_CANISTERS_KEY, canisterId);
+    }
     return true;
   } catch (error) {
     console.error("Failed to burn ICP:", error);
@@ -166,28 +186,22 @@ export const burnICP = async (icpAmount: number): Promise<boolean> => {
   }
 };
 
-// 创建新 Canister
-export const createNewCanister = async (): Promise<boolean> => {
+// 查询目标 Canister 的状态，目标canister的controller必须是用户本人
+export async function queryCanisterStatus() {
+  // 创建管理 Canister 的 Actor
+  const managementCanister = initManage();
   try {
-    const principal = getCurrentPrincipal();
-    if (!principal) throw new Error("未登录，无法获取 Principal");
-
-    // 检查 Cycles 余额
-    const cyclesBalance = await getCyclesBalance(principal);
-    if (cyclesBalance < 1) {
-      // 如果 Cycles 不足，使用 1 ICP 转换为 Cycles 直接创建 Canister
-      await burnICP(0.25);
-      return true;
-    }
-
-    const cyclesLedger = initCyclesLedger();
-    const result = await cyclesLedger.create_canister({
-      settings: [],
+    const status = await managementCanister.canisterStatus(
+      Principal.fromText("dxegq-jyaaa-aaaab-qb2wq-cai")
+    );
+    console.log("Canister Status:", {
+      status: status.status,
+      memory_size: Number(status.memory_size),
+      cycles: Number(status.cycles),
+      controllers: status.settings.controllers.map((p) => p.toText()),
     });
-    console.log("create result", result);
-    return true;
+    return status;
   } catch (error) {
-    console.error("Failed to create canister:", error);
-    throw error;
+    console.error("Error querying canister status:", error);
   }
-};
+}
