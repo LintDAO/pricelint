@@ -23,7 +23,7 @@
     "@dfinity/sns": "^3.7.0",
     "@dfinity/utils": "^2.13.1",
     "@quasar/extras": "^1.16.5",
-    "axios": "^1.6.2",
+    "axios": "^1.10.0",
     "echarts": "^5.4.3",
     "element-plus": "2.4.3",
     "moment-timezone": "^0.5.45",

@@ -130,7 +130,6 @@ export function getCurrentIdentity() {
   try {
     const identity = client.getIdentity();
     const principal = identity.getPrincipal().toText();
-    console.log("Retrieved identity for principal:", principal);
     return identity;
   } catch (err) {
     console.error("Failed to get identity:", err);

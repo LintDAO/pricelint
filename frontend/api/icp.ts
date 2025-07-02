@@ -79,14 +79,6 @@ const initCmc = () => {
   });
 };
 
-// 初始化 管理罐子，可操作拥有控制权的罐子
-const initManage = () => {
-  const agent = createIIAgent();
-  return ICManagementCanister.create({
-    agent,
-  });
-};
-
 const initCyclesLedger = () => {
   const agent = createIIAgent();
   return Actor.createActor(cyclesLedgerIdlFactory, {
@@ -185,23 +177,3 @@ export const burnICPcreateCanister = async (
     throw error;
   }
 };
-
-// 查询目标 Canister 的状态，目标canister的controller必须是用户本人
-export async function queryCanisterStatus() {
-  // 创建管理 Canister 的 Actor
-  const managementCanister = initManage();
-  try {
-    const status = await managementCanister.canisterStatus(
-      Principal.fromText("dxegq-jyaaa-aaaab-qb2wq-cai")
-    );
-    console.log("Canister Status:", {
-      status: status.status,
-      memory_size: Number(status.memory_size),
-      cycles: Number(status.cycles),
-      controllers: status.settings.controllers.map((p) => p.toText()),
-    });
-    return status;
-  } catch (error) {
-    console.error("Error querying canister status:", error);
-  }
-}
