@@ -1,6 +1,8 @@
+import { getStorage } from "@/utils/storage";
 import { ICManagementCanister } from "@dfinity/ic-management";
 import { Principal } from "@dfinity/principal";
 import { createIIAgent } from "./canister_pool";
+import { CONTROLLER_CANISTERS_KEY } from "./icp";
 
 // 定义 Canister 数据接口
 export interface CanisterData {
@@ -22,6 +24,16 @@ const initManage = () => {
     agent,
   });
 };
+
+//获取用户的canister列表
+export async function getCanisterList(): Promise<string[]> {
+  const canisters = getStorage(CONTROLLER_CANISTERS_KEY);
+  if (canisters) return canisters;
+  //TODO 调用后端api，查询线上的canister list是否一致
+
+  // 没有结果就返回空
+  return [];
+}
 
 // 查询目标 Canister 的状态，目标canister的controller必须是用户本人
 export async function queryCanisterStatus() {

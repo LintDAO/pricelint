@@ -3,7 +3,6 @@ import { showMessageError } from "@/utils/message";
 import { setArrayStorage } from "@/utils/storage";
 import { Actor } from "@dfinity/agent";
 import { CMCCanister } from "@dfinity/cmc";
-import { ICManagementCanister } from "@dfinity/ic-management";
 import { SubAccount } from "@dfinity/ledger-icp";
 import { IcrcLedgerCanister } from "@dfinity/ledger-icrc";
 import { Principal } from "@dfinity/principal";
@@ -17,7 +16,7 @@ import {
 } from "./constants/ic";
 
 const currency = { decimals: 8, symbol: "ICP" };
-const CONTROLLER_CANISTERS_KEY = "CONTROLLER_CANISTERS"; // 存储 Canister ID 数组的键
+export const CONTROLLER_CANISTERS_KEY = "CONTROLLER_CANISTERS"; // 存储 Canister ID 数组的键
 
 // 最小化的Cycles Ledger Candid 接口
 const cyclesLedgerIdlFactory = ({ IDL }) => {
@@ -148,10 +147,10 @@ export const burnICPcreateCanister = async (
     const blockIndex = await ledger.transfer({
       to: {
         owner: Principal.fromText(CMC_CANISTER),
-        subaccount: [subaccount], // subaccount为新cycles的接收者的principal id
+        subaccount: [subaccount], // subaccount为本人的principal id
       },
       amount: amountE8s,
-      memo: getMemoCode("CREA"),
+      memo: getMemoCode("CREA"), //表示此次转账用途是调用 notify_create_canister 方法
     });
 
     console.log(
@@ -175,5 +174,26 @@ export const burnICPcreateCanister = async (
   } catch (error) {
     console.error("Failed to burn ICP:", error);
     throw error;
+  }
+};
+
+//获取ICP转换为cycles的比率
+export const getICPtoCyclesRate = async (): Promise<number> => {
+  try {
+    const cmc = initCmc();
+    const rate = await cmc.getIcpToCyclesConversionRate();
+    // 将 xdr_permyriad_per_icp 转换为 XDR/ICP
+    const xdrPerIcp = fromTokenAmount(Number(rate), 4); // 精度为 4，因为是 per 10,000 ICP
+    // 1 XDR = 1 万亿 cycles
+    const cyclesPerIcpInTrillions = xdrPerIcp * 1; // 1 XDR = 1 T cycles
+    return cyclesPerIcpInTrillions;
+  } catch (error) {
+    console.error(
+      `[getICPtoCyclesRate] Failed to fetch ICP to cycles rate: ${error}`
+    );
+    showMessageError(
+      `[getICPtoCyclesRate] Failed to fetch ICP to cycles rate: ${error}`
+    );
+    throw new Error("Unable to fetch ICP to cycles conversion rate");
   }
 };

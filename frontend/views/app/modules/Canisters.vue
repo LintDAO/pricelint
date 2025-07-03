@@ -65,16 +65,19 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+    <TopUpCycles v-model:visible="createLoading" operation="createCanister" />
   </div>
 </template>
 
 <script setup lang="ts">
 import {
   CanisterData,
+  getCanisterList,
   queryCanisterStatus,
   startCanister,
   stopCanister,
 } from "@/api/canisters";
+import TopUpCycles from "@/components/TopUpCycles.vue";
 import type { TableColumn } from "@/types/model";
 import { fromTokenAmount } from "@/utils/common";
 import { showMessageError, showMessageSuccess } from "@/utils/message";
@@ -138,7 +141,7 @@ const columns: TableColumn[] = [
 // 表格数据和状态
 const canisterData = ref<CanisterData[]>([]);
 const loading = ref(false);
-const userCanisterIds = ["dxegq-jyaaa-aaaab-qb2wq-cai"];
+const userCanisterIds = ref<string[]>([]);
 const pagination = ref({
   sortBy: "canisterId",
   descending: false,
@@ -156,13 +159,12 @@ const wasmFile = ref<File | null>(null);
 
 // 初始化时获取数据
 onMounted(async () => {
-  getCanisterInfo();
+  userCanisterIds.value = await getCanisterList();
+  await getCanisterInfo();
 });
 
 const createNew = async () => {
   createLoading.value = true;
-  // await burnICPcreateCanister(0.25);
-  createLoading.value = false;
 };
 
 const getCanisterInfo = async () => {
@@ -170,7 +172,7 @@ const getCanisterInfo = async () => {
   loading.value = true;
   canisterData.value = [];
 
-  for (const canisterId of userCanisterIds) {
+  for (const canisterId of userCanisterIds.value) {
     try {
       const status = await queryCanisterStatus();
       if (!status) {
