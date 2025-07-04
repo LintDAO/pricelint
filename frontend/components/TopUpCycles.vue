@@ -18,20 +18,6 @@
       <q-card-section style="padding-top: 0">
         <!-- From: ICP 输入 -->
         <div class="swap-box q-mb-sm">
-          <div class="swap-label">From</div>
-          <q-input
-            v-model.number="icpInput"
-            type="number"
-            placeholder="0.0"
-            filled
-            dense
-            class="swap-input"
-            :rules="[(val) => val >= 0 || 'Please enter a valid amount']"
-          >
-            <template v-slot:append>
-              <span class="text-weight-bold">ICP</span>
-            </template>
-          </q-input>
           <div class="balance-text">
             Balance: {{ userICP }} ICP
             <q-btn
@@ -44,6 +30,23 @@
               @click="icpInput = userICP"
             />
           </div>
+          <div class="swap-label">From</div>
+          <q-input
+            v-model.number="icpInput"
+            type="number"
+            placeholder="0.0"
+            filled
+            dense
+            class="swap-input"
+            :rules="[
+              (val) => val >= 0 || 'Please enter a valid amount',
+              (val) => val <= userICP || 'Insufficient ICP balance',
+            ]"
+          >
+            <template v-slot:append>
+              <span class="text-weight-bold">ICP</span>
+            </template>
+          </q-input>
         </div>
 
         <!-- 箭头图标 -->
@@ -52,7 +55,7 @@
         </div>
 
         <!-- To: Cycles 输出 -->
-        <div class="swap-box q-mb-md">
+        <div class="swap-box q-my-md">
           <div class="swap-label">To</div>
           <q-input
             :model-value="convertedCycles"
@@ -61,6 +64,11 @@
             filled
             dense
             readonly
+            :rules="[
+              (val) =>
+                val >= 1 ||
+                'At least 1T cycles are required to successfully create.',
+            ]"
             class="swap-input"
           >
             <template v-slot:append>
@@ -71,7 +79,7 @@
         </div>
       </q-card-section>
 
-      <q-card-actions align="center" class="q-pa-md">
+      <q-card-actions align="right" class="q-pa-md">
         <q-btn
           flat
           label="Cancel"
@@ -95,7 +103,11 @@
 
 <script setup lang="ts">
 import { getCurrentPrincipal } from "@/api/canister_pool";
-import { getICPBalance, getICPtoCyclesRate } from "@/api/icp";
+import {
+  burnICPcreateCanister,
+  getICPBalance,
+  getICPtoCyclesRate,
+} from "@/api/icp";
 import { p2a } from "@/utils/common";
 import {
   showMessageError,
@@ -118,7 +130,6 @@ const emit = defineEmits<{
 const userICP = ref<number>(0); // 用户 ICP 余额
 const icpToCyclesRate = ref<number>(0); // 转换比例
 const icpInput = ref<number>(0); // 用户输入的 ICP 数量
-const canisterName = ref<string>(""); // 容器名称
 const localDialogVisible = ref<boolean>(props.visible); // 本地 Dialog 显示状态
 const isLoading = ref<boolean>(false); // 确认操作加载状态
 
@@ -143,11 +154,10 @@ watch(
   () => props.operation,
   () => {
     icpInput.value = 0;
-    canisterName.value = "";
   }
 );
 
-// 模拟查询用户 ICP 余额
+// 查询用户 ICP 余额
 const fetchUserICP = async () => {
   try {
     const principal = getCurrentPrincipal();
@@ -157,7 +167,7 @@ const fetchUserICP = async () => {
   }
 };
 
-// 模拟 Top Up Cycles
+//TODO 模拟 Top Up Cycles
 const topUpCycles = async (icpAmount: number) => {
   // 模拟 API 调用，实际中替换为真实 CMC API
   return new Promise<void>((resolve) => {
@@ -167,25 +177,24 @@ const topUpCycles = async (icpAmount: number) => {
   });
 };
 
-// 模拟创建新容器
+// 创建新容器
 const createCanister = async (icpAmount: number) => {
-  // 模拟 API 调用，实际中替换为真实 Internet Computer API
-  return new Promise<void>((resolve) => {
-    setTimeout(() => {
-      resolve();
-    }, 1000);
-  });
+  //使用用户指定的icp转换为cycles并创建容器
+  isLoading.value = true;
+  await burnICPcreateCanister(icpAmount);
+  isLoading.value = false;
 };
 
 // 计算转换后的 Cycles
-const convertedCycles = computed(() => {
-  return icpInput.value * icpToCyclesRate.value;
+const convertedCycles = computed((): number => {
+  return Number((icpInput.value * icpToCyclesRate.value).toFixed(5));
 });
 
 // 确认按钮禁用逻辑
 const isConfirmDisabled = computed(() => {
   if (icpInput.value <= 0 || icpInput.value > userICP.value) return true;
-  if (props.operation === "createCanister" && !canisterName.value) return true;
+  if (props.operation === "createCanister" && convertedCycles.value < 1)
+    return true;
   return false;
 });
 
@@ -205,18 +214,22 @@ const handleConfirm = async () => {
     showMessageError("Insufficient ICP balance");
     return;
   }
+  if (props.operation === "createCanister" && convertedCycles.value < 1) {
+    showMessageError("Minimum 1 TCycle required for canister creation");
+    return;
+  }
 
   isLoading.value = true;
   try {
     if (props.operation === "topUp") {
-      await topUpCycles(icpInput.value, convertedCycles.value);
+      await topUpCycles(icpInput.value);
       showMessageSuccess(
         `Successfully topped up ${convertedCycles.value} Cycles from ${icpInput.value} ICP`
       );
     } else {
-      await createCanister(canisterName.value, convertedCycles.value);
+      await createCanister(convertedCycles.value);
       showMessageSuccess(
-        `Successfully created canister "${canisterName.value}" with ${convertedCycles.value} Cycles`
+        `Successfully created canister with ${convertedCycles.value} Cycles`
       );
     }
 
@@ -230,7 +243,6 @@ const handleConfirm = async () => {
 
   // 重置输入
   icpInput.value = 0;
-  canisterName.value = "";
   localDialogVisible.value = false;
 };
 
