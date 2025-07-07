@@ -1,25 +1,24 @@
-# `burn_price`
+# `price_lint`
 
-Welcome to your new `burn_price` project and to the Internet Computer development community. By default, creating a new project adds this README and some template files to your project directory. You can edit these template files to customize your project and to include your own code to speed up the development cycle.
+PriceLint is a decentralized price prediction platform inspired by Predictoor.ai.
 
-To get started, you might want to explore the project directory structure and the default configuration file. Working with this project in your development environment will not affect any production deployment or identity tokens.
+In the past, the use of deep learning models to predict prices was always in the hands of a few institutions.
 
-To learn more before you start working with `burn_price`, see the following documentation available online:
+Now, through ICP's low-threshold service, we can enable everyone to predict prices using their own models. Predict their own future.
 
-- [Quick Start](https://internetcomputer.org/docs/current/developer-docs/setup/deploy-locally)
-- [SDK Developer Tools](https://internetcomputer.org/docs/current/developer-docs/setup/install)
-- [Rust Canister Development Guide](https://internetcomputer.org/docs/current/developer-docs/backend/rust/)
-- [ic-cdk](https://docs.rs/ic-cdk)
-- [ic-cdk-macros](https://docs.rs/ic-cdk-macros)
-- [Candid Introduction](https://internetcomputer.org/docs/current/developer-docs/backend/candid/)
+PriceLint leverages the Canister and Burn frameworks to run on-chain LSTM models for price prediction, eliminating the need for local computation. This approach delivers a prediction accuracy slightly above 50%, fully within the IC ecosystem.
+
+Key features include:
+
+One-click deployment of multiple prediction Canisters
+Selection and customization of AI models
+Token pledging for predicting ICP/BTC prices
+Open trading of user-created AI models
+The result is a self-sustaining, decentralized data marketplace, where crowdsourced intelligence is harnessed to train more effective models for 24-hour price trends.
+
+Users benefit by supporting, running, or trading model outputs — while Data Farmer streams provide real-time predictive data for traders.
 
 If you want to start working on your project right away, you might want to try the following commands:
-
-```bash
-cd burn_price/
-dfx help
-dfx canister --help
-```
 
 ## Running the project locally
 
@@ -27,7 +26,7 @@ If you want to test your project locally, you can use the following commands:
 
 ```bash
 # Starts the replica, running in the background
-dfx start --background  
+dfx start --background
 
 # Deploys your canisters to the replica and generates your candid interface
 dfx deploy
