@@ -10,15 +10,14 @@ PriceLint leverages the Canister and Burn frameworks to run on-chain LSTM models
 
 Key features include:
 
-One-click deployment of multiple prediction Canisters
-Selection and customization of AI models
-Token pledging for predicting ICP/BTC prices
-Open trading of user-created AI models
+- One-click deployment of multiple prediction Canisters
+- Selection and customization of AI models
+- Token pledging for predicting ICP/BTC prices
+- Open trading of user-created AI models
+
 The result is a self-sustaining, decentralized data marketplace, where crowdsourced intelligence is harnessed to train more effective models for 24-hour price trends.
 
 Users benefit by supporting, running, or trading model outputs — while Data Farmer streams provide real-time predictive data for traders.
-
-If you want to start working on your project right away, you might want to try the following commands:
 
 ## Running the project locally
 

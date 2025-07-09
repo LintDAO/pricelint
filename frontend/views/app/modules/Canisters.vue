@@ -47,7 +47,7 @@
       <q-card>
         <q-card-section>
           <div class="text-h6">
-            Install Code for Canister {{ selectedCanisterId }}
+            Install Predict for Canister {{ selectedCanisterId }}
           </div>
         </q-card-section>
         <q-card-section>
