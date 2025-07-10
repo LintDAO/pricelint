@@ -120,6 +120,27 @@ export const getCyclesBalance = async (principal: string): Promise<number> => {
   }
 };
 
+//获取ICP转换为cycles的比率
+export const getICPtoCyclesRate = async (): Promise<number> => {
+  try {
+    const cmc = initCmc();
+    const rate = await cmc.getIcpToCyclesConversionRate();
+    // 将 xdr_permyriad_per_icp 转换为 XDR/ICP
+    const xdrPerIcp = fromTokenAmount(Number(rate), 4); // 精度为 4，因为是 per 10,000 ICP
+    // 1 XDR = 1 万亿 cycles
+    const cyclesPerIcpInTrillions = xdrPerIcp * 1; // 1 XDR = 1 T cycles
+    return cyclesPerIcpInTrillions;
+  } catch (error) {
+    console.error(
+      `[getICPtoCyclesRate] Failed to fetch ICP to cycles rate: ${error}`
+    );
+    showMessageError(
+      `[getICPtoCyclesRate] Failed to fetch ICP to cycles rate: ${error}`
+    );
+    throw new Error("Unable to fetch ICP to cycles conversion rate");
+  }
+};
+
 //将当前principal id的ICP转换为Cycles
 export const burnICPcreateCanister = async (
   icpAmount: number
@@ -177,23 +198,63 @@ export const burnICPcreateCanister = async (
   }
 };
 
-//获取ICP转换为cycles的比率
-export const getICPtoCyclesRate = async (): Promise<number> => {
+/**
+ * 为指定 Canister 充值 Cycles，通过将 ICP 转换为 Cycles。
+ * @param canisterId 要充值的 Canister ID（字符串格式）
+ * @param icpAmount 要转换的 ICP 数量
+ * @returns Promise<boolean> 充值成功返回 true，否则抛出错误
+ */
+export const topupCycles = async (
+  icpAmount: number,
+  canisterId: string
+): Promise<boolean> => {
   try {
+    const principal = getCurrentPrincipal();
+    if (!principal)
+      throw new Error("User not authenticated: Principal not found");
+
+    // 检查 ICP 余额
+    const icpBalance = await getICPBalance(p2a(principal));
+    if (icpBalance < icpAmount) {
+      throw new Error(
+        `Insufficient ICP balance: ${icpBalance} ICP available, ${icpAmount} ICP required`
+      );
+    }
+
+    // 将 ICP 转换为 e8s（1 ICP = 10^8 e8s）
+    const amountE8s = toTokenAmount(icpAmount, currency.decimals);
+    const subaccount = SubAccount.fromPrincipal(
+      Principal.fromText(principal)
+    ).toUint8Array();
+    const ledger = initIcrcLedger(ICP_LEDGER_CANISTER);
+
+    // 调用 ICP ledger 的 transfer 方法，将 ICP 转到 CMC
+    const blockIndex = await ledger.transfer({
+      to: {
+        owner: Principal.fromText(CMC_CANISTER),
+        subaccount: [subaccount],
+      },
+      amount: amountE8s,
+      memo: getMemoCode("TPUP"), // 表示此次转账用途是调用 notify_top_up 方法
+    });
+
+    console.log(
+      `Successfully transferred ${icpAmount} ICP to CMC for top-up, block index: ${blockIndex}`
+    );
+
+    // 调用 CMC 的 notify_top_up 方法
     const cmc = initCmc();
-    const rate = await cmc.getIcpToCyclesConversionRate();
-    // 将 xdr_permyriad_per_icp 转换为 XDR/ICP
-    const xdrPerIcp = fromTokenAmount(Number(rate), 4); // 精度为 4，因为是 per 10,000 ICP
-    // 1 XDR = 1 万亿 cycles
-    const cyclesPerIcpInTrillions = xdrPerIcp * 1; // 1 XDR = 1 T cycles
-    return cyclesPerIcpInTrillions;
+    await cmc.notifyTopUp({
+      block_index: blockIndex,
+      canister_id: Principal.fromText(canisterId),
+    });
+
+    console.log(
+      `Successfully topped up ${canisterId} with ${icpAmount} ICP worth of Cycles`
+    );
+    return true;
   } catch (error) {
-    console.error(
-      `[getICPtoCyclesRate] Failed to fetch ICP to cycles rate: ${error}`
-    );
-    showMessageError(
-      `[getICPtoCyclesRate] Failed to fetch ICP to cycles rate: ${error}`
-    );
-    throw new Error("Unable to fetch ICP to cycles conversion rate");
+    console.error(`Failed to top up Cycles for canister ${canisterId}:`, error);
+    throw error;
   }
 };

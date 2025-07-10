@@ -1,7 +1,5 @@
 <template>
-  <q-btn color="primary" :loading="createLoading" @click="createNew()">
-    Create New
-  </q-btn>
+  <q-btn color="primary" @click="createNew()"> Create New </q-btn>
   <div>
     <span v-if="userCanisterIds.length === 0">
       You don't have any canister.
@@ -32,22 +30,43 @@
             :loading="loadingActions[props.row.canisterId]?.stop"
             @click="stopThisCanister(props.row.canisterId)"
           />
-          <q-btn
+          <q-btn-dropdown
+            split
             color="secondary"
-            label="Install Code"
+            :label="
+              props.row.module_hash.length === 0
+                ? 'Install Code'
+                : 'Configuration'
+            "
             :loading="loadingActions[props.row.canisterId]?.install"
-            @click="openInstallCodeDialog(props.row.canisterId)"
-          />
+            @click="
+              props.row.module_hash.length === 0
+                ? installCanisterCode(props.row.canisterId)
+                : openConfigurationDialog(props.row.canisterId)
+            "
+          >
+            <q-list>
+              <q-item
+                clickable
+                v-close-popup
+                @click="showTopupCycles(props.row.canisterId)"
+              >
+                <q-item-section>
+                  <q-item-label>Top-up Cycles</q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
         </q-td>
       </template>
     </q-table>
 
     <!-- Install Code dialog -->
-    <q-dialog v-model="showInstallDialog">
+    <q-dialog v-model="showConfigurationDialog">
       <q-card>
         <q-card-section>
           <div class="text-h6">
-            Install Predict for Canister {{ selectedCanisterId }}
+            Configuration for Canister {{ selectedCanisterId }}
           </div>
         </q-card-section>
         <q-card-section>
@@ -65,7 +84,11 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-    <TopUpCycles v-model:visible="createLoading" operation="createCanister" />
+    <TopUpCycles
+      v-model:visible="topUpDialog"
+      :operation="operation"
+      :targetCanisterId="selectedCanisterId"
+    />
   </div>
 </template>
 
@@ -83,7 +106,8 @@ import { fromTokenAmount } from "@/utils/common";
 import { showMessageError, showMessageSuccess } from "@/utils/message";
 import { onMounted, ref } from "vue";
 
-const createLoading = ref(false);
+const topUpDialog = ref(false);
+const operation = ref<"createCanister" | "topUp">("createCanister");
 
 const columns: TableColumn[] = [
   {
@@ -153,7 +177,7 @@ const loadingActions = ref<
   Record<string, { start?: boolean; stop?: boolean; install?: boolean }>
 >({});
 // Install code dialog state
-const showInstallDialog = ref(false);
+const showConfigurationDialog = ref(false);
 const selectedCanisterId = ref("");
 const wasmFile = ref<File | null>(null);
 
@@ -164,7 +188,8 @@ onMounted(async () => {
 });
 
 const createNew = async () => {
-  createLoading.value = true;
+  topUpDialog.value = true;
+  operation.value = "createCanister";
 };
 
 const getCanisterInfo = async () => {
@@ -263,11 +288,22 @@ const stopThisCanister = async (canisterId: string) => {
   }
 };
 
+//当canister没有初始化环境配置时，使用installCode为canister安装代码
+const installCanisterCode = (canisterId: string) => {
+  // installCode(canisterId, "");
+};
+
+const showTopupCycles = (canisterId: string) => {
+  topUpDialog.value = true;
+  operation.value = "topUp";
+  selectedCanisterId.value = canisterId;
+};
+
 // Open install code dialog
-const openInstallCodeDialog = (canisterId: string) => {
+const openConfigurationDialog = (canisterId: string) => {
   selectedCanisterId.value = canisterId;
   wasmFile.value = null;
-  showInstallDialog.value = true;
+  showConfigurationDialog.value = true;
 };
 </script>
 

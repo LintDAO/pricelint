@@ -9,7 +9,7 @@
         <div class="text-caption text-center q-mt-sm">
           {{
             operation === "topUp"
-              ? "These ICP will be topped up to the canister."
+              ? `These ICP will be topped up to ${targetCanisterId} canister.`
               : "At least 1T Cycles is required to create a new canister."
           }}
         </div>
@@ -107,6 +107,7 @@ import {
   burnICPcreateCanister,
   getICPBalance,
   getICPtoCyclesRate,
+  topupCycles,
 } from "@/api/icp";
 import { p2a } from "@/utils/common";
 import {
@@ -119,6 +120,7 @@ import { computed, onMounted, ref, watch } from "vue";
 interface Props {
   visible: boolean; // 控制 Dialog 显示
   operation: "topUp" | "createCanister"; // 操作类型
+  targetCanisterId?: string;
   onClose?: () => void; // 关闭回调
 }
 
@@ -169,12 +171,14 @@ const fetchUserICP = async () => {
 
 //TODO 模拟 Top Up Cycles
 const topUpCycles = async (icpAmount: number) => {
-  // 模拟 API 调用，实际中替换为真实 CMC API
-  return new Promise<void>((resolve) => {
-    setTimeout(() => {
-      resolve();
-    }, 1000);
-  });
+  isLoading.value = true;
+  if (props.targetCanisterId) {
+    await topupCycles(icpAmount, props.targetCanisterId);
+  } else {
+    showMessageError("Canister Id not undefined");
+  }
+
+  isLoading.value = false;
 };
 
 // 创建新容器
