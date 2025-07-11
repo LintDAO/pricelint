@@ -35,13 +35,21 @@ export interface PriceData {
   'volume' : number,
   'price_diff' : number,
 }
-export type Result = { 'Ok' : string } |
+export type Result = { 'Ok' : WasmFile } |
   { 'Err' : string };
-export type Result_1 = { 'Ok' : PredictorView } |
+export type Result_1 = { 'Ok' : string } |
   { 'Err' : string };
-export type Result_2 = { 'Ok' : Array<Predictor> } |
+export type Result_2 = { 'Ok' : Array<WasmFile> } |
   { 'Err' : string };
-export type Result_3 = { 'Ok' : User } |
+export type Result_3 = { 'Ok' : null } |
+  { 'Err' : string };
+export type Result_4 = { 'Ok' : PredictorView } |
+  { 'Err' : string };
+export type Result_5 = { 'Ok' : Array<Predictor> } |
+  { 'Err' : string };
+export type Result_6 = { 'Ok' : Uint8Array | number[] } |
+  { 'Err' : string };
+export type Result_7 = { 'Ok' : User } |
   { 'Err' : string };
 export interface State {
   'bias' : [] | [Array<number>],
@@ -56,20 +64,29 @@ export interface User {
   'name' : string,
   'create_time' : bigint,
 }
+export interface WasmFile {
+  'wasm_version' : string,
+  'wasm_bin' : Uint8Array | number[],
+  'wasm_name' : string,
+}
 export interface _SERVICE {
   'add_price' : ActorMethod<[PriceData], undefined>,
+  'delete_wasm' : ActorMethod<[string, string], Result>,
   'find_user_lists' : ActorMethod<[], Array<User>>,
-  'get_canister_info' : ActorMethod<[], Result>,
-  'get_canister_info1' : ActorMethod<[], Result>,
+  'get_canister_info' : ActorMethod<[], Result_1>,
   'get_state' : ActorMethod<[], State>,
-  'pred' : ActorMethod<[], Result_1>,
+  'get_wasm_lists' : ActorMethod<[], Result_2>,
+  'get_wasm_vec' : ActorMethod<[string, string], Result_3>,
+  'pred' : ActorMethod<[], Result_4>,
   'predict' : ActorMethod<[], number>,
   'refill_random_buffer' : ActorMethod<[number], undefined>,
-  'show_predictions' : ActorMethod<[], Result_2>,
+  'show_predictions' : ActorMethod<[], Result_5>,
+  'store_wasm' : ActorMethod<[string], Result_6>,
   'train' : ActorMethod<[bigint], undefined>,
   'upload_json_file' : ActorMethod<[Uint8Array | number[]], undefined>,
-  'user_login' : ActorMethod<[], Result_3>,
-  'user_register' : ActorMethod<[], Result_3>,
+  'upload_wasm' : ActorMethod<[string, string], Result_6>,
+  'user_login' : ActorMethod<[], Result_7>,
+  'user_register' : ActorMethod<[], Result_7>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

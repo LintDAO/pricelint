@@ -7,13 +7,19 @@ export const idlFactory = ({ IDL }) => {
     'volume' : IDL.Float32,
     'price_diff' : IDL.Float32,
   });
+  const WasmFile = IDL.Record({
+    'wasm_version' : IDL.Text,
+    'wasm_bin' : IDL.Vec(IDL.Nat8),
+    'wasm_name' : IDL.Text,
+  });
+  const Result = IDL.Variant({ 'Ok' : WasmFile, 'Err' : IDL.Text });
   const User = IDL.Record({
     'id' : IDL.Text,
     'owner' : IDL.Principal,
     'name' : IDL.Text,
     'create_time' : IDL.Nat64,
   });
-  const Result = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
+  const Result_1 = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
   const State = IDL.Record({
     'bias' : IDL.Opt(IDL.Vec(IDL.Float32)),
     'max_values' : IDL.Vec(IDL.Float32),
@@ -21,6 +27,8 @@ export const idlFactory = ({ IDL }) => {
     'prices' : IDL.Vec(PriceData),
     'min_values' : IDL.Vec(IDL.Float32),
   });
+  const Result_2 = IDL.Variant({ 'Ok' : IDL.Vec(WasmFile), 'Err' : IDL.Text });
+  const Result_3 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : IDL.Text });
   const Pred = IDL.Record({
     'up' : IDL.Float64,
     'staked' : IDL.Float64,
@@ -46,23 +54,28 @@ export const idlFactory = ({ IDL }) => {
     'create_time' : IDL.Nat64,
     'accuracy' : IDL.Float64,
   });
-  const Result_1 = IDL.Variant({ 'Ok' : PredictorView, 'Err' : IDL.Text });
-  const Result_2 = IDL.Variant({ 'Ok' : IDL.Vec(Predictor), 'Err' : IDL.Text });
-  const Result_3 = IDL.Variant({ 'Ok' : User, 'Err' : IDL.Text });
+  const Result_4 = IDL.Variant({ 'Ok' : PredictorView, 'Err' : IDL.Text });
+  const Result_5 = IDL.Variant({ 'Ok' : IDL.Vec(Predictor), 'Err' : IDL.Text });
+  const Result_6 = IDL.Variant({ 'Ok' : IDL.Vec(IDL.Nat8), 'Err' : IDL.Text });
+  const Result_7 = IDL.Variant({ 'Ok' : User, 'Err' : IDL.Text });
   return IDL.Service({
     'add_price' : IDL.Func([PriceData], [], []),
+    'delete_wasm' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
     'find_user_lists' : IDL.Func([], [IDL.Vec(User)], ['query']),
-    'get_canister_info' : IDL.Func([], [Result], []),
-    'get_canister_info1' : IDL.Func([], [Result], []),
+    'get_canister_info' : IDL.Func([], [Result_1], []),
     'get_state' : IDL.Func([], [State], ['query']),
-    'pred' : IDL.Func([], [Result_1], ['query']),
+    'get_wasm_lists' : IDL.Func([], [Result_2], ['query']),
+    'get_wasm_vec' : IDL.Func([IDL.Text, IDL.Text], [Result_3], ['query']),
+    'pred' : IDL.Func([], [Result_4], ['query']),
     'predict' : IDL.Func([], [IDL.Float32], ['query']),
     'refill_random_buffer' : IDL.Func([IDL.Nat32], [], []),
-    'show_predictions' : IDL.Func([], [Result_2], ['query']),
+    'show_predictions' : IDL.Func([], [Result_5], ['query']),
+    'store_wasm' : IDL.Func([IDL.Text], [Result_6], ['query']),
     'train' : IDL.Func([IDL.Nat64], [], []),
     'upload_json_file' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
-    'user_login' : IDL.Func([], [Result_3], ['query']),
-    'user_register' : IDL.Func([], [Result_3], []),
+    'upload_wasm' : IDL.Func([IDL.Text, IDL.Text], [Result_6], ['query']),
+    'user_login' : IDL.Func([], [Result_7], ['query']),
+    'user_register' : IDL.Func([], [Result_7], []),
   });
 };
 export const init = ({ IDL }) => { return []; };

@@ -31,10 +31,14 @@ type PriceData = record {
   volume : float32;
   price_diff : float32;
 };
-type Result = variant { Ok : text; Err : text };
-type Result_1 = variant { Ok : PredictorView; Err : text };
-type Result_2 = variant { Ok : vec Predictor; Err : text };
-type Result_3 = variant { Ok : User; Err : text };
+type Result = variant { Ok : WasmFile; Err : text };
+type Result_1 = variant { Ok : text; Err : text };
+type Result_2 = variant { Ok : vec WasmFile; Err : text };
+type Result_3 = variant { Ok; Err : text };
+type Result_4 = variant { Ok : PredictorView; Err : text };
+type Result_5 = variant { Ok : vec Predictor; Err : text };
+type Result_6 = variant { Ok : blob; Err : text };
+type Result_7 = variant { Ok : User; Err : text };
 type State = record {
   bias : opt vec float32;
   max_values : vec float32;
@@ -48,18 +52,27 @@ type User = record {
   name : text;
   create_time : nat64;
 };
+type WasmFile = record {
+  wasm_version : text;
+  wasm_bin : blob;
+  wasm_name : text;
+};
 service : {
   add_price : (PriceData) -> ();
+  delete_wasm : (text, text) -> (Result);
   find_user_lists : () -> (vec User) query;
-  get_canister_info : () -> (Result);
-  get_canister_info1 : () -> (Result);
+  get_canister_info : () -> (Result_1);
   get_state : () -> (State) query;
-  pred : () -> (Result_1) query;
+  get_wasm_lists : () -> (Result_2) query;
+  get_wasm_vec : (text, text) -> (Result_3) query;
+  pred : () -> (Result_4) query;
   predict : () -> (float32) query;
   refill_random_buffer : (nat32) -> ();
-  show_predictions : () -> (Result_2) query;
+  show_predictions : () -> (Result_5) query;
+  store_wasm : (text) -> (Result_6) query;
   train : (nat64) -> ();
   upload_json_file : (blob) -> ();
-  user_login : () -> (Result_3) query;
-  user_register : () -> (Result_3);
+  upload_wasm : (text, text) -> (Result_6) query;
+  user_login : () -> (Result_7) query;
+  user_register : () -> (Result_7);
 }
