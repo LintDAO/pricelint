@@ -7,11 +7,11 @@ const userTTL = TTL.hour12; //用户自身信息缓存时长。
 
 //防止直接使用返回值导致ts报错：不存在属性“Err”。类型“{ Ok: [] | [User]; }”上不存在属性“Err
 export async function userLogin(): Promise<ApiResult<any>> {
-  return await getBackend().user_login();
+  return getBackend().user_login();
 }
 
 export async function userRegister(): Promise<ApiResult<any>> {
-  return await getBackend().user_register();
+  return getBackend().user_register();
 }
 
 // （后端自动注册）并登录，如果有注册，就获取当前登录用户信息，如果没注册，就注册完了再获取信息
