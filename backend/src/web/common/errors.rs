@@ -56,3 +56,12 @@ pub enum CanisterError {
     InsufficientCycles,
 }
 impl_error!(CanisterError);
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum BtreeMapError{
+    GetKeyIsNotExist,
+    RemoveKeyIsNotExist,
+    InsertMapError,
+    
+}
+impl_error!(BtreeMapError);

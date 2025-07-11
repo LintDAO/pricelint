@@ -1,4 +1,4 @@
-use crate::impl_storable::StringVec;
+use crate::impl_storable::{StringVec, WasmFile};
 use crate::ml::api::default_api::State;
 use crate::ml::model::{default_model, record};
 use crate::web::models::context::Context;
@@ -18,11 +18,8 @@ use ic_stable_structures::storable::Bound;
 use ic_stable_structures::{DefaultMemoryImpl, StableBTreeMap, Storable};
 use serde::{Deserialize, Serialize};
 use serde_json;
-use serde_json::Value;
-use std::borrow::Cow;
 use std::cell::RefCell;
 use std::clone::Clone;
-use std::collections::BTreeMap;
 
 type Memory = VirtualMemory<DefaultMemoryImpl>;
 
@@ -59,6 +56,10 @@ thread_local! {
      static ROLE_USER_TREE: RefCell<StableBTreeMap<String,  StringVec, Memory>> = RefCell::new(StableBTreeMap::init(
         MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(5)))
     ));
+
+      static WASM_FILES: RefCell<StableBTreeMap<String,WasmFile, Memory>> = RefCell::new(StableBTreeMap::init(
+        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(6)))
+    ));
 }
 
 //存储于内存的context上下文
@@ -72,21 +73,34 @@ mod web;
 
 pub mod impl_storable {
     use crate::impl_storable;
-    use candid::Principal;
+    use candid::{CandidType, Principal};
     use ic_stable_structures::storable::Bound;
     use ic_stable_structures::Storable;
     use serde::{Deserialize, Serialize};
     use std::borrow::Cow;
+    use std::collections::BTreeMap;
 
     #[derive(Deserialize, Serialize, Clone)]
     pub struct StringVec(pub Vec<String>);
     impl_storable!(StringVec);
+
+    #[derive(Deserialize, Serialize, Clone,CandidType)]
+    pub struct WasmFile{
+        pub wasm_name:String,
+        pub wasm_version:String,
+        pub wasm_bin:Vec<u8>
+    }
+    impl_storable!(WasmFile);
+
+
 }
+
 pub mod export_candid {
     use crate::ml::api::default_api::{PriceData, State};
     use crate::web::models::predictor_model::{Predictor, PredictorView};
     use crate::web::models::user_model::User;
     use ic_cdk::{export_candid, query};
+    use crate::WasmFile;
     export_candid!();
 }
 //TODO: lifecycles和api canid 导出先写到一起  后续需要分canisters再进行重构分离
