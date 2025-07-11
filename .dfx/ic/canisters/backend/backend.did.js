@@ -28,7 +28,6 @@ export const idlFactory = ({ IDL }) => {
     'min_values' : IDL.Vec(IDL.Float32),
   });
   const Result_2 = IDL.Variant({ 'Ok' : IDL.Vec(WasmFile), 'Err' : IDL.Text });
-  const Result_3 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : IDL.Text });
   const Pred = IDL.Record({
     'up' : IDL.Float64,
     'staked' : IDL.Float64,
@@ -54,28 +53,27 @@ export const idlFactory = ({ IDL }) => {
     'create_time' : IDL.Nat64,
     'accuracy' : IDL.Float64,
   });
-  const Result_4 = IDL.Variant({ 'Ok' : PredictorView, 'Err' : IDL.Text });
-  const Result_5 = IDL.Variant({ 'Ok' : IDL.Vec(Predictor), 'Err' : IDL.Text });
-  const Result_6 = IDL.Variant({ 'Ok' : IDL.Vec(IDL.Nat8), 'Err' : IDL.Text });
-  const Result_7 = IDL.Variant({ 'Ok' : User, 'Err' : IDL.Text });
+  const Result_3 = IDL.Variant({ 'Ok' : PredictorView, 'Err' : IDL.Text });
+  const Result_4 = IDL.Variant({ 'Ok' : IDL.Vec(Predictor), 'Err' : IDL.Text });
+  const Result_5 = IDL.Variant({ 'Ok' : IDL.Vec(IDL.Nat8), 'Err' : IDL.Text });
+  const Result_6 = IDL.Variant({ 'Ok' : User, 'Err' : IDL.Text });
   return IDL.Service({
     'add_price' : IDL.Func([PriceData], [], []),
     'delete_wasm' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
     'find_user_lists' : IDL.Func([], [IDL.Vec(User)], ['query']),
     'get_canister_info' : IDL.Func([], [Result_1], []),
     'get_state' : IDL.Func([], [State], ['query']),
+    'get_wasm_bin' : IDL.Func([IDL.Text, IDL.Text], [Result], ['query']),
     'get_wasm_lists' : IDL.Func([], [Result_2], ['query']),
-    'get_wasm_vec' : IDL.Func([IDL.Text, IDL.Text], [Result_3], ['query']),
-    'pred' : IDL.Func([], [Result_4], ['query']),
+    'pred' : IDL.Func([], [Result_3], ['query']),
     'predict' : IDL.Func([], [IDL.Float32], ['query']),
     'refill_random_buffer' : IDL.Func([IDL.Nat32], [], []),
-    'show_predictions' : IDL.Func([], [Result_5], ['query']),
-    'store_wasm' : IDL.Func([IDL.Text], [Result_6], ['query']),
+    'show_predictions' : IDL.Func([], [Result_4], ['query']),
     'train' : IDL.Func([IDL.Nat64], [], []),
     'upload_json_file' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
-    'upload_wasm' : IDL.Func([IDL.Text, IDL.Text], [Result_6], ['query']),
-    'user_login' : IDL.Func([], [Result_7], ['query']),
-    'user_register' : IDL.Func([], [Result_7], []),
+    'upload_wasm' : IDL.Func([IDL.Text, IDL.Text], [Result_5], []),
+    'user_login' : IDL.Func([], [Result_6], ['query']),
+    'user_register' : IDL.Func([], [Result_6], []),
   });
 };
 export const init = ({ IDL }) => { return []; };
