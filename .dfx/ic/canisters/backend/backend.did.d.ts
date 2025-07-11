@@ -39,13 +39,13 @@ export type Result = { 'Ok' : WasmFile } |
   { 'Err' : string };
 export type Result_1 = { 'Ok' : string } |
   { 'Err' : string };
-export type Result_2 = { 'Ok' : Array<WasmFile> } |
+export type Result_2 = { 'Ok' : Uint8Array | number[] } |
   { 'Err' : string };
-export type Result_3 = { 'Ok' : PredictorView } |
+export type Result_3 = { 'Ok' : Array<WasmFile> } |
   { 'Err' : string };
-export type Result_4 = { 'Ok' : Array<Predictor> } |
+export type Result_4 = { 'Ok' : PredictorView } |
   { 'Err' : string };
-export type Result_5 = { 'Ok' : Uint8Array | number[] } |
+export type Result_5 = { 'Ok' : Array<Predictor> } |
   { 'Err' : string };
 export type Result_6 = { 'Ok' : User } |
   { 'Err' : string };
@@ -73,15 +73,16 @@ export interface _SERVICE {
   'find_user_lists' : ActorMethod<[], Array<User>>,
   'get_canister_info' : ActorMethod<[], Result_1>,
   'get_state' : ActorMethod<[], State>,
+  'get_wasm' : ActorMethod<[string], Result_2>,
   'get_wasm_bin' : ActorMethod<[string, string], Result>,
-  'get_wasm_lists' : ActorMethod<[], Result_2>,
-  'pred' : ActorMethod<[], Result_3>,
+  'get_wasm_lists' : ActorMethod<[], Result_3>,
+  'pred' : ActorMethod<[], Result_4>,
   'predict' : ActorMethod<[], number>,
   'refill_random_buffer' : ActorMethod<[number], undefined>,
-  'show_predictions' : ActorMethod<[], Result_4>,
+  'show_predictions' : ActorMethod<[], Result_5>,
   'train' : ActorMethod<[bigint], undefined>,
   'upload_json_file' : ActorMethod<[Uint8Array | number[]], undefined>,
-  'upload_wasm' : ActorMethod<[string, string], Result_5>,
+  'upload_wasm' : ActorMethod<[string, string], Result_2>,
   'user_login' : ActorMethod<[], Result_6>,
   'user_register' : ActorMethod<[], Result_6>,
 }
