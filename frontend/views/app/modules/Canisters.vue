@@ -96,6 +96,7 @@
 import {
   CanisterData,
   getCanisterList,
+  installCode,
   queryCanisterStatus,
   startCanister,
   stopCanister,
@@ -193,13 +194,12 @@ const createNew = async () => {
 };
 
 const getCanisterInfo = async () => {
-  queryCanisterStatus();
   loading.value = true;
   canisterData.value = [];
 
   for (const canisterId of userCanisterIds.value) {
     try {
-      const status = await queryCanisterStatus();
+      const status = await queryCanisterStatus(canisterId);
       if (!status) {
         throw new Error(`Canister ${canisterId} status is undefined`);
       }
@@ -246,7 +246,6 @@ const startThisCanister = async (canisterId: string) => {
   };
   try {
     await startCanister(canisterId);
-    showMessageSuccess(`Canister ${canisterId} started successfully`);
     await getCanisterInfo(); // Refresh data
   } catch (error) {
     console.error(`Error starting canister ${canisterId}:`, error);
@@ -271,7 +270,6 @@ const stopThisCanister = async (canisterId: string) => {
   };
   try {
     await stopCanister(canisterId);
-    showMessageSuccess(`Canister ${canisterId} stopped successfully`);
     await getCanisterInfo(); // Refresh data
   } catch (error) {
     console.error(`Error stopping canister ${canisterId}:`, error);
@@ -289,8 +287,16 @@ const stopThisCanister = async (canisterId: string) => {
 };
 
 //当canister没有初始化环境配置时，使用installCode为canister安装代码
-const installCanisterCode = (canisterId: string) => {
-  // installCode(canisterId, "");
+const installCanisterCode = async (canisterId: string) => {
+  loadingActions.value[canisterId] = {
+    ...loadingActions.value[canisterId],
+    install: true,
+  };
+  await installCode(canisterId, "0.0.1");
+  loadingActions.value[canisterId] = {
+    ...loadingActions.value[canisterId],
+    install: false,
+  };
 };
 
 const showTopupCycles = (canisterId: string) => {
