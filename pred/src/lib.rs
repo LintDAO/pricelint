@@ -1,8 +1,8 @@
-mod learning;
 mod common;
 mod models;
-use ic_cdk::export_candid;
+mod api;
 
+use ic_cdk::export_candid;
 //example
 //use ic_cdk_macros::*;
 // use ic_cdk::export::candid;
