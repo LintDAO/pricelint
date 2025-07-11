@@ -76,9 +76,5 @@ export const createIIAgent = () => {
   if (!identity) throw new Error("unlogin, cant get Identity");
   const agent = new HttpAgent({ host: "https://ic0.app" });
   agent.replaceIdentity(identity);
-  console.log(
-    "Agent created with principal:",
-    identity.getPrincipal().toText()
-  );
   return agent;
 };

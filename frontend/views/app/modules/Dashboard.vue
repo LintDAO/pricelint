@@ -1,8 +1,5 @@
 <template>
   <div class="dashboard-container q-gutter-md">
-    <div class="text-h5 q-mb-xs">Total</div>
-    <q-separator />
-
     <div class="row q-col-gutter-sm dashboard-container">
       <!-- 用户地址 -->
       <div class="col-12 col-md-6">
@@ -21,6 +18,19 @@
                 @click="copyToClipboard(userData.principal)"
               >
                 <q-tooltip>Copy address</q-tooltip>
+              </q-icon>
+            </div>
+            <div class="row items-center">
+              <div class="text-body1">
+                {{ userData.accountId || "N/A" }}
+              </div>
+              <q-icon
+                name="content_copy"
+                color="primary"
+                class="cursor-pointer"
+                @click="copyToClipboard(userData.accountId)"
+              >
+                <q-tooltip>Copy AccountId</q-tooltip>
               </q-icon>
             </div>
             <div class="row items-center"></div>
