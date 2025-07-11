@@ -33,11 +33,11 @@ macro_rules! map_remove {
 
 #[macro_export]
 macro_rules! impl_storable {
-
-    ($type:ident <$gen:ident >) => {
-
-
-        impl Storable for $type<$gen> {
+    ($type:ident <$genric:ident >) => {
+        impl<$genric> Storable for $type<$genric>
+        where
+            $genric: Serialize + for<'de> Deserialize<'de>,
+        {
             fn to_bytes(&self) -> Cow<[u8]> {
                 let bytes = bincode::serialize(self).expect("Serialization failed");
                 Cow::Owned(bytes)
@@ -55,7 +55,6 @@ macro_rules! impl_storable {
     };
 
     ($type:ident) => {
-
         impl Storable for $type {
             fn to_bytes(&self) -> Cow<[u8]> {
                 let bytes = bincode::serialize(self).expect("Serialization failed");

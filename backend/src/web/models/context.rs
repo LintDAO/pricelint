@@ -43,6 +43,4 @@ impl<T> Context<T> {
     }
 }
 
-impl_storable!(Context<User>);
-impl_storable!(Context<Wallet>);
-impl_storable!(Context<Predictor>);
+impl_storable!(Context<T>);
