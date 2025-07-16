@@ -1,23 +1,57 @@
-# `price_lint`
+# PriceLint: Decentralized Price Prediction on Internet Computer
 
-PriceLint is a decentralized price prediction platform inspired by Predictoor.ai.
+**PriceLint** is a decentralized platform for AI-driven price prediction, built on the Internet Computer (IC) and inspired by Predictoor.ai.
 
-In the past, the use of deep learning models to predict prices was always in the hands of a few institutions.
+It implementing on-chain LSTM prediction using the Canister and Burn frameworks eliminates the need for local computation and achieves an accuracy rate slightly above 50%.
 
-Now, through ICP's low-threshold service, we can enable everyone to predict prices using their own models. Predict their own future.
+Users can deploy canisters, customize models, stake tokens, and trade AI configurations in a decentralized marketplace, creating a self-sustaining data ecosystem.
 
-PriceLint leverages the Canister and Burn frameworks to run on-chain LSTM models for price prediction, eliminating the need for local computation. This approach delivers a prediction accuracy slightly above 50%, fully within the IC ecosystem.
+## Why PriceLint?
 
-Key features include:
+PriceLint democratizes price prediction, traditionally controlled by institutions, by leveraging ICP’s scalable infrastructure. It targets:
 
-- One-click deployment of multiple prediction Canisters
-- Selection and customization of AI models
-- Token pledging for predicting ICP/BTC prices
-- Open trading of user-created AI models
+- **Crypto Traders**: Access real-time predictive data streams for trading strategies.
+- **DeFi Participants**: Stake tokens to earn rewards and optimize predictions.
+- **Data Scientists**: Share AI models, earning revenue through a follow-on profit-sharing model.
 
-The result is a self-sustaining, decentralized data marketplace, where crowdsourced intelligence is harnessed to train more effective models for 24-hour price trends.
+## Key Features
 
-Users benefit by supporting, running, or trading model outputs — while Data Farmer streams provide real-time predictive data for traders.
+- **On-Chain AI**: LSTM models run in Canisters using the [ic-burn](https://github.com/LintDAO/ic-burn) framework for chain-native inference.
+- **One-Click Deployment**: Deploy multiple Canisters with pre-configured or custom models.
+- **Token Staking**: Stake tokens to submit predictions and earn rewards.
+- **Model Marketplace**: Trade user-created AI configurations with 2-5% platform fees.
+- **Real-Time Data Streams**: Data Farmer streams provide predictive data for traders.
+- **Community-Driven**: Crowdsourced intelligence improves model accuracy over time.
+
+## User Story
+
+**Data Farmer X** logs into PriceLint via Internet Identity, deploys Canisters with one click, and tests LSTM model parameters for ICP price prediction.
+
+After achieving >50% accuracy, X stakes tokens to submit predictions, earning rewards.
+
+X shares optimized configurations in the marketplace, earning 2-5% follow-on profits.
+
+**Trader Y** subscribes to X’s data stream, using predictions for high-frequency trading strategies.
+
+## Technical Architecture
+
+### Frontend
+
+- **Tech Stack**: Vue3, TypeScript, Pinia.
+- **Features**: User-friendly interface for model selection, parameter tuning, token staking, and marketplace trading. Displays prediction leaderboards and annualized reward status.
+- **ICP Utilization**: Internet Identity for secure, decentralized login; HTTPS Outcalls fetch real-time ICP/BTC prices from APIs (e.g., Binance, CoinGecko).
+
+### Backend
+
+- **Canisters (Rust)**:
+  - **User Canister**: Stores model configurations, staking records, and prediction results.
+  - **Prediction Canister**: Runs LSTM inference using [ic-burn](https://github.com/LintDAO/ic-burn), generating price predictions.
+  - **Market Canister**: Manages model trading, transaction records, and 2-5% fee distribution.
+- **ICP Utilization**:
+  - **Chain-Native AI**: WebAssembly (WASM) enables on-chain LSTM inference, outperforming Predictoor.ai’s local bots.
+  - **Low-Cost Transactions**: Fixed fees (~10B cycles per model training) support high-frequency predictions.
+  - **High Throughput**: Sub-second confirmation ensures real-time data updates.
+  - **ICRC-1 Tokens**: Support staking, rewards, and marketplace payments.
 
 ## Running the project locally
 
