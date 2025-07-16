@@ -1,6 +1,7 @@
 import type { ApiResult } from "@/types/types";
 import { showMessageSuccess } from "@/utils/message";
 import { getStorage } from "@/utils/storage";
+import { Actor } from "@dfinity/agent";
 import { ICManagementCanister, chunk_hash } from "@dfinity/ic-management";
 import { Principal } from "@dfinity/principal";
 import { backend } from "canisters/backend";
@@ -25,6 +26,22 @@ const initManage = () => {
   const agent = createIIAgent();
   return ICManagementCanister.create({
     agent,
+  });
+};
+
+// 手动定义 Candid 接口
+const userCanisterIdlFactory = ({ IDL }) => {
+  return IDL.Service({
+    set_train_params: IDL.Func([], [], []), // 无参数，无返回值
+  });
+};
+
+// 初始化 用户罐子，可操作用户拥有的罐子
+const initTargetCanister = async (canisterId: string) => {
+  const agent = createIIAgent();
+  return Actor.createActor(userCanisterIdlFactory, {
+    agent,
+    canisterId: Principal.fromText(canisterId),
   });
 };
 
@@ -182,3 +199,20 @@ export async function installCode(
     throw error;
   }
 }
+
+export const callTargetCanister = async (canisterId: string): Promise<void> => {
+  console.log(
+    `Calling set_train_params for canister ${canisterId} with params:`
+  );
+  try {
+    const canisterActor = await initTargetCanister(canisterId);
+    const res = await canisterActor.set_train_params();
+    console.log("callTargetCanister", res);
+  } catch (error) {
+    console.error(
+      `Error calling set_train_params on canister ${canisterId}:`,
+      error
+    );
+    throw error;
+  }
+};
