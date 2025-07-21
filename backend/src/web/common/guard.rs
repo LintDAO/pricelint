@@ -53,6 +53,10 @@ pub fn is_named_user<'user>() -> Result<(), String> {
 
     Err(GuardError::IsAnonymousUser.to_string())
 }
+pub fn is_canister()->Result<(), String>{
+    //TODO:安装pred的canister代码后 记录canister id 只允许这些canister id调用
+    Ok(())
+}
 
 pub fn init_admin() {
     let init_admin = vec![
