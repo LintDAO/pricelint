@@ -8,25 +8,34 @@ use std::borrow::Cow;
 
 
 
-//et.关于定时 理论上前端定时即可
+//个人预测数据
 #[derive(Serialize, Deserialize, CandidType, Clone, Default)]
 pub struct Predictor {
     pub id: String,
-    pub name: String,
+    pub user_id: String,
+    pub canister_id: String,
     pub price: f64,
     pub trend: Option<String>, //实际结果 涨跌      // up down none  ,none表示尚未预测
     pub pred: Pred,
-    pub stake: (f64, f64),
+    pub stake: (f64, f64), //amount:个人的质押   //change:24小时内变化
     pub create_time: u64,
 }
 
+
+#[derive(Serialize, Deserialize, CandidType, Clone, Default)]
+pub struct PredictorResult {
+    pub price: Option<f64>, //历史价格
+    pub trend: Option<String>, //实际结果 涨跌      // up down none  ,none表示尚未预测
+    pub pred: Pred,
+}
+//所有人的预测数据的集合总体统计
 #[derive(Serialize, Deserialize, CandidType, Clone, Default)]
 pub struct PredictorView{
     pub id: String,
-    pub last_2: Option<Predictor>,
-    pub last_1: Option<Predictor>,
-    pub now: Option<Predictor>,
-    pub next: Option<Predictor>,
+    pub last_2: Option<PredictorResult>,
+    pub last_1: Option<PredictorResult>,
+    pub now: Option<PredictorResult>,
+    pub next: Option<PredictorResult>,
     pub accuracy: f64,
     pub stake: (f64, f64),
     pub create_time: u64,
