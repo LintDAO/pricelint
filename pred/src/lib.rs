@@ -1,19 +1,15 @@
 mod common;
 mod models;
 mod api;
+mod services;
 
-use ic_cdk::export_candid;
-//example
-//use ic_cdk_macros::*;
-// use ic_cdk::export::candid;
-//
-// #[import(canister_id = "", candid_path = "multiply_deps.did")]
-// struct CounterCanister;
-//
-// #[update]
-// async fn read() -> candid::Nat {
-//     CounterCanister::read().await.0
-// }
+pub mod export_canid{
+    use ic_cdk::export_candid;
+    use canistergeek_ic_rust::api_type::GetInformationRequest;
+    use canistergeek_ic_rust::api_type::GetInformationResponse;
+    use canistergeek_ic_rust::api_type::UpdateInformationRequest;
+    use crate::services::pred_service::Predictor;
+    export_candid!();
+    
+}
 
-
-export_candid!();
