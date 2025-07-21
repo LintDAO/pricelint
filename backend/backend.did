@@ -1,3 +1,12 @@
+type DurationRange = variant {
+  Microseconds;
+  Minutes;
+  Seconds;
+  Days;
+  Milliseconds;
+  Hours;
+  Nanoseconds;
+};
 type Pred = record {
   up : float64;
   staked : float64;
@@ -7,18 +16,24 @@ type Pred = record {
 type Predictor = record {
   id : text;
   trend : opt text;
-  name : text;
   pred : Pred;
+  canister_id : text;
+  user_id : text;
   stake : record { float64; float64 };
   create_time : nat64;
   price : float64;
 };
+type PredictorResult = record {
+  trend : opt text;
+  pred : Pred;
+  price : opt float64;
+};
 type PredictorView = record {
   id : text;
-  now : opt Predictor;
-  next : opt Predictor;
-  last_1 : opt Predictor;
-  last_2 : opt Predictor;
+  now : opt PredictorResult;
+  next : opt PredictorResult;
+  last_1 : opt PredictorResult;
+  last_2 : opt PredictorResult;
   stake : record { float64; float64 };
   create_time : nat64;
   accuracy : float64;
@@ -33,10 +48,10 @@ type PriceData = record {
 };
 type Result = variant { Ok : WasmFile; Err : text };
 type Result_1 = variant { Ok : text; Err : text };
-type Result_2 = variant { Ok : blob; Err : text };
+type Result_2 = variant { Ok : vec Predictor; Err : text };
 type Result_3 = variant { Ok : vec WasmFile; Err : text };
-type Result_4 = variant { Ok : PredictorView; Err : text };
-type Result_5 = variant { Ok : vec Predictor; Err : text };
+type Result_4 = variant { Ok : Predictor; Err : text };
+type Result_5 = variant { Ok : PredictorView; Err : text };
 type Result_6 = variant { Ok : User; Err : text };
 type State = record {
   bias : opt vec float32;
@@ -61,17 +76,18 @@ service : () -> {
   delete_wasm : (text, text) -> (Result);
   find_user_lists : () -> (vec User) query;
   get_canister_info : () -> (Result_1);
+  get_predictor_vec : () -> (Result_2) query;
   get_state : () -> (State) query;
-  get_wasm : (text) -> (Result_2) query;
   get_wasm_bin : (text, text) -> (Result) query;
   get_wasm_lists : () -> (Result_3) query;
-  pred : () -> (Result_4) query;
   predict : () -> (float32) query;
+  push_user_pred : (Predictor) -> (Result_4);
   refill_random_buffer : (nat32) -> ();
   show_predictions : () -> (Result_5) query;
+  test_1 : (DurationRange) -> (nat64, nat64) query;
   train : (nat64) -> ();
   upload_json_file : (blob) -> ();
-  upload_wasm : (text, text) -> (Result_2);
+  upload_wasm : (text, text, blob) -> (Result);
   user_login : () -> (Result_6) query;
   user_register : () -> (Result_6);
 }
