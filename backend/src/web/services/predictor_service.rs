@@ -1,32 +1,52 @@
-use crate::web::common::constants::{API_VERSION, BASE_BIANCE_API, BIANCE_KLINES_API};
+use crate::common::utils::xrc;
+use crate::common::utils::xrc::{
+    Asset, AssetClass, ExchangeRate, GetExchangeRateRequest, GetExchangeRateResult,
+};
+use crate::web::common::constants::{
+    API_VERSION, BASE_BIANCE_API, BIANCE_KLINES_API, BIANCE_TICKER_API,
+};
 use crate::web::models::context::Context;
 use crate::web::models::predictor_model::Predictor;
-use crate::{map_get, map_insert, Memory, PREDICTOR_CONTEXT, USER_CONTEXT};
+use crate::{map_get, map_insert, Memory, EXCHANGE_RATE, PREDICTOR_CONTEXT, USER_CONTEXT};
 use candid::Principal;
+use ic_cdk::api::management_canister::http_request::{
+    http_request, CanisterHttpRequestArgument, HttpHeader, HttpMethod,
+};
 use ic_cdk::caller;
 use lazy_static::lazy_static;
 use proc_macro::{generate_service_impl, generate_service_trait};
 use std::cell::RefCell;
+use std::collections::HashMap;
+use std::ops::Deref;
 use std::thread::LocalKey;
+use urlencoding::encode;
 
 generate_service_trait!(Predictor);
 generate_service_impl!(Predictor, PREDICTOR_CONTEXT);
 
 pub trait ExtendPredictorService: PredictorService {
     //get coins from other platform
-    fn get_coins_prices() -> ();
 
     fn predictor_config();
 
     // call predictor results
     fn get_predictor_results() -> f32;
-    fn get_last_pred(principal:Principal) -> Vec<Predictor>;
-    fn get_accuracy(principal: Principal) -> f64;
+    fn get_last_pred(principal: Principal) -> Vec<Predictor>;
+    fn get_accuracy() -> f64;
+
     fn get_total_stake() -> f64;
+    async fn get_exchange_rate(
+        base_asset: Asset,
+        quote_asset: Asset,
+    ) -> Result<ExchangeRate, String>;
+
+    //每隔一段时间存储一条预测数据 并且调用的是用户的canisters
+    async fn autosave_predictor() -> Result<(), String>;
+    async fn autosave_exchange_rate() -> Result<(), String>;
+    fn get_total_stake_24hours() -> f64;
+    fn get_stake_growth_rate() -> f64;
 }
 impl ExtendPredictorService for Predictor {
-    fn get_coins_prices() -> () {}
-
     fn predictor_config() {
         todo!()
     }
@@ -51,7 +71,7 @@ impl ExtendPredictorService for Predictor {
         predictors.into_iter().take(2).collect() // 取最新的两个
     }
 
-    fn get_accuracy(principal: Principal) -> f64 {
+    fn get_accuracy() -> f64 {
         MAP.with(|map| {
             let mut borrowed_map = map.borrow_mut();
 
@@ -77,12 +97,90 @@ impl ExtendPredictorService for Predictor {
                 .count();
 
             let total_count = current_user_predictors.count().clone();
-            (true_count / total_count) as f64  //后续可能均要修改成as f64
+            (true_count as f64 / total_count as f64)
         })
     }
 
     fn get_total_stake() -> f64 {
-        todo!()
+        //TODO:从 stake的map里获取数据
+        MAP.with(|map| {
+            let borrowed_map = map.borrow();
+            let total_stake = borrowed_map
+                .iter()
+                .map(|(k, v)| v.clone().context.unwrap().stake.0)
+                .sum::<f64>();
+            total_stake
+        })
+    }
+    fn get_total_stake_24hours() -> f64 {
+        0.0
+    }
+    fn get_stake_growth_rate() -> f64 {
+        let growth_rate = (Self::get_total_stake() - Self::get_total_stake()) / Self::get_total_stake();
+        growth_rate * 100.0
     }
 
+    async fn get_exchange_rate(
+        base_asset: Asset,
+        quote_asset: Asset,
+    ) -> Result<ExchangeRate, String> {
+        let principal =
+            Principal::from_text("uf6dk-hyaaa-aaaaq-qaaaq-cai").map_err(|e| e.to_string())?;
+        let (ret,) = xrc::get_exchange_rate(
+            principal,
+            1_000_000_000,
+            GetExchangeRateRequest {
+                timestamp: None,
+                base_asset,
+                quote_asset,
+            },
+        )
+        .await
+        .map_err(|(r, e)| e.to_string())?;
+        match ret {
+            GetExchangeRateResult::Ok(v) => Ok(v),
+            GetExchangeRateResult::Err(e) => Err(e.to_string()),
+        }
+    }
+
+    //每隔一段时间存储一条预测数据 并且调用的是用户的canisters
+    async fn autosave_predictor() -> Result<(), String> {
+        Ok(())
+    }
+
+    //保存汇率到稳定内存
+    async fn autosave_exchange_rate() -> Result<(), String> {
+        //TODO:添加剩余货币
+        let icp_to_usd = Self::get_exchange_rate(
+            Asset {
+                class: AssetClass::Cryptocurrency,
+                symbol: "ICP".to_string(),
+            },
+            Asset {
+                class: AssetClass::FiatCurrency,
+                symbol: "USD".to_string(),
+            },
+        )
+        .await?;
+        let btc_to_usd = Self::get_exchange_rate(
+            Asset {
+                class: AssetClass::Cryptocurrency,
+                symbol: "BTC".to_string(),
+            },
+            Asset {
+                class: AssetClass::FiatCurrency,
+                symbol: "USD".to_string(),
+            },
+        )
+        .await?;
+
+        //存储到稳定内存
+        EXCHANGE_RATE.with(|rate| {
+            let mut borrowed_rate = rate.borrow_mut();
+            borrowed_rate.insert("ICP_USD".to_string(), icp_to_usd);
+            borrowed_rate.insert("BTC_USD".to_string(), btc_to_usd);
+        });
+
+        Ok(())
+    }
 }
