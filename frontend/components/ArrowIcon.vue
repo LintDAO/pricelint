@@ -21,6 +21,6 @@ const iconName = computed(() => {
 
 // 根据 direction 计算图标颜色类
 const iconClass = computed(() => {
-  return props.direction === "Up" ? "text-red-5" : "text-green-6";
+  return props.direction === "Up" ? "text-positive" : "text-negative";
 });
 </script>

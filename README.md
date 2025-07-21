@@ -37,7 +37,7 @@ X filters models with an accuracy rate of over 50%, stakes tokens to submit pred
 
 X begins optimizing model parameters to improve accuracy and shares the configuration on the platform market to earn referral commissions.
 
-**Trader Y** pays to subscribe to X's prediction data stream to optimize high-frequency trading strategies.
+**Trader Y** pays for a subscription to aggregated forecast data streams to optimize his high-frequency trading strategy.
 
 ## 🛠️ Technical Architecture
 
