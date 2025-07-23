@@ -53,6 +53,8 @@ X begins optimizing model parameters to improve accuracy and shares the configur
   - **User Canister**: Ownership belongs to individual users, stores model configurations, staking records, and prediction results. Runs LSTM inference using [ic-burn](https://github.com/LintDAO/ic-burn), generating price predictions, hold tokens.
   - **Backend Canister**: Responsible for storing user information, aggregating data, and determining whether prediction results are correct.
   - **Market Canister**: Manages model trading, transaction records, and 2-5% fee distribution.
+
+
 - **ICP Utilization**:
   - **Chain-Native AI**: WebAssembly (WASM) enables on-chain LSTM inference.
   - **Low-Cost Transactions**: Fixed fees (~10B cycles per model training) support high-frequency predictions.
@@ -60,31 +62,77 @@ X begins optimizing model parameters to improve accuracy and shares the configur
   - **100% on-chain**: with smart contracts based on Canister implementing the entire process from model training to inference, token staking, and result determination, ensuring data sovereignty and transparency.
   - **ICRC-1 Tokens**: Support staking, rewards, and marketplace payments.
 
-## Running the project locally
++ **ICP Features Used**
+  + Full-stack decentralization.
+  + Fetch real-time prices using  **HTTPS Outcalls** .
+  + Authenticate and authorize using **Internet Identity**.
+  + Using `ic-sdk-timer` to Periodic prediction submissions from users , scheduled collection and analysis of user-submitted results and automated statistical processing.
+  + Using` ic-stable-structures` to persist data.
+  + Exposing APIs to enable cross-canister calls
+## Build and deployment instructions for local development
+### 1. Environment Preparation
 
-If you want to test your project locally, you can use the following commands:
-
++ Install dfx toolchains
 ```bash
-# Starts the replica, running in the background
-dfx start --background
-
-# Deploys your canisters to the replica and generates your candid interface
-dfx deploy
+sh -ci "$(curl -fsSL https://internetcomputer.org/install.sh)"
 ```
 
-Once the job completes, your application will be available at `http://localhost:4943?canisterId={asset_canister_id}`.
 
-If you have made changes to your backend canister, you can generate a new candid interface with
-
++ Dependencies
 ```bash
-npm run generate
+# install rust toolchains
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+rustup target add wasm32-unknown-unknown
 ```
 
-at any time. This is recommended before starting the frontend development server, and will be run automatically any time you run `dfx deploy`.
+### 2. Build canisters
 
-### Start the Frontend
-
++ Build backend
 ```bash
+cd backend
+cargo build --target wasm32-unknown-unknown --release -p backend
+```
+
++ Build frontend
+```bash
+cd frontend
 npm install
-npm run dev
+npm run build
 ```
+### 3. Deploy on local
+
++ Start local IC replica
+```bash
+# start the local IC replica in background mode with a clean state
+dfx start --background --clean
+```
+
++ Deploy canisters
+```bash
+# deploy all canisters  on local
+dfx deploy
+
+# deploy only backend
+dfx deploy backend
+
+# deploy only frontend
+dfx deploy frontend
+```
+### 4. Validate and tests
+
+
++ Command test
+```bash
+dfx canister status backend
+```
+
++ Frontend interaction
+```bash
+npm run dev
+# visit http://localhost:3000
+```
+## Mainnet canister ID(s)
+
++ Backend canister id: `eov5t-niaaa-aaaah-arepa-cai`
++ Frontend canister id: `lcdqt-cqaaa-aaaap-an2fq-cai`
+

@@ -7,7 +7,7 @@
       "type": "custom",
       "optimize": "cycles",
       "build": [
-        "RUSTFLAGS='--cfg getrandom_backend=\"custom\"' cargo build --target wasm32-unknown-unknown --release -p backend",
+        "cargo build --target wasm32-unknown-unknown --release -p backend",
         "bash ./scripts/generate_did.sh",
         "bash ./scripts/rename_did.sh"
       ],
