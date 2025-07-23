@@ -1,6 +1,4 @@
-use crate::ml::api::default_api::init as init_ml;
 use crate::web::common::guard::init_admin;
-use burn::module::{DisplaySettings, ModuleDisplay};
 use ic_cdk::api::time;
 use ic_cdk::{block_on, init, post_upgrade, pre_upgrade, spawn};
 use ic_cdk_timers::{set_timer, set_timer_interval};
@@ -14,7 +12,6 @@ use crate::web::services::predictor_service::ExtendPredictorService;
 
 #[init]
 fn init() {
-    init_ml();
     init_admin();
     spawn(async move {
         init_timer().await;

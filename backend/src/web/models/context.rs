@@ -2,7 +2,6 @@ use candid::{CandidType, Principal};
 use ic_cdk::api::time;
 use ic_cdk::caller;
 use std::hash::{DefaultHasher, Hash, Hasher};
-use burn::tensor::T;
 use serde::{Deserialize, Serialize};
 use crate::impl_storable;
 use crate::web::models::predictor_model::Predictor;
