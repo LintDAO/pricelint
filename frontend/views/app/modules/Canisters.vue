@@ -66,20 +66,19 @@
       <q-card>
         <q-card-section>
           <div class="text-h6">
-            Configuration for Canister {{ selectedCanisterId }}
+            Recommended Configuration for Canister {{ selectedCanisterId }}
           </div>
         </q-card-section>
         <q-card-section>
-          <q-file v-model="wasmFile" label="Select .wasm file" accept=".wasm" />
+          The model will now run using the recommended configuration.
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancel" color="negative" v-close-popup />
           <q-btn
-            flat
-            label="Install"
+            label="Use Recommend"
             color="primary"
-            :disable="!wasmFile"
-            :loading="loadingActions[selectedCanisterId]?.install"
+            @click="useRecommend()"
+            :loading="loadingActions[selectedCanisterId]?.use"
           />
         </q-card-actions>
       </q-card>
@@ -95,6 +94,7 @@
 <script setup lang="ts">
 import {
   CanisterData,
+  callTargetCanister,
   getCanisterList,
   installCode,
   queryCanisterStatus,
@@ -104,7 +104,7 @@ import {
 import TopUpCycles from "@/components/TopUpCycles.vue";
 import type { TableColumn } from "@/types/model";
 import { fromTokenAmount } from "@/utils/common";
-import { showMessageError, showMessageSuccess } from "@/utils/message";
+import { showMessageError } from "@/utils/message";
 import { onMounted, ref } from "vue";
 
 const topUpDialog = ref(false);
@@ -175,7 +175,10 @@ const pagination = ref({
 });
 // Operation loading states
 const loadingActions = ref<
-  Record<string, { start?: boolean; stop?: boolean; install?: boolean }>
+  Record<
+    string,
+    { start?: boolean; stop?: boolean; install?: boolean; use?: boolean }
+  >
 >({});
 // Install code dialog state
 const showConfigurationDialog = ref(false);
@@ -290,12 +293,12 @@ const stopThisCanister = async (canisterId: string) => {
 const installCanisterCode = async (canisterId: string) => {
   loadingActions.value[canisterId] = {
     ...loadingActions.value[canisterId],
-    install: true,
+    use: true,
   };
   await installCode(canisterId, "0.0.1");
   loadingActions.value[canisterId] = {
     ...loadingActions.value[canisterId],
-    install: false,
+    use: false,
   };
 };
 
@@ -310,6 +313,19 @@ const openConfigurationDialog = (canisterId: string) => {
   selectedCanisterId.value = canisterId;
   wasmFile.value = null;
   showConfigurationDialog.value = true;
+};
+
+const useRecommend = async () => {
+  const canisterId = selectedCanisterId.value;
+  loadingActions.value[selectedCanisterId.value] = {
+    ...loadingActions.value[selectedCanisterId.value],
+    use: true,
+  };
+  await callTargetCanister(canisterId);
+  loadingActions.value[selectedCanisterId.value] = {
+    ...loadingActions.value[selectedCanisterId.value],
+    use: false,
+  };
 };
 </script>
 

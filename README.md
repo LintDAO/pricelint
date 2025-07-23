@@ -1,23 +1,64 @@
-# `price_lint`
+# PriceLint: Decentralized Price Prediction on Internet Computer
 
-PriceLint is a decentralized price prediction platform inspired by Predictoor.ai.
+**PriceLint** is a decentralized platform for AI-driven price prediction, built on the Internet Computer (IC) and inspired by Predictoor.ai.
 
-In the past, the use of deep learning models to predict prices was always in the hands of a few institutions.
+It combines the features of Canister and Burn frameworks on the chain to achieve a 100% on-chain LSTM prediction model, significantly reducing the dependence of traditional prediction models on local computing resources.
 
-Now, through ICP's low-threshold service, we can enable everyone to predict prices using their own models. Predict their own future.
+Users can make predictions without continuously running local devices, greatly improving ease of use.
 
-PriceLint leverages the Canister and Burn frameworks to run on-chain LSTM models for price prediction, eliminating the need for local computation. This approach delivers a prediction accuracy slightly above 50%, fully within the IC ecosystem.
+Our goal is to achieve a prediction accuracy rate of slightly above 50% for this model.
 
-Key features include:
+Users can deploy AI in PriceLint and predict staked tokens.
 
-- One-click deployment of multiple prediction Canisters
-- Selection and customization of AI models
-- Token pledging for predicting ICP/BTC prices
-- Open trading of user-created AI models
+Trade your own AI configurations in the upcoming decentralized market to build a self-sustaining data ecosystem.
 
-The result is a self-sustaining, decentralized data marketplace, where crowdsourced intelligence is harnessed to train more effective models for 24-hour price trends.
+## 📝 Why PriceLint?
 
-Users benefit by supporting, running, or trading model outputs — while Data Farmer streams provide real-time predictive data for traders.
+PriceLint democratizes price prediction, traditionally controlled by institutions, by leveraging ICP’s scalable infrastructure. It targets:
+
+- **Crypto Traders**: Access real-time predictive data streams for trading strategies.
+- **DeFi Participants**: Stake tokens to earn rewards and optimize predictions.
+- **Data Scientists**: Share AI models, earning revenue through a follow-on profit-sharing model.
+
+## 🚀 Key Features
+
+- **On-Chain AI**: LSTM models run in Canisters using the [ic-burn](https://github.com/LintDAO/ic-burn) framework for chain-native inference.
+- **One-Click Deployment**: Deploy multiple Canisters with pre-configured or custom models.
+- **Token Staking**: Stake tokens to submit predictions and earn rewards.
+- **Model Marketplace**: Trade user-created AI configurations with 2-5% platform fees.
+- **Real-Time Data Streams**: Data Farmer streams provide predictive data for traders.
+- **Community-Driven**: Crowdsourced intelligence improves model accuracy over time.
+
+## 💬 User Story
+
+**Data Farmer X** logs into PriceLint, deploys dozens of Canisters with a single click, and tests the accuracy of ICP price predictions by adjusting different model parameters.
+
+X filters models with an accuracy rate of over 50%, stakes tokens to submit predictions, and earns rewards.
+
+X begins optimizing model parameters to improve accuracy and shares the configuration on the platform market to earn referral commissions.
+
+**Trader Y** pays for a subscription to aggregated forecast data streams to optimize his high-frequency trading strategy.
+
+## 🛠️ Technical Architecture
+
+### Frontend
+
+- **Tech Stack**: Vue3, TypeScript, Pinia.
+- **Features**: User-friendly interface for model selection, parameter tuning, token staking, and marketplace trading. Displays prediction leaderboards and annualized reward status.
+- **ICP Utilization**: Internet Identity for secure, decentralized login; Retrieve real-time BTC prices from APIs (such as Binance and CoinGecko) via HTTPS outbound calls, and retrieve real-time ICP prices via XRC.
+
+### Backend
+
+- **Canisters (Rust)**:
+  - **User Canister**: Ownership belongs to individual users, stores model configurations, staking records, and prediction results. Runs LSTM inference using [ic-burn](https://github.com/LintDAO/ic-burn), generating price predictions, hold tokens.
+  - **Backend Canister**: Responsible for storing user information, aggregating data, and determining whether prediction results are correct.
+  - **Market Canister**: Manages model trading, transaction records, and 2-5% fee distribution.
+- **ICP Utilization**:
+  - **Chain-Native AI**: WebAssembly (WASM) enables on-chain LSTM inference.
+  - **Low-Cost Transactions**: Fixed fees (~10B cycles per model training) support high-frequency predictions.
+  - **High Throughput**: Sub-second confirmation ensures real-time data updates.
+  - **100% on-chain**: with smart contracts based on Canister implementing the entire process from model training to inference, token staking, and result determination, ensuring data sovereignty and transparency.
+  - **ICRC-1 Tokens**: Support staking, rewards, and marketplace payments.
 
 ## Running the project locally
 
@@ -41,19 +82,9 @@ npm run generate
 
 at any time. This is recommended before starting the frontend development server, and will be run automatically any time you run `dfx deploy`.
 
-If you are making frontend changes, you can start a development server with
+### Start the Frontend
 
 ```bash
-npm start
+npm install
+npm run dev
 ```
-
-Which will start a server at `http://localhost:8080`, proxying API requests to the replica at port 4943.
-
-### Note on frontend environment variables
-
-If you are hosting frontend code somewhere without using DFX, you may need to make one of the following adjustments to ensure your project does not fetch the root key in production:
-
-- set`DFX_NETWORK` to `ic` if you are using Webpack
-- use your own preferred method to replace `process.env.DFX_NETWORK` in the autogenerated declarations
-  - Setting `canisters -> {asset_canister_id} -> declarations -> env_override to a string` in `dfx.json` will replace `process.env.DFX_NETWORK` with the string in the autogenerated declarations
-- Write your own `createActor` constructor

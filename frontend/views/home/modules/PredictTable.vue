@@ -16,6 +16,7 @@
                   flat
                   :pagination="{ rowsPerPage: 0 }"
                   hide-bottom
+                  :loading="loading"
                 >
                   <!-- 表头 -->
                   <template
@@ -173,10 +174,9 @@
 </template>
 
 <script lang="ts" setup>
-import { IdentityInfo, initAuth, signIn } from "@/api/auth";
-import { setCurrentIdentity } from "@/api/canister_pool";
 import { MARKETS } from "@/api/constants/markets";
 import { TOKENS } from "@/api/constants/tokens";
+import { getTokenNowPrice } from "@/api/icp";
 import ArrowIcon from "@/components/ArrowIcon.vue";
 import { useUserStore } from "@/stores/user";
 import type { TableColumn } from "@/types/model";
@@ -214,18 +214,21 @@ const columnTooltips: Record<string, string> = {
     "The percentage difference in the total number of PCL tokens invested in the past 24 hours compared to the previous day.",
 };
 
-onMounted(() => {
-  // getOKInfo()
-});
 // 与 II 认证相关的信息
 const signedIn = ref(false); // 是否登录
 const loading = ref(false);
 
-// 更新表格数据
-const updateTable = debounce(() => {
-  const now = new Date(); // 2025-05-21 15:42 PDT
-  const times = getTimeLabels(now); // [15:35, 15:40, 15:42, 15:45]
+onMounted(() => {
+  // getOKInfo()
+});
 
+// 更新表格数据的函数
+const updateTable = debounce(async () => {
+  loading.value = true;
+  const now = new Date(); // 当前时间
+  const times = getTimeLabels(now); // 获取时间标签
+
+  // 设置 columns
   columns.value = [
     {
       name: "asset",
@@ -235,32 +238,32 @@ const updateTable = debounce(() => {
     },
     {
       name: "last_2",
-      label: times[0], // 01:35
+      label: times[0],
       field: "last_2",
       align: "center",
     },
     {
       name: "last_1",
-      label: times[1], // 01:40
+      label: times[1],
       field: "last_1",
       align: "center",
     },
     {
       name: "now",
-      label: times[2], // 01:50
+      label: times[2],
       field: "now",
       align: "center",
     },
     {
       name: "next",
-      label: `${times[3]}`, // 01:50 (预测)
+      label: `${times[3]}`,
       field: "next",
       align: "center",
       subtitle: "Predictions",
     },
     {
       name: "accuracy",
-      label: "Accuracy ",
+      label: "Accuracy",
       field: "accuracy",
       align: "center",
       subtitle: "1 week",
@@ -275,11 +278,11 @@ const updateTable = debounce(() => {
   ];
 
   // 假数据（实际从 API 获取）
-  rows.value = [
+  const rawData: RowData[] = [
     {
       id: 1,
       token: { name: "BTC-USDT", logo: "" },
-      source: { name: "BINANCE" },
+      source: { name: "BINANCE", logo: "" },
       last_2: {
         price: 105133.25,
         trend: "Down",
@@ -301,18 +304,18 @@ const updateTable = debounce(() => {
     {
       id: 2,
       token: { name: "ICP-USDT", logo: "" },
-      source: { name: "BINANCE" },
+      source: { name: "BINANCE", logo: "" },
       last_2: {
-        price: 3200.45,
+        price: 7.5,
         trend: "Up",
         pred: { staked: 76.2, up: 45.5, down: 30.2, trend: "Up" },
       },
       last_1: {
-        price: 3210.12,
+        price: 7.4,
         trend: "Up",
         pred: { staked: 76.2, up: 46.0, down: 29.8, trend: "Up" },
       },
-      now: { price: 3195.78, trend: "Down", pred: null },
+      now: { price: 7.5, trend: "Down", pred: null },
       next: {
         trend: "Up",
         pred: { staked: 76.2, up: 45.5, down: 30.2, trend: "Up" },
@@ -320,21 +323,33 @@ const updateTable = debounce(() => {
       accuracy: 62.3,
       stake: { amount: 16000, change: 5.2 },
     },
-  ].map((item) => {
-    const symbol = getTokenSymbol(item.token.name); // 提取 BTC 或 ETH
-    return {
-      ...item,
-      token: {
-        ...item.token,
-        logo: TOKENS[symbol]?.meta.logo || "/assets/default-icon.png", // 使用 TOKENS 中的 logo
-      },
-      source: {
-        name: item.source.name,
-        logo: MARKETS[item.source.name]?.logo || "/assets/default-icon.png",
-      },
-    };
-  });
+  ];
+
+  // 将获取的数据填入模板
+  rows.value = await Promise.all(
+    rawData.map(async (item) => {
+      const symbol = getTokenSymbol(item.token.name);
+      const now_price = await getTokenNowPrice(symbol);
+      return {
+        ...item,
+        token: {
+          ...item.token,
+          logo: TOKENS[symbol]?.meta.logo || "/assets/default-icon.png",
+        },
+        source: {
+          name: item.source.name,
+          logo: MARKETS[item.source.name]?.logo || "/assets/default-icon.png",
+        },
+        now: {
+          ...item.now, // 保留原始的 now.trend 和 now.pred
+          price: now_price,
+        },
+      };
+    })
+  );
+  loading.value = false;
 }, 500);
+
 // 提取代币符号的辅助函数
 const getTokenSymbol = (pair: string): string => {
   // 假设 token.name 是如 "BTC-USDT" 的格式，返回 "BTC"
@@ -378,49 +393,6 @@ onMounted(() => {
   updateTable();
   // setInterval(updateTable, 60 * 1000); // 每分钟更新
 });
-
-const onLogin = async () => {
-  const auth = await initAuth();
-  loading.value = true;
-  //TODO 先不使用登录缓存，有点问题
-  // if (!auth.info) {
-  //检查用户是否已登录，未登录就登录
-  signIn(auth.client) // 理论上有链接对象才会进入这个方法
-    .then((ii) => {
-      signedIn.value = true;
-      auth.info = ii;
-      loginSuccess(ii);
-    })
-    .catch((e) => {
-      console.error("e", e);
-    })
-    .finally(() => {
-      loading.value = false;
-    });
-  // } else {
-  //   //存在auth.info，说明用户已登录，不需要再登录
-  //   loginSuccess(auth.info)
-  // }
-};
-
-const enableTwitterAds = () => {
-  // 调用 Twitter 广告跟踪事件
-  //@ts-ignore
-  window.twq("event", "tw-opr1q-opr2m", {});
-};
-
-const loginSuccess = (ii: IdentityInfo) => {
-  // 保存登录状态到actor，方便调用
-  setCurrentIdentity(ii.identity, ii.principal);
-  // 保存 principal 到状态
-  userStore.setPrincipal(ii.principal).then(() => {
-    enableTwitterAds();
-    //直接跳转到应用中，在应用里获取userInfo，加快速度。
-    router.push({
-      path: "/app",
-    });
-  });
-};
 </script>
 
 <style lang="scss" scoped>

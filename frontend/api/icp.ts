@@ -9,6 +9,7 @@ import { Principal } from "@dfinity/principal";
 import axios from "axios";
 import { createIIAgent, getCurrentPrincipal } from "./canister_pool";
 import {
+  BINANCE_URL,
   CMC_CANISTER,
   CYCLES_LEDGER_CANISTER,
   ICP_LEDGER_CANISTER,
@@ -255,6 +256,35 @@ export const topupCycles = async (
     return true;
   } catch (error) {
     console.error(`Failed to top up Cycles for canister ${canisterId}:`, error);
+    throw error;
+  }
+};
+
+export const getTokenNowPrice = async (
+  tokenSymbol: string
+): Promise<number> => {
+  try {
+    //获取Binance的当前ICP历史数据。
+    const url = `${BINANCE_URL}/api/v3/ticker/price`;
+    //Symbol: ICP BTC...
+    const params = { symbol: tokenSymbol.toUpperCase() + "USDT" };
+
+    const response = await axios.get(url, { params });
+
+    if (response.status === 200) {
+      //直接返回价格
+      return Number(response.data.price);
+    } else {
+      showMessageError(
+        "Can not connect Binance api, please check if you have access to Binance or try later"
+      );
+      throw new Error("Failed to fetch ICP price data");
+    }
+  } catch (error) {
+    showMessageError(
+      "Can not connect Binance api, please check if you have access to Binance or try later"
+    );
+    console.error("Error fetching ICP price data:", error);
     throw error;
   }
 };
