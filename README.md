@@ -33,11 +33,11 @@ PriceLint democratizes price prediction, traditionally controlled by institution
 
 **Data Farmer X** logs into PriceLint, deploys dozens of Canisters with a single click, and tests the accuracy of ICP price predictions by adjusting different model parameters.
 
-X filters models with an accuracy rate of over 50%, stakes tokens to submit predictions, and earns rewards.
+Select models with an accuracy rate of over 50% for predicting the rise and fall of tokens, submit predictions, and stake a certain amount of tokens. When the prediction is correct, they make a profit; When predictions are incorrect, they incur losses. This promotes the accuracy of predictive information, as only accurate forecasters can make profits and sustain operations.
 
-X begins optimizing model parameters to improve accuracy and shares the configuration on the platform market to earn referral commissions.
+**X** starts optimizing model parameters, improving accuracy, and sharing configurations to the platform market to earn additional profits.
 
-**Trader Y** pays for a subscription to aggregated forecast data streams to optimize his high-frequency trading strategy.
+**Trader Y** pays to purchase all the predicted aggregates of **X**, and then uses them to perform buy or sell operations. The more accurate the prediction, the easier it is for them to make money, and the more motivated they are to continue purchasing predictive information, thanks to their profit through trading.
 
 ## 🛠️ Technical Architecture
 
@@ -50,10 +50,10 @@ X begins optimizing model parameters to improve accuracy and shares the configur
 ### Backend
 
 - **Canisters (Rust)**:
+
   - **User Canister**: Ownership belongs to individual users, stores model configurations, staking records, and prediction results. Runs LSTM inference using [ic-burn](https://github.com/LintDAO/ic-burn), generating price predictions, hold tokens.
   - **Backend Canister**: Responsible for storing user information, aggregating data, and determining whether prediction results are correct.
   - **Market Canister**: Manages model trading, transaction records, and 2-5% fee distribution.
-
 
 - **ICP Utilization**:
   - **Chain-Native AI**: WebAssembly (WASM) enables on-chain LSTM inference.
@@ -62,23 +62,26 @@ X begins optimizing model parameters to improve accuracy and shares the configur
   - **100% on-chain**: with smart contracts based on Canister implementing the entire process from model training to inference, token staking, and result determination, ensuring data sovereignty and transparency.
   - **ICRC-1 Tokens**: Support staking, rewards, and marketplace payments.
 
-+ **ICP Features Used**
-  + Full-stack decentralization.
-  + Fetch real-time prices using  **HTTPS Outcalls** .
-  + Authenticate and authorize using **Internet Identity**.
-  + Using `ic-sdk-timer` to Periodic prediction submissions from users , scheduled collection and analysis of user-submitted results and automated statistical processing.
-  + Using` ic-stable-structures` to persist data.
-  + Exposing APIs to enable cross-canister calls
+* **ICP Features Used**
+  - Full-stack decentralization.
+  - Fetch real-time prices using **HTTPS Outcalls** .
+  - Authenticate and authorize using **Internet Identity**.
+  - Using `ic-sdk-timer` to Periodic prediction submissions from users , scheduled collection and analysis of user-submitted results and automated statistical processing.
+  - Using` ic-stable-structures` to persist data.
+  - Exposing APIs to enable cross-canister calls
+
 ## Build and deployment instructions for local development
+
 ### 1. Environment Preparation
 
-+ Install dfx toolchains
+- Install dfx toolchains
+
 ```bash
 sh -ci "$(curl -fsSL https://internetcomputer.org/install.sh)"
 ```
 
+- Dependencies
 
-+ Dependencies
 ```bash
 # install rust toolchains
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -87,27 +90,32 @@ rustup target add wasm32-unknown-unknown
 
 ### 2. Build canisters
 
-+ Build backend
+- Build backend
+
 ```bash
 cd backend
 cargo build --target wasm32-unknown-unknown --release -p backend
 ```
 
-+ Build frontend
+- Build frontend
+
 ```bash
 cd frontend
 npm install
 npm run build
 ```
+
 ### 3. Deploy on local
 
-+ Start local IC replica
+- Start local IC replica
+
 ```bash
 # start the local IC replica in background mode with a clean state
 dfx start --background --clean
 ```
 
-+ Deploy canisters
+- Deploy canisters
+
 ```bash
 # deploy all canisters  on local
 dfx deploy
@@ -118,21 +126,23 @@ dfx deploy backend
 # deploy only frontend
 dfx deploy frontend
 ```
+
 ### 4. Validate and tests
 
+- Command test
 
-+ Command test
 ```bash
 dfx canister status backend
 ```
 
-+ Frontend interaction
+- Frontend interaction
+
 ```bash
 npm run dev
 # visit http://localhost:3000
 ```
+
 ## Mainnet canister ID(s)
 
-+ Backend canister id: `eov5t-niaaa-aaaah-arepa-cai`
-+ Frontend canister id: `lcdqt-cqaaa-aaaap-an2fq-cai`
-
+- Backend canister id: `eov5t-niaaa-aaaah-arepa-cai`
+- Frontend canister id: `lcdqt-cqaaa-aaaap-an2fq-cai`
