@@ -1,17 +1,17 @@
-import type { PluginOption } from "vite"
-import type { ViteEnv } from "../../../types/model"
+import type { PluginOption } from "vite";
+import type { ViteEnv } from "../../../types/model";
 
-import { quasar, transformAssetUrls } from "@quasar/vite-plugin"
-import vue from "@vitejs/plugin-vue"
-import { visualizer } from "rollup-plugin-visualizer"
-import { createHtmlPlugin } from "vite-plugin-html"
-import { viteCompressionPlugin } from "./compression"
+import { quasar, transformAssetUrls } from "@quasar/vite-plugin";
+import vue from "@vitejs/plugin-vue";
+import { visualizer } from "rollup-plugin-visualizer";
+import { createHtmlPlugin } from "vite-plugin-html";
+import { viteCompressionPlugin } from "./compression";
 
 export function createVitePlugins(viteEnv: ViteEnv, isBuild: boolean) {
   const {
     VITE_BUILD_COMPRESS: compressType,
     VITE_BUILD_COMPRESS_DELETE_ORIGIN_FILE: shouldBuildCompressDeleteFile,
-  } = viteEnv
+  } = viteEnv;
 
   const vitePlugins: (PluginOption | PluginOption[])[] = [
     vue({
@@ -38,14 +38,14 @@ export function createVitePlugins(viteEnv: ViteEnv, isBuild: boolean) {
         },
       },
     }),
-  ]
+  ];
 
   if (isBuild) {
     // 生成模式执行
     vitePlugins.push(
-      viteCompressionPlugin(compressType, shouldBuildCompressDeleteFile), // 压缩
-    )
+      viteCompressionPlugin(compressType, shouldBuildCompressDeleteFile) // 压缩
+    );
   }
 
-  return vitePlugins
+  return vitePlugins;
 }
