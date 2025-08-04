@@ -1,5 +1,5 @@
 <template>
-  <q-btn color="primary" @click="createNew()"> Create New </q-btn>
+  <q-btn color="primary" @click="createNew()"> New Canister</q-btn>
   <div>
     <span v-if="userCanisterIds.length === 0">
       You don't have any canister.

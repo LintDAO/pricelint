@@ -1,6 +1,100 @@
 <template>
   <div class="dashboard-container q-gutter-md">
-    <div class="row q-col-gutter-sm dashboard-container">
+    <div class="row q-col-gutter-sm">
+      <!-- 运行中的Canister -->
+      <div class="col-12 col-md-4">
+        <q-card class="dashboard-card">
+          <q-card-section>
+            <div class="text-h6">Running Canisters</div>
+            <div class="text-subtitle2 text-grey">
+              Active canisters in your account
+            </div>
+          </q-card-section>
+          <q-card-section class="canister-list q-pt-none">
+            <q-list dense>
+              <q-item
+                v-for="canister in userData.runningCanisters"
+                :key="canister.id"
+                clickable
+              >
+                <q-item-section>
+                  <q-item-label>{{ canister.name }}</q-item-label>
+                  <q-item-label caption
+                    >Status: {{ canister.status }}</q-item-label
+                  >
+                </q-item-section>
+              </q-item>
+              <q-item v-if="!userData.runningCanisters.length">
+                <q-item-label>No running canisters</q-item-label>
+              </q-item>
+            </q-list>
+          </q-card-section>
+        </q-card>
+      </div>
+
+      <!-- 质押代币数量 -->
+      <div class="col-12 col-md-4">
+        <q-card class="dashboard-card">
+          <q-card-section>
+            <div class="text-h6">Staked Tokens</div>
+            <div class="text-subtitle2 text-grey">
+              ICP tokens staked for predictions
+            </div>
+          </q-card-section>
+          <q-card-section class="q-pt-none">
+            <div class="text-body1">{{ userData.stakedTokens }} ICP</div>
+            <q-chip color="primary" text-color="white" icon="lock">
+              Locked until {{ userData.stakeLockEnd }}
+            </q-chip>
+          </q-card-section>
+        </q-card>
+      </div>
+
+      <!-- 预测准确率 -->
+      <div class="col-12 col-md-4">
+        <q-card class="dashboard-card">
+          <q-card-section>
+            <div class="text-h6">Prediction Accuracy</div>
+            <div class="text-subtitle2 text-grey">
+              Your historical prediction accuracy
+            </div>
+          </q-card-section>
+          <q-card-section class="q-pt-none q-gutter-md">
+            <q-circular-progress
+              show-value
+              :value="userData.predictionAccuracy"
+              size="80px"
+              :thickness="0.2"
+              color="positive"
+              track-color="grey-3"
+            >
+              {{ userData.predictionAccuracy }}%
+            </q-circular-progress>
+            <q-circular-progress
+              show-value
+              :value="userData.predictionAccuracy"
+              size="80px"
+              :thickness="0.2"
+              color="positive"
+              track-color="grey-3"
+            >
+              {{ userData.predictionAccuracy }}%
+            </q-circular-progress>
+            <q-circular-progress
+              show-value
+              :value="userData.predictionAccuracy"
+              size="80px"
+              :thickness="0.2"
+              color="positive"
+              track-color="grey-3"
+            >
+              {{ userData.predictionAccuracy }}%
+            </q-circular-progress>
+          </q-card-section>
+        </q-card>
+      </div>
+    </div>
+    <div class="row q-col-gutter-sm">
       <!-- 用户地址 -->
       <div class="col-12 col-md-6">
         <q-card class="dashboard-card">
@@ -128,100 +222,8 @@
           </q-card-section>
         </q-card>
       </div>
-
-      <!-- 运行中的Canister -->
-      <div class="col-12 col-md-4">
-        <q-card class="dashboard-card">
-          <q-card-section>
-            <div class="text-h6">Running Canisters</div>
-            <div class="text-subtitle2 text-grey">
-              Active canisters in your account
-            </div>
-          </q-card-section>
-          <q-card-section class="canister-list q-pt-none">
-            <q-list dense>
-              <q-item
-                v-for="canister in userData.runningCanisters"
-                :key="canister.id"
-                clickable
-              >
-                <q-item-section>
-                  <q-item-label>{{ canister.name }}</q-item-label>
-                  <q-item-label caption
-                    >Status: {{ canister.status }}</q-item-label
-                  >
-                </q-item-section>
-              </q-item>
-              <q-item v-if="!userData.runningCanisters.length">
-                <q-item-label>No running canisters</q-item-label>
-              </q-item>
-            </q-list>
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <!-- 质押代币数量 -->
-      <div class="col-12 col-md-4">
-        <q-card class="dashboard-card">
-          <q-card-section>
-            <div class="text-h6">Staked Tokens</div>
-            <div class="text-subtitle2 text-grey">
-              ICP tokens staked for predictions
-            </div>
-          </q-card-section>
-          <q-card-section class="q-pt-none">
-            <div class="text-body1">{{ userData.stakedTokens }} ICP</div>
-            <q-chip color="primary" text-color="white" icon="lock">
-              Locked until {{ userData.stakeLockEnd }}
-            </q-chip>
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <!-- 预测准确率 -->
-      <div class="col-12 col-md-4">
-        <q-card class="dashboard-card">
-          <q-card-section>
-            <div class="text-h6">Prediction Accuracy</div>
-            <div class="text-subtitle2 text-grey">
-              Your historical prediction accuracy
-            </div>
-          </q-card-section>
-          <q-card-section class="q-pt-none q-gutter-md">
-            <q-circular-progress
-              show-value
-              :value="userData.predictionAccuracy"
-              size="80px"
-              :thickness="0.2"
-              color="positive"
-              track-color="grey-3"
-            >
-              {{ userData.predictionAccuracy }}%
-            </q-circular-progress>
-            <q-circular-progress
-              show-value
-              :value="userData.predictionAccuracy"
-              size="80px"
-              :thickness="0.2"
-              color="positive"
-              track-color="grey-3"
-            >
-              {{ userData.predictionAccuracy }}%
-            </q-circular-progress>
-            <q-circular-progress
-              show-value
-              :value="userData.predictionAccuracy"
-              size="80px"
-              :thickness="0.2"
-              color="positive"
-              track-color="grey-3"
-            >
-              {{ userData.predictionAccuracy }}%
-            </q-circular-progress>
-          </q-card-section>
-        </q-card>
-      </div>
-
+    </div>
+    <div class="row q-col-gutter-sm">
       <!-- 预测收益 -->
       <div class="col-12 col-md-4">
         <q-card class="dashboard-card">
@@ -515,12 +517,5 @@ const showEarningsTrend = () => {
   .q-item {
     padding-left: 0;
   }
-}
-
-.row.q-col-gutter-sm > .col-md-4:nth-child(3n) {
-  padding-left: 0 !important;
-}
-.row.q-col-gutter-sm > .col-md-6:nth-child(2n + 1) {
-  padding-left: 0 !important;
 }
 </style>
