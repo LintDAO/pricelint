@@ -13,7 +13,7 @@
           <!-- Animated Badge -->
           <q-chip
             :ripple="false"
-            class="q-mb-md hero-badge"
+            class="q-my-lg hero-badge"
             style="
               background: rgba(255, 255, 255, 0.2);
               backdrop-filter: blur(10px);
@@ -28,20 +28,25 @@
           </q-chip>
 
           <!-- Main Title with Typing Effect -->
-          <h1 class="hero-title text-white q-mb-md">
+          <h1 class="hero-title text-white q-my-md">
             <div class="text-h2 text-weight-bold q-mb-sm">
               {{ displayedText }}
-              <span class="cursor" :class="{ blink: showCursor }">|</span>
+              <span
+                class="cursor"
+                v-show="showCursor"
+                :class="{ blink: showCursor }"
+                >|</span
+              >
             </div>
             <div class="text-h4 text-weight-light" style="opacity: 0.9">
-              for your favorite crypto assets
+              We’ve Got You Covered
             </div>
           </h1>
 
           <!-- Subtitle -->
           <p
-            class="text-h6 text-white q-mb-xl"
-            style="opacity: 0.8; max-width: 600px; margin: 0 auto"
+            class="text-h6 text-white"
+            style="opacity: 0.8; max-width: 600px; margin: 48px auto"
           >
             Harness the power of on-chain AI and LSTM models to make informed
             trading decisions with real-time predictive analytics.
@@ -60,7 +65,7 @@
               <q-icon name="analytics" class="q-mr-sm" />
               <span class="text-weight-bold">View Predictions</span>
             </q-btn>
-            <q-btn
+            <!-- <q-btn
               outline
               rounded
               size="lg"
@@ -69,7 +74,7 @@
             >
               <q-icon name="play_arrow" class="q-mr-sm" />
               <span class="text-weight-medium">Watch Demo</span>
-            </q-btn>
+            </q-btn> -->
           </div>
 
           <!-- Stats Row -->
@@ -119,7 +124,7 @@
                 <div>
                   <div class="text-white text-weight-medium">BTC</div>
                   <div class="text-caption text-white" style="opacity: 0.8">
-                    +2.4% predicted
+                    55% Accuracy
                   </div>
                 </div>
                 <q-icon name="trending_up" color="positive" size="20px" />
@@ -148,7 +153,7 @@
                 <div>
                   <div class="text-white text-weight-medium">ICP</div>
                   <div class="text-caption text-white" style="opacity: 0.8">
-                    +5.7% predicted
+                    61% Accuracy
                   </div>
                 </div>
                 <q-icon name="trending_up" color="positive" size="20px" />
@@ -178,7 +183,7 @@
 import { onMounted, onUnmounted, ref } from "vue";
 
 // Typing effect
-const fullText = "Accurate price predictions";
+const fullText = "Crypto Trends: Up or Down";
 const displayedText = ref("");
 const showCursor = ref(true);
 let typingInterval: NodeJS.Timeout | null = null;
@@ -197,6 +202,8 @@ const startTypingEffect = () => {
       index++;
     } else {
       if (typingInterval) clearInterval(typingInterval);
+      if (cursorInterval) clearInterval(cursorInterval); // 停止光标闪烁
+      showCursor.value = false; // 隐藏光标
     }
   }, 100);
 };
