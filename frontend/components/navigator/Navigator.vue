@@ -47,6 +47,7 @@
           class="cta-button q-px-lg q-py-sm"
           style="background: rgba(255, 255, 255, 0.9); color: #667eea"
           @click="onLogin()"
+          :loading="loading"
         >
           <q-icon name="rocket_launch" class="q-mr-sm" size="18px" />
           <span class="text-weight-bold">Start Predict</span>

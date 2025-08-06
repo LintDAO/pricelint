@@ -486,7 +486,7 @@ const closeSendDialog = () => {
 // 处理列表项点击事件
 const handleItemClick = (item) => {
   $q.notify({
-    message: `Clicked: ${item.title}`,
+    message: `Coming Soon: ${item.title}`,
     color: "positive",
     position: "top",
   });
@@ -504,14 +504,21 @@ const showEarningsTrend = () => {
 
 <style lang="scss" scoped>
 .dashboard-card {
-  min-height: 180px; /* 固定卡片高度 */
-  width: 100%; /* 填满分配的列宽 */
-  transition: box-shadow 0.3s;
-}
-.dashboard-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-height: 180px;
+  width: 100%;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    /* 内部高光 */ 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
+.dashboard-card:hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transform: translateY(-2px);
+  border-color: rgba(0, 0, 0, 0.12);
+}
 .token-list {
   width: 100%;
   .q-item {
