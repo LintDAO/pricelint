@@ -46,21 +46,38 @@
           border-right: 1px solid #ddd;
         "
       >
-        <q-list>
+        <q-list class="q-px-sm">
+          <q-item-label header> Overview </q-item-label>
           <q-item
             v-for="(item, index) in menuItems"
             :key="index"
             clickable
-            v-ripple="true"
+            v-ripple
             :to="item.route"
             :active="item.route === $route.path"
+            active-class="bg-grey-2"
+            class="q-my-xs q-px-md rounded-borders"
+            style="transition: all 0.2s ease"
           >
             <q-item-section avatar>
               <q-icon :name="item.icon" />
             </q-item-section>
+
             <q-item-section>
-              {{ item.label }}
+              <span
+                :style="{
+                  color: item.route === $route.path ? '#1f2937' : '#4b5563',
+                  fontWeight: item.route === $route.path ? '600' : '500',
+                }"
+              >
+                {{ item.label }}
+              </span>
             </q-item-section>
+
+            <div
+              v-if="item.route === $route.path"
+              class="active-indicator"
+            ></div>
           </q-item>
         </q-list>
         <div class="bottom-icon q-pa-md">
@@ -192,7 +209,7 @@ const showUser = computed<string>(() => {
 });
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .home-container {
   min-height: 100vh;
   .q-header {
@@ -207,5 +224,15 @@ const showUser = computed<string>(() => {
       color: grey !important;
     }
   }
+}
+.active-indicator {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 40px;
+  background-color: #667eea;
+  border-radius: 2px 0 0 2px;
 }
 </style>
