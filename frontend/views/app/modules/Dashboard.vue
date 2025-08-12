@@ -115,7 +115,7 @@
               </q-icon>
             </div>
             <div class="row items-center">
-              <div class="text-body1">
+              <div class="text-body1 text-break">
                 {{ userData.accountId || "N/A" }}
               </div>
               <q-icon

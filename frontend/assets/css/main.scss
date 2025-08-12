@@ -46,6 +46,10 @@ a:hover {
   word-wrap: break-word;
 }
 
+.text-break {
+  word-break: break-all; /* 强制在任意字符处换行 */
+}
+
 .q-tooltip--style {
   font-size: 12px !important; //默认的font-size 10px太小了，这里强制12px大一点
 }
