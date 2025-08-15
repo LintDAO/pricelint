@@ -1,7 +1,7 @@
 <template>
   <q-layout view="lHh lpR lFr">
     <!-- Mobile Navbar (visible on smaller screens) -->
-    <q-header elevated class="bg-primary text-white" v-if="$q.screen.lt.md">
+    <q-header reveal class="bg-white header" v-if="$q.screen.lt.md">
       <q-toolbar>
         <q-btn
           flat
@@ -10,9 +10,35 @@
           icon="menu"
           aria-label="Menu"
           @click="toggleDrawer"
+          class="q-mr-sm text-grey-9"
         />
         <q-space />
-        <q-btn flat label="Logout" @click="onLogOut()" />
+        <!-- User Avatar in Header (Mobile) -->
+        <q-avatar
+          :style="{ background: backgroundColor, color: 'white' }"
+          size="32px"
+          class="user-avatar-header"
+          @click="userMenu = true"
+        >
+          {{ showAvatar }}
+          <q-menu v-model="userMenu" anchor="bottom start" self="top start">
+            <q-list>
+              <template v-for="(item, index) in userMenuItems" :key="index">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="item.click ? $options[item.click]() : null"
+                >
+                  <q-item-section avatar>
+                    <q-icon :name="item.icon" />
+                  </q-item-section>
+                  <q-item-section>{{ item.label }}</q-item-section>
+                </q-item>
+                <!-- <q-separator v-if="item.separator" /> -->
+              </template>
+            </q-list>
+          </q-menu>
+        </q-avatar>
       </q-toolbar>
     </q-header>
 
@@ -21,39 +47,39 @@
       v-model="drawerOpen"
       show-if-above
       :width="256"
-      class="bg-grey-11"
+      class="bg-grey-11 drawer-container"
       :breakpoint="769"
     >
-      <q-scroll-area class="fit">
-        <!-- Sidebar Body: Navigation Sections -->
-        <q-list padding class="q-px-sm">
-          <q-item
-            class="q-my-xs q-px-md rounded-borders"
-            style="transition: all 0.2s ease"
-          >
-            <q-item-section avatar>
-              <q-avatar size="sm">
-                <q-img src="@/assets/favicon.svg" alt="Logo" />
-              </q-avatar>
-            </q-item-section>
-            <q-item-section>
-              <span
-                :style="{
-                  color: '#4b5563',
-                  fontWeight: '500',
-                }"
-              >
-                PriceLint
-              </span>
-            </q-item-section>
-          </q-item>
-          <q-separator class="q-my-md" />
+      <!-- Sidebar Body: Navigation Sections -->
+      <q-list padding class="q-px-sm">
+        <q-item
+          class="q-my-xs q-px-md rounded-borders"
+          style="transition: all 0.2s ease"
+        >
+          <q-item-section avatar>
+            <q-avatar size="sm">
+              <q-img src="@/assets/favicon.svg" alt="Logo" />
+            </q-avatar>
+          </q-item-section>
+          <q-item-section>
+            <span
+              :style="{
+                color: '#4b5563',
+                fontWeight: '600',
+              }"
+            >
+              PriceLint
+            </span>
+          </q-item-section>
+        </q-item>
+        <q-separator class="q-my-md" />
+        <q-scroll-area style="height: calc(100vh - 160px)">
           <!-- First Section -->
           <q-item-label header class="text-caption text-grey-7"
             >Overview</q-item-label
           >
           <q-item
-            v-for="(item, index) in menuItems.slice(0, 2)"
+            v-for="(item, index) in menuItems"
             :key="index"
             clickable
             v-ripple
@@ -81,53 +107,60 @@
               class="active-indicator"
             ></div>
           </q-item>
-        </q-list>
-
-        <!-- Sidebar Footer: User Profile Dropdown -->
-        <div class="absolute-bottom">
-          <q-separator />
-          <q-item clickable v-ripple>
-            <q-item-section avatar>
-              <q-avatar
-                :style="{ background: backgroundColor, color: 'white' }"
-              >
-                {{ showAvatar }}
-              </q-avatar>
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>{{ username || showUser }}</q-item-label>
-              <q-item-label caption>{{
-                principal ? principal.slice(0, 10) + "..." : ""
-              }}</q-item-label>
-            </q-item-section>
-            <q-item-section side>
-              <q-btn
-                flat
-                dense
-                round
-                icon="keyboard_arrow_up"
-                @click="userMenu = true"
-              />
-              <q-menu v-model="userMenu" anchor="top start" self="bottom start">
-                <q-list style="min-width: 200px">
-                  <q-item clickable v-close-popup to="/profile">
-                    <q-item-section>Profile</q-item-section>
-                  </q-item>
-                  <q-item clickable v-close-popup to="/app/settings">
-                    <q-item-section>Settings</q-item-section>
-                  </q-item>
-                  <q-separator />
-                  <q-item clickable v-close-popup @click="onLogOut">
-                    <q-item-section>Logout</q-item-section>
-                  </q-item>
-                </q-list>
-              </q-menu>
-            </q-item-section>
-          </q-item>
-        </div>
-      </q-scroll-area>
+        </q-scroll-area>
+      </q-list>
     </q-drawer>
 
+    <!-- Sidebar Footer: User Profile Dropdown -->
+    <div class="absolute-bottom" v-if="drawerOpen && $q.screen.lt.md">
+      <q-separator />
+      <div class="q-pa-md">
+        <q-item class="rounded-borders">
+          <q-item-section avatar>
+            <q-avatar :style="{ background: backgroundColor, color: 'white' }">
+              {{ showAvatar }}
+            </q-avatar>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>{{ showUser }}</q-item-label>
+            <q-item-label caption>
+              {{ showUser }}
+              <q-icon
+                name="content_copy"
+                class="cursor-pointer"
+                @click.stop="copyPid()"
+              />
+            </q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-btn flat dense round>
+              <q-icon
+                name="keyboard_arrow_down"
+                class="rotate-icon"
+                :class="{ 'rotate-active': userMenu }"
+              />
+              <q-menu v-model="userMenu" anchor="top start" self="bottom start">
+                <q-list>
+                  <template v-for="(item, index) in userMenuItems" :key="index">
+                    <q-item
+                      clickable
+                      v-close-popup
+                      @click="item.click ? $options[item.click]() : null"
+                    >
+                      <q-item-section avatar>
+                        <q-icon :name="item.icon" />
+                      </q-item-section>
+                      <q-item-section>{{ item.label }}</q-item-section>
+                    </q-item>
+                    <!-- <q-separator v-if="item.separator" /> -->
+                  </template>
+                </q-list>
+              </q-menu>
+            </q-btn>
+          </q-item-section>
+        </q-item>
+      </div>
+    </div>
     <!-- Main Content Area -->
     <q-page-container
       class="bg-grey-11"
@@ -138,7 +171,7 @@
         class="bg-white"
         :style="{
           border: '1px solid #e5e7eb',
-          borderRadius: '0.5rem',
+          borderRadius: $q.screen.lt.md ? '0' : '0.5rem',
           minHeight: $q.screen.lt.md ? '100vh' : 'calc(100vh - 16px)',
         }"
       >
@@ -173,6 +206,27 @@ const menuItems = [
   { icon: "memory", label: "Canisters", route: "/app/canisters" },
   // { icon: "settings", label: "Settings", route: "/app/settings" },
 ];
+
+// 定义用户菜单项数据
+const userMenuItems = [
+  // {
+  //   label: "Profile",
+  //   to: "/profile",
+  //   icon: "person",
+  // },
+  // {
+  //   label: "Settings",
+  //   to: "/app/settings",
+  //   icon: "settings",
+  //   separator: true, // 仅在此项后添加分隔线
+  // },
+  {
+    label: "Logout",
+    click: "onLogOut",
+    icon: "logout",
+  },
+];
+
 const drawerOpen = ref(false);
 const userMenu = ref(false);
 // 与 II 认证相关的信息
@@ -263,6 +317,10 @@ const showUser = computed<string>(() => {
 </script>
 
 <style lang="scss" scoped>
+/* 自定义边框类 */
+.header {
+  border-bottom: 1px solid #e5e7eb; /* 浅灰色边框，模仿 Catalyst UI */
+}
 .active-indicator {
   position: absolute;
   right: 0;
@@ -272,5 +330,27 @@ const showUser = computed<string>(() => {
   height: 40px;
   background-color: #667eea;
   border-radius: 2px 0 0 2px;
+}
+.drawer-container {
+  .q-item__section--avatar {
+    color: inherit;
+    min-width: 36px;
+    padding-right: 0;
+  }
+}
+
+.absolute-bottom {
+  position: fixed; /* Fix to viewport bottom */
+  bottom: 0;
+  left: 0;
+  width: 256px; /* Match q-drawer width */
+  background: inherit; /* Inherit bg-grey-1 from q-drawer */
+  z-index: 5000; /* Ensure it stays above content */
+}
+.rotate-icon {
+  transition: transform 0.3s ease;
+}
+.rotate-icon.rotate-active {
+  transform: rotate(180deg);
 }
 </style>
