@@ -14,13 +14,37 @@
         />
         <q-space />
         <!-- User Avatar in Header (Mobile) -->
-        <q-avatar
-          :style="{ background: backgroundColor, color: 'white' }"
-          size="32px"
-          class="user-avatar-header"
-          @click="userMenu = true"
+        <div
+          class="connection-panel q-mr-md"
+          style="color: black; width: 150px"
         >
-          {{ showAvatar }}
+          <div class="flex items-center justify-between full-width q-pa-sm">
+            <!-- 左侧：Connected + 呼吸灯 -->
+            <div class="flex items-center q-gutter-xs">
+              <div class="breathing-dot"></div>
+              <span class="text-caption">On</span>
+            </div>
+
+            <!-- 中间分隔线 -->
+            <q-separator vertical style="height: 20px" />
+
+            <!-- 右侧：Principal ID -->
+            <div class="flex items-center q-gutter-xs">
+              <span class="text-caption text-grey-7">{{ showUser }}</span>
+              <q-icon
+                name="content_copy"
+                class="cursor-pointer"
+                @click.stop="copyPid()"
+              />
+            </div>
+          </div>
+        </div>
+        <q-icon
+          name="keyboard_arrow_up"
+          class="rotate-icon"
+          style="color: black"
+          :class="{ 'rotate-active': userMenu }"
+        >
           <q-menu v-model="userMenu" anchor="bottom start" self="top start">
             <q-list>
               <template v-for="(item, index) in userMenuItems" :key="index">
@@ -38,7 +62,7 @@
               </template>
             </q-list>
           </q-menu>
-        </q-avatar>
+        </q-icon>
       </q-toolbar>
     </q-header>
 
@@ -112,25 +136,31 @@
     </q-drawer>
 
     <!-- Sidebar Footer: User Profile Dropdown -->
-    <div class="absolute-bottom" v-if="drawerOpen && $q.screen.lt.md">
+    <div class="absolute-bottom" v-if="drawerOpen && !$q.screen.lt.md">
       <q-separator />
       <div class="q-pa-md">
         <q-item class="rounded-borders">
-          <q-item-section avatar>
-            <q-avatar :style="{ background: backgroundColor, color: 'white' }">
-              {{ showAvatar }}
-            </q-avatar>
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>{{ showUser }}</q-item-label>
-            <q-item-label caption>
-              {{ showUser }}
-              <q-icon
-                name="content_copy"
-                class="cursor-pointer"
-                @click.stop="copyPid()"
-              />
-            </q-item-label>
+          <q-item-section class="connection-panel">
+            <div class="flex items-center justify-between full-width q-pa-sm">
+              <!-- 左侧：Connected + 呼吸灯 -->
+              <div class="flex items-center q-gutter-xs">
+                <div class="breathing-dot"></div>
+                <span class="text-caption">On</span>
+              </div>
+
+              <!-- 中间分隔线 -->
+              <q-separator vertical style="height: 20px" />
+
+              <!-- 右侧：Principal ID -->
+              <div class="flex items-center q-gutter-xs">
+                <span class="text-caption text-grey-7">{{ showUser }}</span>
+                <q-icon
+                  name="content_copy"
+                  class="cursor-pointer"
+                  @click.stop="copyPid()"
+                />
+              </div>
+            </div>
           </q-item-section>
           <q-item-section side>
             <q-btn flat dense round>
@@ -317,6 +347,31 @@ const showUser = computed<string>(() => {
 </script>
 
 <style lang="scss" scoped>
+.connection-panel {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.breathing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #4caf50;
+  animation: breathing 2s ease-in-out infinite;
+}
+
+@keyframes breathing {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
 /* 自定义边框类 */
 .header {
   border-bottom: 1px solid #e5e7eb; /* 浅灰色边框，模仿 Catalyst UI */
