@@ -1,325 +1,334 @@
 <template>
-  <div class="dashboard-container q-gutter-md">
-    <div class="row q-col-gutter-sm">
-      <!-- 运行中的Canister -->
-      <div class="col-12 col-md-4">
-        <q-card class="dashboard-card">
-          <q-card-section>
-            <div class="text-h6">Running Canisters</div>
-            <div class="text-subtitle2 text-grey">
-              Active canisters in your account
-            </div>
-          </q-card-section>
-          <q-card-section class="canister-list q-pt-none">
-            <q-list dense>
-              <q-item
-                v-for="canister in userData.runningCanisters"
-                :key="canister.id"
-                clickable
-              >
-                <q-item-section>
-                  <q-item-label>{{ canister.name }}</q-item-label>
-                  <q-item-label caption
-                    >Status: {{ canister.status }}</q-item-label
-                  >
-                </q-item-section>
-              </q-item>
-              <q-item v-if="!userData.runningCanisters.length">
-                <q-item-label>No running canisters</q-item-label>
-              </q-item>
-            </q-list>
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <!-- 质押代币数量 -->
-      <div class="col-12 col-md-4">
-        <q-card class="dashboard-card">
-          <q-card-section>
-            <div class="text-h6">Staked Tokens</div>
-            <div class="text-subtitle2 text-grey">
-              ICP tokens staked for predictions
-            </div>
-          </q-card-section>
-          <q-card-section class="q-pt-none">
-            <div class="text-body1">{{ userData.stakedTokens }} ICP</div>
-            <q-chip color="primary" text-color="white" icon="lock">
-              Locked until {{ userData.stakeLockEnd }}
-            </q-chip>
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <!-- 预测准确率 -->
-      <div class="col-12 col-md-4">
-        <q-card class="dashboard-card">
-          <q-card-section>
-            <div class="text-h6">Prediction Accuracy</div>
-            <div class="text-subtitle2 text-grey">
-              Your historical prediction accuracy
-            </div>
-          </q-card-section>
-          <q-card-section class="q-pt-none q-gutter-md">
-            <q-circular-progress
-              show-value
-              :value="userData.predictionAccuracy"
-              size="80px"
-              :thickness="0.2"
-              color="positive"
-              track-color="grey-3"
-            >
-              {{ userData.predictionAccuracy }}%
-            </q-circular-progress>
-            <q-circular-progress
-              show-value
-              :value="userData.predictionAccuracy"
-              size="80px"
-              :thickness="0.2"
-              color="positive"
-              track-color="grey-3"
-            >
-              {{ userData.predictionAccuracy }}%
-            </q-circular-progress>
-            <q-circular-progress
-              show-value
-              :value="userData.predictionAccuracy"
-              size="80px"
-              :thickness="0.2"
-              color="positive"
-              track-color="grey-3"
-            >
-              {{ userData.predictionAccuracy }}%
-            </q-circular-progress>
-          </q-card-section>
-        </q-card>
-      </div>
-    </div>
-    <div class="row q-col-gutter-sm">
-      <!-- 用户地址 -->
-      <div class="col-12 col-md-6">
-        <q-card class="dashboard-card">
-          <q-card-section>
-            <div class="text-h6">Treasury</div>
-            <div class="text-subtitle2 text-grey">ICP wallet info</div>
-            <div class="row items-center">
-              <div class="text-body1">
-                {{ userData.principal || "N/A" }}
+  <div>
+    <div class="q-gutter-md">
+      <div class="row q-col-gutter-sm">
+        <!-- 运行中的Canister -->
+        <div class="col-12 col-md-4">
+          <q-card class="dashboard-card">
+            <q-card-section>
+              <div class="text-h6">Running Canisters</div>
+              <div class="text-subtitle2 text-grey">
+                Active canisters in your account
               </div>
-              <q-icon
-                name="content_copy"
-                color="primary"
-                class="cursor-pointer"
-                @click="copyToClipboard(userData.principal)"
-              >
-                <q-tooltip>Copy address</q-tooltip>
-              </q-icon>
-            </div>
-            <div class="row items-center">
-              <div class="text-body1 text-break">
-                {{ userData.accountId || "N/A" }}
+            </q-card-section>
+            <q-card-section class="canister-list q-pt-none">
+              <q-list dense>
+                <q-item
+                  v-for="canister in userData.runningCanisters"
+                  :key="canister.id"
+                  clickable
+                >
+                  <q-item-section>
+                    <q-item-label>{{ canister.name }}</q-item-label>
+                    <q-item-label caption
+                      >Status: {{ canister.status }}</q-item-label
+                    >
+                  </q-item-section>
+                </q-item>
+                <q-item v-if="!userData.runningCanisters.length">
+                  <q-item-label>No running canisters</q-item-label>
+                </q-item>
+              </q-list>
+            </q-card-section>
+          </q-card>
+        </div>
+
+        <!-- 质押代币数量 -->
+        <div class="col-12 col-md-4">
+          <q-card class="dashboard-card">
+            <q-card-section>
+              <div class="text-h6">Staked Tokens</div>
+              <div class="text-subtitle2 text-grey">
+                ICP tokens staked for predictions
               </div>
-              <q-icon
-                name="content_copy"
-                color="primary"
-                class="cursor-pointer"
-                @click="copyToClipboard(userData.accountId)"
+            </q-card-section>
+            <q-card-section class="q-pt-none">
+              <div class="text-body1">{{ userData.stakedTokens }} ICP</div>
+              <q-chip color="primary" text-color="white" icon="lock">
+                Locked until {{ userData.stakeLockEnd }}
+              </q-chip>
+            </q-card-section>
+          </q-card>
+        </div>
+
+        <!-- 预测准确率 -->
+        <div class="col-12 col-md-4">
+          <q-card class="dashboard-card">
+            <q-card-section>
+              <div class="text-h6">Prediction Accuracy</div>
+              <div class="text-subtitle2 text-grey">
+                Your historical prediction accuracy
+              </div>
+            </q-card-section>
+            <q-card-section class="q-pt-none q-gutter-md">
+              <q-circular-progress
+                show-value
+                :value="userData.predictionAccuracy"
+                size="80px"
+                :thickness="0.2"
+                color="positive"
+                track-color="grey-3"
               >
-                <q-tooltip>Copy AccountId</q-tooltip>
-              </q-icon>
-            </div>
-            <div class="row items-center"></div>
-          </q-card-section>
-          <q-card-section class="q-pt-none q-gutter-sm row">
-            <div class="text-subtitle2 text-grey">Balance</div>
-            <q-list dense padding class="token-list q-pt-none q-mt-none">
-              <q-item v-for="(token, index) in userData.balances" :key="index">
-                <!-- 遍历已添加的token -->
-                <q-item-section avatar>
-                  <q-avatar size="40px" font-size="12px">
-                    <img :src="token.logo" />
-                  </q-avatar>
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>{{ token.name }}</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <div style="display: flex; align-items: center; gap: 8px">
-                    <q-item-label>
-                      {{ token.amount }} {{ token.symbol }}
-                    </q-item-label>
-                    <q-btn-dropdown flat round dense>
-                      <q-list dense>
-                        <q-item clickable v-close-popup>
-                          <q-item-section>
-                            <q-item-label @click="openSendDialog(token)">
-                              Send
-                            </q-item-label>
-                          </q-item-section>
-                        </q-item>
-                      </q-list>
-                    </q-btn-dropdown>
-                  </div>
-                </q-item-section>
-              </q-item>
-            </q-list>
-            <!-- 发送代币对话框 -->
-            <q-dialog v-model="showSendDialog" @hide="closeSendDialog()">
-              <q-card>
-                <q-card-section>
-                  <div class="text-h6">Send {{ selectedToken?.name }}</div>
-                </q-card-section>
-                <q-card-section>
-                  <q-input
-                    v-model="sendForm.principal"
-                    label="Recipient  Principal"
-                    filled
-                    class="q-mb-md"
-                  />
-                  <q-input
-                    v-model.number="sendForm.amount"
-                    label="amount"
-                    type="number"
-                    filled
-                    :suffix="selectedToken?.symbol"
-                    :rules="[
+                {{ userData.predictionAccuracy }}%
+              </q-circular-progress>
+              <q-circular-progress
+                show-value
+                :value="userData.predictionAccuracy"
+                size="80px"
+                :thickness="0.2"
+                color="positive"
+                track-color="grey-3"
+              >
+                {{ userData.predictionAccuracy }}%
+              </q-circular-progress>
+              <q-circular-progress
+                show-value
+                :value="userData.predictionAccuracy"
+                size="80px"
+                :thickness="0.2"
+                color="positive"
+                track-color="grey-3"
+              >
+                {{ userData.predictionAccuracy }}%
+              </q-circular-progress>
+            </q-card-section>
+          </q-card>
+        </div>
+      </div>
+      <div class="row q-col-gutter-sm">
+        <!-- 用户地址 -->
+        <div class="col-12 col-md-6">
+          <q-card class="dashboard-card">
+            <q-card-section>
+              <div class="text-h6">Treasury</div>
+              <div class="text-subtitle2 text-grey">ICP wallet info</div>
+              <div class="row items-center">
+                <div class="text-body1">
+                  {{ userData.principal || "N/A" }}
+                </div>
+                <q-icon
+                  name="content_copy"
+                  color="primary"
+                  class="cursor-pointer"
+                  @click="copyToClipboard(userData.principal)"
+                >
+                  <q-tooltip>Copy address</q-tooltip>
+                </q-icon>
+              </div>
+              <div class="row items-center">
+                <div class="text-body1 text-break">
+                  {{ userData.accountId || "N/A" }}
+                </div>
+                <q-icon
+                  name="content_copy"
+                  color="primary"
+                  class="cursor-pointer"
+                  @click="copyToClipboard(userData.accountId)"
+                >
+                  <q-tooltip>Copy AccountId</q-tooltip>
+                </q-icon>
+              </div>
+              <div class="row items-center"></div>
+            </q-card-section>
+            <q-card-section class="q-pt-none q-gutter-sm row">
+              <div class="text-subtitle2 text-grey">Balance</div>
+              <q-list dense padding class="token-list q-pt-none q-mt-none">
+                <q-item
+                  v-for="(token, index) in userData.balances"
+                  :key="index"
+                >
+                  <!-- 遍历已添加的token -->
+                  <q-item-section avatar>
+                    <q-avatar size="40px" font-size="12px">
+                      <img :src="token.logo" />
+                    </q-avatar>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>{{ token.name }}</q-item-label>
+                  </q-item-section>
+                  <q-item-section side>
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <q-item-label>
+                        {{ token.amount }} {{ token.symbol }}
+                      </q-item-label>
+                      <q-btn-dropdown flat round dense>
+                        <q-list dense>
+                          <q-item clickable v-close-popup>
+                            <q-item-section>
+                              <q-item-label @click="openSendDialog(token)">
+                                Send
+                              </q-item-label>
+                            </q-item-section>
+                          </q-item>
+                        </q-list>
+                      </q-btn-dropdown>
+                    </div>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+              <!-- 发送代币对话框 -->
+              <q-dialog v-model="showSendDialog" @hide="closeSendDialog()">
+                <q-card>
+                  <q-card-section>
+                    <div class="text-h6">Send {{ selectedToken?.name }}</div>
+                  </q-card-section>
+                  <q-card-section>
+                    <q-input
+                      v-model="sendForm.principal"
+                      label="Recipient  Principal"
+                      filled
+                      class="q-mb-md"
+                    />
+                    <q-input
+                      v-model.number="sendForm.amount"
+                      label="amount"
+                      type="number"
+                      filled
+                      :suffix="selectedToken?.symbol"
+                      :rules="[
                 (val: number) => val > 0 && val <= (selectedToken?.amount ?? 0) || 'ineffective balance'
               ]"
-                  />
-                </q-card-section>
-                <q-card-actions align="right">
-                  <q-btn flat label="cancel" v-close-popup />
-                  <q-btn
-                    color="primary"
-                    label="confirm"
-                    @click="sendToken"
-                    :disable="!sendForm.principal || sendForm.amount == null"
-                  />
-                </q-card-actions>
-              </q-card>
-            </q-dialog>
-          </q-card-section>
-        </q-card>
+                    />
+                  </q-card-section>
+                  <q-card-actions align="right">
+                    <q-btn flat label="cancel" v-close-popup />
+                    <q-btn
+                      color="primary"
+                      label="confirm"
+                      @click="sendToken"
+                      :disable="!sendForm.principal || sendForm.amount == null"
+                    />
+                  </q-card-actions>
+                </q-card>
+              </q-dialog>
+            </q-card-section>
+          </q-card>
+        </div>
+
+        <!-- 钱包Cycles余额 -->
+        <div class="col-12 col-md-6">
+          <q-card class="dashboard-card">
+            <q-card-section>
+              <div class="text-h6">Cycles Balance</div>
+              <div class="text-subtitle2 text-grey">
+                Canister consumes cycles as fuel every day
+              </div>
+            </q-card-section>
+            <q-card-section class="q-pt-none">
+              <div class="text-body1">{{ userData.cycles.amount }} Cycles</div>
+              <div class="text-body1">0.00000T / Day</div>
+              <q-linear-progress
+                stripe
+                :value="cyclesPercentage / 100"
+                style="height: 10px"
+                color="positive"
+              />
+            </q-card-section>
+          </q-card>
+        </div>
+      </div>
+      <div class="row q-col-gutter-sm">
+        <!-- 预测收益 -->
+        <div class="col-12 col-md-4">
+          <q-card class="dashboard-card">
+            <q-card-section>
+              <div class="text-h6">Prediction Earnings</div>
+              <div class="text-subtitle2 text-grey">
+                Earnings from successful predictions
+              </div>
+            </q-card-section>
+            <q-card-section class="q-pt-none">
+              <div class="text-body1">
+                {{ userData.predictionEarnings }} ICP
+              </div>
+              <q-btn
+                flat
+                color="positive"
+                label="View Trend"
+                @click="showEarningsTrend"
+              />
+            </q-card-section>
+          </q-card>
+        </div>
+
+        <!-- 活跃预测池 -->
+        <div class="col-12 col-md-4">
+          <q-card class="dashboard-card">
+            <q-card-section>
+              <div class="text-h6">Active Prediction Pools</div>
+              <div class="text-subtitle2 text-grey">
+                Ongoing prediction markets
+              </div>
+            </q-card-section>
+            <q-card-section class="q-pt-none canister-list">
+              <q-list dense>
+                <q-item
+                  v-for="pool in userData.activePools"
+                  :key="pool.id"
+                  clickable
+                >
+                  <q-item-section>
+                    <q-item-label>{{ pool.asset }}</q-item-label>
+                    <q-item-label caption>Cycle: {{ pool.cycle }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+                <q-item v-if="!userData.activePools.length">
+                  <q-item-label>No active pools</q-item-label>
+                </q-item>
+              </q-list>
+            </q-card-section>
+          </q-card>
+        </div>
+
+        <!-- 排行榜排名 -->
+        <div class="col-12 col-md-4">
+          <q-card class="dashboard-card">
+            <q-card-section>
+              <div class="text-h6">Leaderboard Rank</div>
+              <div class="text-subtitle2 text-grey">
+                Your rank in prediction market
+              </div>
+            </q-card-section>
+            <q-card-section class="q-pt-none">
+              <div class="text-body1">Rank #{{ userData.leaderboardRank }}</div>
+              <q-icon
+                :name="
+                  userData.rankTrend === 'up'
+                    ? 'arrow_upward'
+                    : 'arrow_downward'
+                "
+                :color="userData.rankTrend === 'up' ? 'positive' : 'negative'"
+                size="sm"
+              />
+            </q-card-section>
+          </q-card>
+        </div>
       </div>
 
-      <!-- 钱包Cycles余额 -->
-      <div class="col-12 col-md-6">
-        <q-card class="dashboard-card">
-          <q-card-section>
-            <div class="text-h6">Cycles Balance</div>
-            <div class="text-subtitle2 text-grey">
-              Canister consumes cycles as fuel every day
-            </div>
-          </q-card-section>
-          <q-card-section class="q-pt-none">
-            <div class="text-body1">{{ userData.cycles.amount }} Cycles</div>
-            <div class="text-body1">0.00000T / Day</div>
-            <q-linear-progress
-              stripe
-              :value="cyclesPercentage / 100"
-              style="height: 10px"
-              color="positive"
-            />
-          </q-card-section>
-        </q-card>
+      <div class="text-h5 q-pt-md">Quick Start</div>
+      <q-separator />
+      <div>
+        <q-list bordered separator>
+          <q-item
+            v-for="item in quickStartItems"
+            :key="item.id"
+            clickable
+            v-ripple
+            @click="handleItemClick(item)"
+          >
+            <q-item-section avatar>
+              <q-icon :name="item.icon" color="primary" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label class="text-h6">{{ item.title }}</q-item-label>
+              <q-item-label caption>{{ item.description }}</q-item-label>
+            </q-item-section>
+            <q-item-section side>
+              <q-badge :color="item.statusColor" :label="item.status" />
+            </q-item-section>
+          </q-item>
+        </q-list>
       </div>
-    </div>
-    <div class="row q-col-gutter-sm">
-      <!-- 预测收益 -->
-      <div class="col-12 col-md-4">
-        <q-card class="dashboard-card">
-          <q-card-section>
-            <div class="text-h6">Prediction Earnings</div>
-            <div class="text-subtitle2 text-grey">
-              Earnings from successful predictions
-            </div>
-          </q-card-section>
-          <q-card-section class="q-pt-none">
-            <div class="text-body1">{{ userData.predictionEarnings }} ICP</div>
-            <q-btn
-              flat
-              color="positive"
-              label="View Trend"
-              @click="showEarningsTrend"
-            />
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <!-- 活跃预测池 -->
-      <div class="col-12 col-md-4">
-        <q-card class="dashboard-card">
-          <q-card-section>
-            <div class="text-h6">Active Prediction Pools</div>
-            <div class="text-subtitle2 text-grey">
-              Ongoing prediction markets
-            </div>
-          </q-card-section>
-          <q-card-section class="q-pt-none canister-list">
-            <q-list dense>
-              <q-item
-                v-for="pool in userData.activePools"
-                :key="pool.id"
-                clickable
-              >
-                <q-item-section>
-                  <q-item-label>{{ pool.asset }}</q-item-label>
-                  <q-item-label caption>Cycle: {{ pool.cycle }}</q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item v-if="!userData.activePools.length">
-                <q-item-label>No active pools</q-item-label>
-              </q-item>
-            </q-list>
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <!-- 排行榜排名 -->
-      <div class="col-12 col-md-4">
-        <q-card class="dashboard-card">
-          <q-card-section>
-            <div class="text-h6">Leaderboard Rank</div>
-            <div class="text-subtitle2 text-grey">
-              Your rank in prediction market
-            </div>
-          </q-card-section>
-          <q-card-section class="q-pt-none">
-            <div class="text-body1">Rank #{{ userData.leaderboardRank }}</div>
-            <q-icon
-              :name="
-                userData.rankTrend === 'up' ? 'arrow_upward' : 'arrow_downward'
-              "
-              :color="userData.rankTrend === 'up' ? 'positive' : 'negative'"
-              size="sm"
-            />
-          </q-card-section>
-        </q-card>
-      </div>
-    </div>
-
-    <div class="text-h5 q-pt-md">Quick Start</div>
-    <q-separator />
-    <div>
-      <q-list bordered separator>
-        <q-item
-          v-for="item in quickStartItems"
-          :key="item.id"
-          clickable
-          v-ripple
-          @click="handleItemClick(item)"
-        >
-          <q-item-section avatar>
-            <q-icon :name="item.icon" color="primary" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label class="text-h6">{{ item.title }}</q-item-label>
-            <q-item-label caption>{{ item.description }}</q-item-label>
-          </q-item-section>
-          <q-item-section side>
-            <q-badge :color="item.statusColor" :label="item.status" />
-          </q-item-section>
-        </q-item>
-      </q-list>
     </div>
   </div>
 </template>

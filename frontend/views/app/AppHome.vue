@@ -51,7 +51,7 @@
                 <q-item
                   clickable
                   v-close-popup
-                  @click="item.click ? $options[item.click]() : null"
+                  @click="item.click ? item.click() : null"
                 >
                   <q-item-section avatar>
                     <q-icon :name="item.icon" />
@@ -175,7 +175,7 @@
                     <q-item
                       clickable
                       v-close-popup
-                      @click="item.click ? $options[item.click]() : null"
+                      @click="item.click ? item.click() : null"
                     >
                       <q-item-section avatar>
                         <q-icon :name="item.icon" />
@@ -205,7 +205,7 @@
           minHeight: $q.screen.lt.md ? '100vh' : 'calc(100vh - 16px)',
         }"
       >
-        <router-view />
+        <router-view class="container" />
       </q-page>
     </q-page-container>
   </q-layout>
@@ -235,26 +235,6 @@ const menuItems = [
   { icon: "analytics", label: "Dashboard", route: "/app" },
   { icon: "memory", label: "Canisters", route: "/app/canisters" },
   // { icon: "settings", label: "Settings", route: "/app/settings" },
-];
-
-// 定义用户菜单项数据
-const userMenuItems = [
-  // {
-  //   label: "Profile",
-  //   to: "/profile",
-  //   icon: "person",
-  // },
-  // {
-  //   label: "Settings",
-  //   to: "/app/settings",
-  //   icon: "settings",
-  //   separator: true, // 仅在此项后添加分隔线
-  // },
-  {
-    label: "Logout",
-    click: "onLogOut",
-    icon: "logout",
-  },
 ];
 
 const drawerOpen = ref(false);
@@ -344,6 +324,26 @@ const backgroundColor = computed<string>(() => {
 const showUser = computed<string>(() => {
   return showUsername("", principal.value);
 });
+
+// 定义用户菜单项数据
+const userMenuItems = [
+  // {
+  //   label: "Profile",
+  //   to: "/profile",
+  //   icon: "person",
+  // },
+  // {
+  //   label: "Settings",
+  //   to: "/app/settings",
+  //   icon: "settings",
+  //   separator: true, // 仅在此项后添加分隔线
+  // },
+  {
+    label: "Logout",
+    click: onLogOut,
+    icon: "logout",
+  },
+];
 </script>
 
 <style lang="scss" scoped>
