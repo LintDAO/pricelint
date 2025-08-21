@@ -222,8 +222,9 @@ import {
   showAvatarName,
   showUsername,
 } from "@/utils/avatars";
-import { showMessageError, showMessageSuccess } from "@/utils/message";
-import { copyToClipboard, useQuasar } from "quasar";
+import { copyText } from "@/utils/common";
+import { showMessageError } from "@/utils/message";
+import { useQuasar } from "quasar";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
@@ -284,13 +285,7 @@ const getUserInfoFromServices = () => {
 };
 
 const copyPid = () => {
-  copyToClipboard(principal.value)
-    .then(() => {
-      showMessageSuccess(`copy ${principal.value} success`);
-    })
-    .catch(() => {
-      showMessageError("copy failed");
-    });
+  copyText(principal.value);
 };
 
 const onLogOut = async () => {

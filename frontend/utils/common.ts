@@ -1,5 +1,7 @@
 import { AccountIdentifier } from "@dfinity/ledger-icp";
 import { Principal } from "@dfinity/principal";
+import { copyToClipboard } from "quasar";
+import { showMessageError, showMessageSuccess } from "./message";
 
 /**
  * 将带精度的值转换为实际代币值。
@@ -61,4 +63,14 @@ export function checkDomain() {
     const newUrl = window.location.href.replace(oldDomain, newDomain);
     window.location.replace(newUrl);
   }
+}
+
+export function copyText(text: string) {
+  copyToClipboard(text)
+    .then(() => {
+      showMessageSuccess(`copy ${text} success`);
+    })
+    .catch(() => {
+      showMessageError("copy failed");
+    });
 }

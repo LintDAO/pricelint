@@ -17,6 +17,19 @@
           <q-btn color="primary" @click="createNew()"> New Canister</q-btn>
         </div>
       </template>
+      <template v-slot:body-cell-canisterId="props">
+        <q-td :props="props" class="text-grey-7">
+          <span>{{ showUsername("", props.row.canisterId) }}</span>
+          <q-icon
+            name="content_copy"
+            size="14px"
+            class="q-ml-sm cursor-pointer"
+            @click="copyText(props.row.canisterId)"
+          >
+            <q-tooltip>Copy Canister ID</q-tooltip>
+          </q-icon>
+        </q-td>
+      </template>
       <!-- Operation column -->
       <template v-slot:body-cell-actions="props">
         <q-td :props="props" class="q-gutter-xs">
@@ -61,7 +74,7 @@
               </q-item>
               <!-- 将canisterid从已记录的列表中移除，不是删除canister -->
               <q-item
-                v-if="props.row.status === 'unknown'"
+                v-if="props.row.status !== 'unknown'"
                 clickable
                 v-close-popup
                 @click="showRemoveDialog(props.row.canisterId)"
@@ -107,7 +120,8 @@
           <div class="text-h6">Import Canister ID</div>
         </q-card-section>
         <q-card-section class="q-py-none">
-          Only canister controller can import the canister id.
+          Import a canister currently controlled by the principal. Only canister
+          controller can import the canister id.
         </q-card-section>
         <q-card-section>
           <q-input
@@ -152,7 +166,8 @@ import {
 } from "@/api/canisters";
 import TopUpCycles from "@/components/TopUpCycles.vue";
 import type { TableColumn } from "@/types/model";
-import { fromTokenAmount, isPrincipal } from "@/utils/common";
+import { showUsername } from "@/utils/avatars";
+import { copyText, fromTokenAmount, isPrincipal } from "@/utils/common";
 import { showMessageError } from "@/utils/message";
 import { useQuasar } from "quasar";
 import { onMounted, ref } from "vue";
@@ -241,7 +256,6 @@ const wasmFile = ref<File | null>(null);
 
 // 初始化时获取数据
 onMounted(async () => {
-  userCanisterIds.value = await getCanisterList();
   await getCanisterInfo();
 });
 
@@ -252,6 +266,7 @@ const createNew = async () => {
 
 const getCanisterInfo = async () => {
   loading.value = true;
+  userCanisterIds.value = await getCanisterList();
   canisterData.value = [];
 
   for (const canisterId of userCanisterIds.value) {
@@ -388,6 +403,7 @@ const importConfirm = async () => {
   const success = await importCanisterList(importCanisterId.value);
   importLoading.value = false;
   if (success) {
+    console.log("success");
     importDialogVisible.value = false;
     getCanisterInfo(); // Refresh data
   }

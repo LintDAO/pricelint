@@ -45,6 +45,13 @@ a:hover {
 .q-table__title {
   font-weight: 600 !important;
 }
+.q-table__middle {
+  margin-top: 24px;
+}
+.q-table thead th {
+  color: #6b7280; /* Tailwind 的 text-gray-500 颜色 */
+  font-size: 13px !important; /* 字体大小 */
+}
 .q-item__label {
   word-wrap: break-word;
 }
