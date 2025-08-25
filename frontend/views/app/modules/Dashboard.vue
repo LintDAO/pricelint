@@ -1,101 +1,40 @@
 <template>
   <div>
     <div class="q-gutter-md">
-      <div class="row q-col-gutter-sm">
-        <!-- 运行中的Canister -->
-        <div class="col-12 col-md-4">
-          <q-card class="dashboard-card">
-            <q-card-section>
-              <div class="text-h6">Running Canisters</div>
-              <div class="text-subtitle2 text-grey">
-                Active canisters in your account
+      <div class="overview-container">
+        <div class="text-h6 text-grey-8 q-mb-md">Overview</div>
+        <div class="row q-col-gutter-md">
+          <div
+            v-for="item in overviewData"
+            :key="item.title"
+            class="col-12 col-sm-6 col-md-3"
+          >
+            <div class="overview-item">
+              <q-separator class="q-mb-lg" />
+              <div class="text-subtitle2 text-grey-7">{{ item.title }}</div>
+              <div class="text-h5 text-weight-bold q-my-sm">
+                {{ item.value }}
               </div>
-            </q-card-section>
-            <q-card-section class="canister-list q-pt-none">
-              <q-list dense>
-                <q-item
-                  v-for="canister in userData.runningCanisters"
-                  :key="canister.id"
-                  clickable
+              <div class="change-text">
+                <span
+                  class="change-value"
+                  :class="
+                    item.change >= 0
+                      ? 'text-positive bg-positive-1'
+                      : 'text-negative bg-negative-1'
+                  "
                 >
-                  <q-item-section>
-                    <q-item-label>{{ canister.name }}</q-item-label>
-                    <q-item-label caption
-                      >Status: {{ canister.status }}</q-item-label
-                    >
-                  </q-item-section>
-                </q-item>
-                <q-item v-if="!userData.runningCanisters.length">
-                  <q-item-label>No running canisters</q-item-label>
-                </q-item>
-              </q-list>
-            </q-card-section>
-          </q-card>
-        </div>
-
-        <!-- 质押代币数量 -->
-        <div class="col-12 col-md-4">
-          <q-card class="dashboard-card">
-            <q-card-section>
-              <div class="text-h6">Staked Tokens</div>
-              <div class="text-subtitle2 text-grey">
-                ICP tokens staked for predictions
+                  {{ item.change >= 0 ? "+" : "" }}{{ item.change }}%
+                </span>
+                <span class="text-grey-7 q-ml-sm">from last week</span>
               </div>
-            </q-card-section>
-            <q-card-section class="q-pt-none">
-              <div class="text-body1">{{ userData.stakedTokens }} ICP</div>
-              <q-chip color="primary" text-color="white" icon="lock">
-                Locked until {{ userData.stakeLockEnd }}
-              </q-chip>
-            </q-card-section>
-          </q-card>
-        </div>
-
-        <!-- 预测准确率 -->
-        <div class="col-12 col-md-4">
-          <q-card class="dashboard-card">
-            <q-card-section>
-              <div class="text-h6">Prediction Accuracy</div>
-              <div class="text-subtitle2 text-grey">
-                Your historical prediction accuracy
-              </div>
-            </q-card-section>
-            <q-card-section class="q-pt-none q-gutter-md">
-              <q-circular-progress
-                show-value
-                :value="userData.predictionAccuracy"
-                size="80px"
-                :thickness="0.2"
-                color="positive"
-                track-color="grey-3"
-              >
-                {{ userData.predictionAccuracy }}%
-              </q-circular-progress>
-              <q-circular-progress
-                show-value
-                :value="userData.predictionAccuracy"
-                size="80px"
-                :thickness="0.2"
-                color="positive"
-                track-color="grey-3"
-              >
-                {{ userData.predictionAccuracy }}%
-              </q-circular-progress>
-              <q-circular-progress
-                show-value
-                :value="userData.predictionAccuracy"
-                size="80px"
-                :thickness="0.2"
-                color="positive"
-                track-color="grey-3"
-              >
-                {{ userData.predictionAccuracy }}%
-              </q-circular-progress>
-            </q-card-section>
-          </q-card>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="row q-col-gutter-sm">
+      <div class="text-h6 text-grey-8 q-pt-xl">Data</div>
+      <q-separator />
+      <div class="card-row row q-col-gutter-sm">
         <!-- 用户地址 -->
         <div class="col-12 col-md-6">
           <q-card class="dashboard-card">
@@ -227,7 +166,7 @@
           </q-card>
         </div>
       </div>
-      <div class="row q-col-gutter-sm">
+      <div class="card-row row q-col-gutter-sm">
         <!-- 预测收益 -->
         <div class="col-12 col-md-4">
           <q-card class="dashboard-card">
@@ -305,7 +244,7 @@
         </div>
       </div>
 
-      <div class="text-h5 q-pt-md">Quick Start</div>
+      <div class="text-h6 text-grey-8 q-pt-md">Quick Start</div>
       <q-separator />
       <div>
         <q-list bordered separator>
@@ -371,18 +310,28 @@ onMounted(async () => {
   loading.value = false;
 });
 
-const getUserInfo = () => {
-  userData.value.principal = userStore.principal;
-  userData.value.accountId = p2a(userStore.principal);
-  getICPBalance(userData.value.accountId).then((res) => {
-    userData.value.balances.icp.amount = res;
-  });
-  getCyclesBalance(userData.value.principal).then((res) => {
-    userData.value.cycles.amount = Number(res);
-  });
-};
-
-const sendToken = () => {};
+const overviewData = [
+  {
+    title: "Running Canisters",
+    value: "12",
+    change: 4.5,
+  },
+  {
+    title: "Profit",
+    value: "$455",
+    change: -0.5,
+  },
+  {
+    title: "Prediction Accuracy",
+    value: "51%",
+    change: 4.5,
+  },
+  {
+    title: "Cycles Burn",
+    value: "20 T",
+    change: 21.2,
+  },
+];
 
 // 模拟 Quick Start 数据
 const quickStartItems = ref([
@@ -454,6 +403,19 @@ const userData = ref({
   leaderboardRank: 42,
   rankTrend: "up",
 });
+
+const getUserInfo = () => {
+  userData.value.principal = userStore.principal;
+  userData.value.accountId = p2a(userStore.principal);
+  getICPBalance(userData.value.accountId).then((res) => {
+    userData.value.balances.icp.amount = res;
+  });
+  getCyclesBalance(userData.value.principal).then((res) => {
+    userData.value.cycles.amount = Number(res);
+  });
+};
+
+const sendToken = () => {};
 
 // 计算 Cycles 余额进度条百分比（假设最大值为 1000 万）
 const cyclesPercentage = computed(() =>
@@ -533,5 +495,8 @@ const showEarningsTrend = () => {
   .q-item {
     padding-left: 0;
   }
+}
+.card-row {
+  margin-left: 8px;
 }
 </style>
