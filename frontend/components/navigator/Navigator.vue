@@ -131,31 +131,6 @@ const scrollToTop = () => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
-const scrollToPredictions = () => {
-  const element = document.querySelector(".predictions-table");
-  if (element) {
-    element.scrollIntoView({ behavior: "smooth" });
-  }
-};
-
-const scrollToFeatures = () => {
-  const element = document.querySelector(".features-section");
-  if (element) {
-    element.scrollIntoView({ behavior: "smooth" });
-  }
-};
-
-const mobileNavigate = (section: string) => {
-  showMobileMenu.value = false;
-  setTimeout(() => {
-    if (section === "predictions") {
-      scrollToPredictions();
-    } else if (section === "features") {
-      scrollToFeatures();
-    }
-  }, 300);
-};
-
 onMounted(() => {
   window.addEventListener("scroll", handleScroll);
 });

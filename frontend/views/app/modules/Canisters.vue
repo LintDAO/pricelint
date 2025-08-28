@@ -11,10 +11,12 @@
     >
       <template v-slot:top-right>
         <div class="q-gutter-md">
-          <q-btn color="primary" @click="importDialogVisible = true">
+          <q-btn color="primary" @click="importDialogVisible = true" no-caps>
             Import Canister
           </q-btn>
-          <q-btn color="primary" @click="createNew()"> New Canister</q-btn>
+          <q-btn color="primary" @click="createNew()" no-caps>
+            New Canister</q-btn
+          >
         </div>
       </template>
       <template v-slot:body-cell-canisterId="props">
@@ -33,34 +35,21 @@
       <!-- Operation column -->
       <template v-slot:body-cell-actions="props">
         <q-td :props="props" class="q-gutter-xs">
-          <q-btn
-            v-if="props.row.status === 'stopped'"
-            color="primary"
-            label="Start"
-            :loading="loadingActions[props.row.canisterId]?.start"
-            @click="startThisCanister(props.row.canisterId)"
-          />
-          <q-btn
-            v-if="props.row.status === 'running'"
-            color="negative"
-            label="Stop"
-            :loading="loadingActions[props.row.canisterId]?.stop"
-            @click="stopThisCanister(props.row.canisterId)"
-          />
           <q-btn-dropdown
             split
             color="secondary"
-            :label="
-              props.row.module_hash.length === 0
-                ? 'Install Code'
-                : 'Configuration'
+            :label="props.row.module_hash.length === 0 ? 'Init' : 'Edit'"
+            :loading="
+              loadingActions[props.row.canisterId]?.install ||
+              loadingActions[props.row.canisterId]?.start ||
+              loadingActions[props.row.canisterId]?.stop
             "
-            :loading="loadingActions[props.row.canisterId]?.install"
             @click="
               props.row.module_hash.length === 0
                 ? installCanisterCode(props.row.canisterId)
-                : openConfigurationDialog(props.row.canisterId)
+                : toCanisterDetail(props.row.canisterId)
             "
+            no-caps
           >
             <q-list>
               <q-item
@@ -70,6 +59,29 @@
               >
                 <q-item-section>
                   <q-item-label>Top-up Cycles</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-separator />
+              <!-- Start 选项 -->
+              <q-item
+                v-if="props.row.status === 'stopped'"
+                clickable
+                v-close-popup
+                @click="startThisCanister(props.row.canisterId)"
+              >
+                <q-item-section>
+                  <q-item-label>Start Canister</q-item-label>
+                </q-item-section>
+              </q-item>
+              <!-- Stop 选项 -->
+              <q-item
+                v-if="props.row.status === 'running'"
+                clickable
+                v-close-popup
+                @click="stopThisCanister(props.row.canisterId)"
+              >
+                <q-item-section>
+                  <q-item-label>Stop Canister</q-item-label>
                 </q-item-section>
               </q-item>
               <!-- 将canisterid从已记录的列表中移除，不是删除canister -->
@@ -171,8 +183,10 @@ import { copyText, fromTokenAmount, isPrincipal } from "@/utils/common";
 import { showMessageError } from "@/utils/message";
 import { useQuasar } from "quasar";
 import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 
 const $q = useQuasar();
+const router = useRouter();
 const topUpDialog = ref(false);
 const importDialogVisible = ref(false);
 const operation = ref<"createCanister" | "topUp">("createCanister");
@@ -377,11 +391,11 @@ const showTopupCycles = (canisterId: string) => {
   selectedCanisterId.value = canisterId;
 };
 
-// Open install code dialog
-const openConfigurationDialog = (canisterId: string) => {
-  selectedCanisterId.value = canisterId;
-  wasmFile.value = null;
-  showConfigurationDialog.value = true;
+// jump to detail page
+const toCanisterDetail = (canisterId: string) => {
+  router.push({
+    path: `/app/canisters/${canisterId}`,
+  });
 };
 
 const useRecommend = async () => {

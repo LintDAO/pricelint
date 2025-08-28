@@ -3,6 +3,7 @@ import { setCurrentIdentity } from "@/api/canister_pool";
 import App from "@/views/app/AppHome.vue";
 import Canisters from "@/views/app/modules/Canisters.vue";
 import DashBoard from "@/views/app/modules/Dashboard.vue";
+import CanisterDetail from "@/views/app/modules/CanisterDetail.vue";
 import Home from "@/views/home/Home.vue";
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import errors from "./modules/errors";
@@ -35,6 +36,11 @@ const routes: Array<RouteRecordRaw> = [
     children: [
       { name: "App", path: "", component: DashBoard },
       { name: "Canisters", path: "canisters", component: Canisters },
+      {
+        name: "CanisterDetail",
+        path: "canisters/:principalId",
+        component: CanisterDetail, // 假设你有一个 CanisterDetail 组件
+      },
     ],
   },
   ...errors,

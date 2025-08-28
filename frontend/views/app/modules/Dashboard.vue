@@ -11,7 +11,7 @@
           >
             <div class="overview-item">
               <q-separator class="q-mb-lg" />
-              <div class="text-subtitle2 text-grey-7">{{ item.title }}</div>
+              <div class="text-subtitle2">{{ item.title }}</div>
               <div class="text-h5 text-weight-bold q-my-sm">
                 {{ item.value }}
               </div>
@@ -41,8 +41,9 @@
             <q-card-section>
               <div class="text-h6">Treasury</div>
               <div class="text-subtitle2 text-grey">ICP wallet info</div>
+              <div class="text-caption text-grey">Principal Id</div>
               <div class="row items-center">
-                <div class="text-body1">
+                <div class="text-body2">
                   {{ userData.principal || "N/A" }}
                 </div>
                 <q-icon
@@ -55,7 +56,8 @@
                 </q-icon>
               </div>
               <div class="row items-center">
-                <div class="text-body1 text-break">
+                <div class="text-caption text-grey">Account Id</div>
+                <div class="text-body2 text-break">
                   {{ userData.accountId || "N/A" }}
                 </div>
                 <q-icon
