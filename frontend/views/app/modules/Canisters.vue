@@ -115,7 +115,7 @@
           <q-btn
             label="Use Recommend"
             color="primary"
-            @click="useRecommend()"
+            @click="useRecommendParam()"
             :loading="loadingActions[selectedCanisterId]?.use"
           />
         </q-card-actions>
@@ -398,7 +398,7 @@ const toCanisterDetail = (canisterId: string) => {
   });
 };
 
-const useRecommend = async () => {
+const useRecommendParam = async () => {
   const canisterId = selectedCanisterId.value;
   loadingActions.value[selectedCanisterId.value] = {
     ...loadingActions.value[selectedCanisterId.value],

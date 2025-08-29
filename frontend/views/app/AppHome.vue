@@ -205,6 +205,20 @@
           minHeight: $q.screen.lt.md ? '100vh' : 'calc(100vh - 16px)',
         }"
       >
+        <!-- 添加面包屑，只有在匹配的详情页路径下显示，使用绝对定位不挤占空间 -->
+        <q-breadcrumbs
+          v-if="showBreadcrumbs"
+          class="absolute-top-left q-pl-md q-pt-sm"
+          style="z-index: 1"
+        >
+          <q-breadcrumbs-el
+            v-for="(item, index) in breadcrumbItems"
+            :key="index"
+            :label="item.label"
+            :to="item.to"
+          />
+          <!-- 假设从路由参数获取 ID -->
+        </q-breadcrumbs>
         <router-view class="container" />
       </q-page>
     </q-page-container>
@@ -226,11 +240,12 @@ import { copyText } from "@/utils/common";
 import { showMessageError } from "@/utils/message";
 import { useQuasar } from "quasar";
 import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 const $q = useQuasar();
 const userStore = useUserStore();
 const router = useRouter();
+const route = useRoute();
 
 const menuItems = [
   { icon: "analytics", label: "Dashboard", route: "/app" },
@@ -249,6 +264,36 @@ const username = ref();
 
 onMounted(() => {
   doInitAuth();
+});
+
+const showBreadcrumbs = computed(() => {
+  // 只在路径以 /app/canisters/ 开头且有更多级（如 ID 或子路径）时显示
+  return (
+    route.path.startsWith("/app/canisters/") && route.path.split("/").length > 3
+  );
+});
+
+const breadcrumbItems = computed(() => {
+  const parts = route.path.split("/").filter((part) => part); // 过滤空部分
+  const items: { label: string; to: string }[] = [];
+  let currentPath: string = "";
+
+  parts.forEach((part, index) => {
+    if (index === 0 && part === "app") {
+      // 从 App 开始
+      items.push({ label: "App", to: "/app" });
+      currentPath = "/app";
+    } else if (index > 0) {
+      currentPath += "/" + part;
+      // 新逻辑：如果包含数字或连字符（可能是 ID），保持原样；否则首字母大写
+      const label = /[0-9-]/.test(part)
+        ? part
+        : part.charAt(0).toUpperCase() + part.slice(1);
+      items.push({ label, to: currentPath });
+    }
+  });
+
+  return items;
 });
 
 const doInitAuth = () => {
