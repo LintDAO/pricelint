@@ -1,3 +1,32 @@
+type Account = record { owner : principal; subaccount : opt blob };
+type Approve = record {
+  fee : opt nat;
+  from : Account;
+  memo : opt blob;
+  created_at_time : opt nat64;
+  amount : nat;
+  expected_allowance : opt nat;
+  expires_at : opt nat64;
+  spender : Account;
+};
+type ArchivedRange = record {
+  callback : func (GetBlocksRequest) -> (BlockRange) query;
+  start : nat;
+  length : nat;
+};
+type ArchivedRange_1 = record {
+  callback : func (GetBlocksRequest) -> (TransactionRange) query;
+  start : nat;
+  length : nat;
+};
+type BlockRange = record { blocks : vec Value };
+type Burn = record {
+  from : Account;
+  memo : opt blob;
+  created_at_time : opt nat64;
+  amount : nat;
+  spender : opt Account;
+};
 type DurationRange = variant {
   Microseconds;
   Minutes;
@@ -6,6 +35,30 @@ type DurationRange = variant {
   Milliseconds;
   Hours;
   Nanoseconds;
+};
+type GetBlocksRequest = record { start : nat; length : nat };
+type GetBlocksResponse = record {
+  certificate : opt blob;
+  first_index : nat;
+  blocks : vec Value;
+  chain_length : nat64;
+  archived_blocks : vec ArchivedRange;
+};
+type GetTransactionsResponse = record {
+  first_index : nat;
+  log_length : nat;
+  transactions : vec Transaction;
+  archived_transactions : vec ArchivedRange_1;
+};
+type ICRC2AllowanceResponse = record {
+  allowance : nat;
+  expires_at : opt nat64;
+};
+type Mint = record {
+  to : Account;
+  memo : opt blob;
+  created_at_time : opt nat64;
+  amount : nat;
 };
 type Pred = record {
   up : float64;
@@ -38,18 +91,74 @@ type PredictorView = record {
   create_time : nat64;
   accuracy : float64;
 };
+type PriceData = record {
+  low : float32;
+  high : float32;
+  close : float32;
+  open : float32;
+  volume : float32;
+  price_diff : float32;
+};
 type Result = variant { Ok : WasmFile; Err : text };
-type Result_1 = variant { Ok : text; Err : text };
-type Result_2 = variant { Ok : vec Predictor; Err : text };
-type Result_3 = variant { Ok : vec WasmFile; Err : text };
-type Result_4 = variant { Ok : Predictor; Err : text };
-type Result_5 = variant { Ok : PredictorView; Err : text };
-type Result_6 = variant { Ok : User; Err : text };
+type Result_1 = variant { Ok : GetBlocksResponse; Err : text };
+type Result_10 = variant { Ok; Err : text };
+type Result_11 = variant { Ok : User; Err : text };
+type Result_2 = variant { Ok : text; Err : text };
+type Result_3 = variant { Ok : vec Predictor; Err : text };
+type Result_4 = variant { Ok : GetTransactionsResponse; Err : text };
+type Result_5 = variant { Ok : vec WasmFile; Err : text };
+type Result_6 = variant { Ok : nat; Err : text };
+type Result_7 = variant { Ok : ICRC2AllowanceResponse; Err : text };
+type Result_8 = variant { Ok : Predictor; Err : text };
+type Result_9 = variant { Ok : PredictorView; Err : text };
+type State = record {
+  bias : opt vec float32;
+  max_values : vec float32;
+  weights : opt vec float32;
+  prices : vec PriceData;
+  min_values : vec float32;
+};
+type Transaction = record {
+  burn : opt Burn;
+  kind : text;
+  mint : opt Mint;
+  approve : opt Approve;
+  timestamp : nat64;
+  transfer : opt Transfer;
+};
+type TransactionRange = record { transactions : vec Transaction };
+type Transfer = record {
+  to : Account;
+  fee : opt nat;
+  from : Account;
+  memo : opt blob;
+  created_at_time : opt nat64;
+  amount : nat;
+  spender : opt Account;
+};
 type User = record {
   id : text;
   owner : principal;
   name : text;
   create_time : nat64;
+};
+type Value = variant {
+  Int : int;
+  Map : vec record { text; Value };
+  Nat : nat;
+  Nat64 : nat64;
+  Blob : blob;
+  Text : text;
+  Array : Vec;
+};
+type Vec = vec variant {
+  Int : int;
+  Map : vec record { text; Value };
+  Nat : nat;
+  Nat64 : nat64;
+  Blob : blob;
+  Text : text;
+  Array : Vec;
 };
 type WasmFile = record {
   wasm_version : text;
@@ -57,16 +166,34 @@ type WasmFile = record {
   wasm_name : text;
 };
 service : () -> {
+  add_price : (PriceData) -> ();
   delete_wasm : (text, text) -> (Result);
   find_user_lists : () -> (vec User) query;
-  get_canister_info : () -> (Result_1);
-  get_predictor_vec : () -> (Result_2) query;
+  get_blocks : (GetBlocksRequest) -> (Result_1);
+  get_canister_info : () -> (Result_2);
+  get_predictor_vec : () -> (Result_3) query;
+  get_principal : () -> (principal) query;
+  get_state : () -> (State) query;
+  get_transactions : (GetBlocksRequest) -> (Result_4);
   get_wasm_bin : (text, text) -> (Result) query;
-  get_wasm_lists : () -> (Result_3) query;
-  push_user_pred : (Predictor) -> (Result_4);
-  show_predictions : () -> (Result_5) query;
+  get_wasm_lists : () -> (Result_5) query;
+  icrc1_balance_of : () -> (Result_6);
+  icrc1_transfer : (Account, nat, opt blob) -> (Result_6);
+  icrc2_allowance : (Account) -> (Result_7);
+  icrc2_approve : (nat) -> (Result_2);
+  icrc2_transfer_from : (Account, nat, opt blob) -> (Result_6);
+  minting_or_burn : (Account, nat) -> (Result_6);
+  predict : () -> (float32) query;
+  push_user_pred : (Predictor) -> (Result_8);
+  refill_random_buffer : (nat32) -> ();
+  show_predictions : () -> (Result_9) query;
+  // 质押token  累计计算
+  stake : (nat, nat64) -> (Result_10);
   test_1 : (DurationRange) -> (nat64, nat64) query;
+  train : (nat64) -> ();
+  unstake : () -> (Result_10);
+  upload_json_file : (blob) -> ();
   upload_wasm : (text, text, blob) -> (Result);
-  user_login : () -> (Result_6) query;
-  user_register : () -> (Result_6);
+  user_login : () -> (Result_11) query;
+  user_register : () -> (Result_11);
 }
