@@ -11,12 +11,12 @@ pub enum DurationRange {
     Hours,
     Days
 }
-const NANOS_PER_MICRO: u64 = 1_000;
-const NANOS_PER_MILLI: u64 = 1_000_000;
-const NANOS_PER_SEC: u64 = 1_000_000_000;
-const NANOS_PER_MINUTE: u64 = 60 * NANOS_PER_SEC;
-const NANOS_PER_HOUR: u64 = 60 * NANOS_PER_MINUTE;
-const NANOS_PER_DAY: u64 = 24 * NANOS_PER_HOUR;
+pub const NANOS_PER_MICRO: u64 = 1_000;
+pub const NANOS_PER_MILLI: u64 = 1_000_000;
+pub const NANOS_PER_SEC: u64 = 1_000_000_000;
+pub const NANOS_PER_MINUTE: u64 = 60 * NANOS_PER_SEC;
+pub const NANOS_PER_HOUR: u64 = 60 * NANOS_PER_MINUTE;
+pub const NANOS_PER_DAY: u64 = 24 * NANOS_PER_HOUR;
 
 //TODO: timezone时区问题 
 pub fn get_time_range(timestamp:u64,range: DurationRange) -> (u64, u64) {
