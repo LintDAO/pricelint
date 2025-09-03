@@ -80,3 +80,47 @@ fn get_wasm_bin(name: String, version: String) -> Result<WasmFile, String> {
 }
 
 
+pub  mod canister_list{
+    use candid::Principal;
+    use ic_cdk::caller;
+    use crate::{impl_storable, CANISTER_LIST, TEMP_MAP};
+    use crate::impl_storable::StringVec;
+    use crate::web::common::errors::BtreeMapError::GetKeyIsNotExist;
+
+    pub  struct CanisterParameter {
+        pub canister_id:Principal,
+        pub canister_name:String,
+    }
+
+    //从链上同步canister列表
+    //前端同步
+    pub  fn sync_canister(){}
+    pub fn add_canister(canister_id:String)->Result<Vec<String>, String> {
+        CANISTER_LIST.with(|map | {
+            let string_vec=map.borrow_mut().get(&caller().to_text());
+            let mut string_vec =string_vec.ok_or(GetKeyIsNotExist.to_string())?.0;
+            string_vec.push(canister_id);
+            map.borrow_mut().insert(caller().to_text(), StringVec(string_vec.clone()));
+            Ok(string_vec)
+        })
+    }
+    pub fn find_canister_list()->Result<Vec<String>, String> {
+        CANISTER_LIST.with(|map | {
+            let string_vec=map.borrow_mut().get(&caller().to_text());
+            let string_vec=string_vec.ok_or(GetKeyIsNotExist.to_string())?.0;
+            Ok(string_vec)
+        })
+    }
+
+    //仅删除canister列表中的canister  实际操作前端agent调用api完成
+    pub fn remove_canister(canister_id:String)->Result<Vec<String>, String> {
+        CANISTER_LIST.with(|map | {
+            let string_vec=map.borrow_mut().get(&caller().to_text());
+            let mut  string_vec =string_vec.ok_or(GetKeyIsNotExist.to_string())?.0;
+            string_vec.retain(|x| *x != canister_id);
+            map.borrow_mut().insert(caller().to_text(), StringVec(string_vec.clone()));
+            Ok(string_vec)
+        })
+    }
+
+}
