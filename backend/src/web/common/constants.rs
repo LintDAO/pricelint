@@ -12,3 +12,6 @@ pub const BIANCE_TICKER_API:&str="ticker";
 pub const  ADMIN_ROLE_TAG:&str="admin";
 pub const  OWNER_ROLE_TAG:&str="owner";
 
+
+pub const ICRC1_LEDGER_CANISTER_ID:&str="tx6gn-wqaaa-aaaac-qbrma-cai";
+

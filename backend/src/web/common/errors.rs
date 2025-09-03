@@ -65,3 +65,13 @@ pub enum BtreeMapError{
     
 }
 impl_error!(BtreeMapError);
+#[derive(Serialize, Deserialize, Debug)]
+pub enum StakeError{
+    TransactionIsNotExist,
+    IsNotTransferTransaction,
+    UserHasNotStake,
+    StakeAmountIsZero,
+    LockDaysIsZero,
+    LockPeriodNotEnd,
+}
+impl_error!(StakeError);
