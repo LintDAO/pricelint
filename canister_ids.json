@@ -4,5 +4,8 @@
   },
   "frontend": {
     "ic": "lcdqt-cqaaa-aaaap-an2fq-cai"
+  },
+  "icrc1_ledger_canister": {
+    "ic": "tx6gn-wqaaa-aaaac-qbrma-cai"
   }
 }
