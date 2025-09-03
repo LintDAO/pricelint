@@ -1,88 +1,11 @@
-type CanisterLogFeature = variant {
-  filterMessageByContains;
-  filterMessageByRegex;
-};
-type CanisterLogMessages = record {
-  data : vec LogMessageData;
-  lastAnalyzedMessageTimeNanos : opt nat64;
-};
-type CanisterLogMessagesInfo = record {
-  features : vec opt CanisterLogFeature;
-  lastTimeNanos : opt nat64;
-  count : nat32;
-  firstTimeNanos : opt nat64;
-};
-type CanisterLogRequest = variant {
-  getMessagesInfo;
-  getMessages : GetLogMessagesParameters;
-  getLatestMessages : GetLatestLogMessagesParameters;
-};
-type CanisterLogResponse = variant {
-  messagesInfo : CanisterLogMessagesInfo;
-  messages : CanisterLogMessages;
-};
-type CanisterMetrics = record { data : CanisterMetricsData };
-type CanisterMetricsData = variant {
-  hourly : vec HourlyMetricsData;
-  daily : vec DailyMetricsData;
-};
-type CollectMetricsRequestType = variant { force; normal };
-type DailyMetricsData = record {
-  updateCalls : nat64;
-  canisterHeapMemorySize : NumericEntity;
-  canisterCycles : NumericEntity;
-  canisterMemorySize : NumericEntity;
-  timeMillis : int;
-};
-type GetInformationRequest = record {
-  status : opt StatusRequest;
-  metrics : opt MetricsRequest;
-  logs : opt CanisterLogRequest;
-  version : bool;
-};
-type GetInformationResponse = record {
-  status : opt StatusResponse;
-  metrics : opt MetricsResponse;
-  logs : opt CanisterLogResponse;
-  version : opt nat;
-};
-type GetLatestLogMessagesParameters = record {
-  upToTimeNanos : opt nat64;
-  count : nat32;
-  filter : opt GetLogMessagesFilter;
-};
-type GetLogMessagesFilter = record {
-  analyzeCount : nat32;
-  messageRegex : opt text;
-  messageContains : opt text;
-};
-type GetLogMessagesParameters = record {
-  count : nat32;
-  filter : opt GetLogMessagesFilter;
-  fromTimeNanos : opt nat64;
-};
-type GetMetricsParameters = record {
-  dateToMillis : nat;
-  granularity : MetricsGranularity;
-  dateFromMillis : nat;
-};
-type HourlyMetricsData = record {
-  updateCalls : vec nat64;
-  canisterHeapMemorySize : vec nat64;
-  canisterCycles : vec nat64;
-  canisterMemorySize : vec nat64;
-  timeMillis : int;
-};
-type LogMessageData = record { timeNanos : nat64; message : text };
-type MetricsGranularity = variant { hourly; daily };
-type MetricsRequest = record { parameters : GetMetricsParameters };
-type MetricsResponse = record { metrics : opt CanisterMetrics };
-type NumericEntity = record {
-  avg : nat64;
-  max : nat64;
-  min : nat64;
-  first : nat64;
-  last : nat64;
+type DurationRange = variant {
+  Microseconds;
+  Minutes;
+  Seconds;
+  Days;
+  Milliseconds;
+  Hours;
+  Nanoseconds;
 };
 type Pred = record {
   up : float64;
@@ -100,32 +23,50 @@ type Predictor = record {
   create_time : nat64;
   price : float64;
 };
-type Result = variant { Ok : vec text; Err : text };
-type Result_1 = variant { Ok : vec float32; Err : text };
-type Result_2 = variant { Ok; Err : text };
-type Result_3 = variant { Ok : Predictor; Err : text };
-type StatusRequest = record {
-  memory_size : bool;
-  cycles : bool;
-  heap_memory_size : bool;
+type PredictorResult = record {
+  trend : opt text;
+  pred : Pred;
+  price : opt float64;
 };
-type StatusResponse = record {
-  memory_size : opt nat64;
-  cycles : opt nat64;
-  heap_memory_size : opt nat64;
+type PredictorView = record {
+  id : text;
+  now : opt PredictorResult;
+  next : opt PredictorResult;
+  last_1 : opt PredictorResult;
+  last_2 : opt PredictorResult;
+  stake : record { float64; float64 };
+  create_time : nat64;
+  accuracy : float64;
 };
-type UpdateInformationRequest = record {
-  metrics : opt CollectMetricsRequestType;
+type Result = variant { Ok : WasmFile; Err : text };
+type Result_1 = variant { Ok : text; Err : text };
+type Result_2 = variant { Ok : vec Predictor; Err : text };
+type Result_3 = variant { Ok : vec WasmFile; Err : text };
+type Result_4 = variant { Ok : Predictor; Err : text };
+type Result_5 = variant { Ok : PredictorView; Err : text };
+type Result_6 = variant { Ok : User; Err : text };
+type User = record {
+  id : text;
+  owner : principal;
+  name : text;
+  create_time : nat64;
+};
+type WasmFile = record {
+  wasm_version : text;
+  wasm_bin : blob;
+  wasm_name : text;
 };
 service : () -> {
-  collect_metrics : () -> ();
-  find_model_lists : () -> (Result) query;
-  get_canister_info : (GetInformationRequest) -> (GetInformationResponse) query;
-  pred : () -> ();
-  predict : () -> (Result_1);
-  set_model_version : (text) -> (Result_2);
-  set_train_params : () -> ();
-  test : () -> (Result_3);
-  train : () -> (Result_2);
-  update_canister_info : (UpdateInformationRequest) -> ();
+  delete_wasm : (text, text) -> (Result);
+  find_user_lists : () -> (vec User) query;
+  get_canister_info : () -> (Result_1);
+  get_predictor_vec : () -> (Result_2) query;
+  get_wasm_bin : (text, text) -> (Result) query;
+  get_wasm_lists : () -> (Result_3) query;
+  push_user_pred : (Predictor) -> (Result_4);
+  show_predictions : () -> (Result_5) query;
+  test_1 : (DurationRange) -> (nat64, nat64) query;
+  upload_wasm : (text, text, blob) -> (Result);
+  user_login : () -> (Result_6) query;
+  user_register : () -> (Result_6);
 }
