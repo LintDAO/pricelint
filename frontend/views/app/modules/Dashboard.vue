@@ -7,7 +7,7 @@
           <div
             v-for="item in overviewData"
             :key="item.title"
-            class="col-12 col-sm-6 col-md-3"
+            class="col-12 col-sm-6 col-md-6 col-lg-3"
           >
             <div class="overview-item">
               <q-separator class="q-mb-lg" />

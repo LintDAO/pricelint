@@ -38,7 +38,7 @@
           <q-btn-dropdown
             split
             color="secondary"
-            :label="props.row.module_hash.length === 0 ? 'Init' : 'Edit'"
+            :label="props.row.module_hash.length === 0 ? 'Init' : 'Detail'"
             :loading="
               loadingActions[props.row.canisterId]?.install ||
               loadingActions[props.row.canisterId]?.start ||
@@ -425,19 +425,28 @@ const importConfirm = async () => {
 
 const showRemoveDialog = (canisterId: string) => {
   $q.dialog({
-    title: "Confirm Removal",
+    title: "Confirm Remove",
     message: `This operation only removes ${canisterId} from the list and does not actually delete the container.`,
     cancel: true, // Show cancel button
-    persistent: true, // Prevent dismissing dialog by clicking outside
-  })
-    .onOk(() => {
-      // Call removeCanister when user confirms
+    ok: {
+      label: "Remove",
+      color: "negative",
+    },
+  }).onOk(() => {
+    // Show a second confirmation dialog to prevent accidental removal
+    $q.dialog({
+      title: "Are You Sure Remove This Canister Id?",
+      message: `Removing the ID will not affect the canister in any way, but you will no longer be able to locate the corresponding canister.`,
+      cancel: true,
+      ok: {
+        label: "Yes, I accept",
+        color: "negative",
+      },
+    }).onOk(() => {
+      // Only remove if the second confirmation is accepted
       removeCanister(canisterId);
-    })
-    .onCancel(() => {
-      // Handle cancel (optional: add logging or other actions)
-      console.log("Removal canceled");
     });
+  });
 };
 
 const removeCanister = (canisterId: string) => {
