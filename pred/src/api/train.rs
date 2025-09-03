@@ -35,7 +35,6 @@ fn train() -> Result<(), String> {
                 num_epochs,
                 batch_size,
                 learning_rate,
-                model_save_path,
             );
 
             ic_cdk::println!("Training finished.");
@@ -47,7 +46,6 @@ fn train() -> Result<(), String> {
     Ok(())
 }
 
-struct VecF32(Vec<f32>);
 #[update(guard = "is_owner")]
 fn predict() -> Result<Vec<f32>, String> {
     let model_name = get_default_model()?;
@@ -85,11 +83,16 @@ fn get_default_model() -> Result<String, String> {
     let default_model_name = CONFIG
         .with(|rc| rc.borrow_mut().get(&DEFAULT_MODEL_KEY.to_string()))
         .ok_or(ConfigError::HasNotSetDefaultModel.to_string())?;
-    
     if let Value::Text(val) = default_model_name {
         Ok(val)
     } else {
         Err(ConfigError::ValueMatchPatternError.to_string())
     }
-   
+}
+
+fn set_default_model(model_name: String) -> Result<Value<String>, String> {
+    let default_model_name = CONFIG
+        .with(|rc| rc.borrow_mut().insert(DEFAULT_MODEL_KEY.to_string(),Value::Text(model_name)))
+        .ok_or(ConfigError::SetDefaultModelError.to_string())?;
+    Ok(default_model_name)
 }

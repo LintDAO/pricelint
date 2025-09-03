@@ -1,3 +1,4 @@
+
 use ic_cdk::{call, init, post_upgrade, pre_upgrade};
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory};
 use ic_stable_structures::storable::Bound;
@@ -6,26 +7,43 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
-use candid::Principal;
-use ic_cdk::api::call::CallResult;
+use std::io::Read;
+use std::slice;
 
 type Memory = VirtualMemory<DefaultMemoryImpl>;
+macro_rules! init_stable_memory {
+    // StableBTreeMap 模式
+    ($name:ident, $memory_id:expr, map<$K:ty, $V:ty>) => {
+        thread_local! {
+            pub static $name: RefCell<StableBTreeMap<$K, $V, Memory>> = RefCell::new(
+                StableBTreeMap::init(
+                    MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new($memory_id)))
+                )
+            );
+        }
+    };
+
+    // StableVec 模式
+    ($name:ident, $memory_id:expr, vec<$V:ty>) => {
+        thread_local! {
+           pub static $name: RefCell<StableVec<$V, Memory>> = RefCell::new(
+                StableVec::init(
+                    MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new($memory_id)))
+                ).expect("Failed to initialize StableVec")
+            );
+        }
+    };
+}
 
 thread_local! {
         static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> =RefCell::new(MemoryManager::init(
         DefaultMemoryImpl::default()
     ));
-        pub static MODEL_MAP: RefCell<StableBTreeMap<String, Vec<u8>, Memory>> = RefCell::new(StableBTreeMap::init(
-        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(0)))
-    ));
-         pub static CONFIG: RefCell<StableBTreeMap<String, Value<String>, Memory>> = RefCell::new(StableBTreeMap::init(
-        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
-    ));
-
-         pub static N: RefCell<StableBTreeMap<String, Value<String>, Memory>> = RefCell::new(StableBTreeMap::init(
-        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(2)))
-    ));
 }
+init_stable_memory!(MODEL_MAP,0,map<String, Vec<u8>>);
+init_stable_memory!(CONFIG,1,map<String, Value<String>>);
+
+
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Value<K: Ord, V = String> {
@@ -52,12 +70,15 @@ where
         is_fixed_size: false,
     };
 }
+use getrandom::Error;
+
 #[no_mangle]
 unsafe extern "Rust" fn __getrandom_v03_custom(
     dest: *mut u8,
-    len: usize,
-) -> Result<(), getrandom::Error> {
-    //TODO:  complete it
+    len: usize
+) -> Result<(), Error> {
+
+
     Ok(())
 }
 
@@ -65,21 +86,12 @@ unsafe extern "Rust" fn __getrandom_v03_custom(
 fn init() {}
 #[pre_upgrade]
 fn pre_upgrade_function() {
-    let monitor_stable_data = canistergeek_ic_rust::monitor::pre_upgrade_stable_data();
-    let logger_stable_data = canistergeek_ic_rust::logger::pre_upgrade_stable_data();
-    ic_cdk::storage::stable_save((monitor_stable_data, logger_stable_data));
+
 }
 
 #[post_upgrade]
 fn post_upgrade_function() {
-    let stable_data: Result<(canistergeek_ic_rust::monitor::PostUpgradeStableData, canistergeek_ic_rust::logger::PostUpgradeStableData), String> = ic_cdk::storage::stable_restore();
-    match stable_data {
-        Ok((monitor_stable_data, logger_stable_data)) => {
-            canistergeek_ic_rust::monitor::post_upgrade_stable_data(monitor_stable_data);
-            canistergeek_ic_rust::logger::post_upgrade_stable_data(logger_stable_data);
-        }
-        Err(e) => {}
-    }
+
 }
 //TODO: stable可能和ic-structure 内存冲突  并且导致dfx无法正常启动和升级
 async fn push_pred()-> Result<(), String>{

@@ -17,6 +17,7 @@ impl_error!(GuardError);
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ConfigError{
     HasNotSetDefaultModel,
+    SetDefaultModelError,
     ValueMatchPatternError
 }
 

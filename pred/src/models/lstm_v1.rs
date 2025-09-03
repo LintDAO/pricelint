@@ -98,7 +98,6 @@ impl<B: AutodiffBackend> LstmModel<B> {
         num_epochs: usize,
         batch_size: usize,
         learning_rate: LearningRate,
-        model_save_path: &str,
     )->Result<(),String> where
         B::FloatElem: ToElement,
 
@@ -171,7 +170,6 @@ impl<B: AutodiffBackend> LstmModel<B> {
 
         // 4. 保存训练好的模型
         save_model(&model);
-        println!("Model saved to {}", model_save_path);
         Ok(())
     }
 
@@ -349,5 +347,4 @@ pub fn load_model<B: Backend>(device: &B::Device) -> Result<LstmModel<B>,Recorde
 }
 
 //（整合流程）
-#[update]
 fn pred() {}
