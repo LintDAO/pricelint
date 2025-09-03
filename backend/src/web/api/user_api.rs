@@ -53,3 +53,7 @@ fn find_user_lists()->Vec<User>{
     }
 }
 
+#[query]
+fn  get_principal()->Principal{
+    caller()
+}
