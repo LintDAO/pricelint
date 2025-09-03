@@ -1,8 +1,10 @@
 import { initAuth } from "@/api/auth";
 import { setCurrentIdentity } from "@/api/canister_pool";
 import App from "@/views/app/AppHome.vue";
-import Canisters from "@/views/app/modules/Canisters.vue";
+import Canisters from "@/views/app/modules/canister/Canisters.vue";
 import DashBoard from "@/views/app/modules/Dashboard.vue";
+import CanisterDetail from "@/views/app/modules/canister/CanisterDetail.vue";
+import CanisterEdit from "@/views/app/modules/canister/CanisterEdit.vue";
 import Home from "@/views/home/Home.vue";
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import errors from "./modules/errors";
@@ -35,6 +37,16 @@ const routes: Array<RouteRecordRaw> = [
     children: [
       { name: "App", path: "", component: DashBoard },
       { name: "Canisters", path: "canisters", component: Canisters },
+      {
+        name: "CanisterDetail",
+        path: "canisters/:principalId",
+        component: CanisterDetail,
+      },
+      {
+        name: "CanisterEdit",
+        path: "canisters/edit/:principalId",
+        component: CanisterEdit,
+      },
     ],
   },
   ...errors,

@@ -1,13 +1,11 @@
 <template>
-  <div class="color-mask">
+  <div class="color-mask predictions-table">
     <div class="container login-container">
       <div class="description row">
         <div class="col-12">
-          <div class="text-h5 q-my-md">
-            Accurate price predictions for your favorite crypto assets
-          </div>
-          <q-card flat bordered>
-            <q-item style="padding-top: 0; padding-bottom: 0">
+          <div class="text-h5 q-my-md">Crypto Trends: Up or Down</div>
+          <q-card>
+            <q-item style="padding-bottom: 16px">
               <q-item-section>
                 <q-table
                   :rows="rows"
@@ -68,6 +66,7 @@
                       </div>
                     </q-th>
                   </template>
+
                   <template #body-cell-asset="props">
                     <q-td :props="props" class="token">
                       <q-item dense>

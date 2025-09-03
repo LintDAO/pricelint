@@ -7,7 +7,6 @@ import "@/assets/css/main.scss";
 // Import icon libraries
 import "@quasar/extras/bootstrap-icons/bootstrap-icons.css";
 import "@quasar/extras/material-icons/material-icons.css";
-import "@quasar/extras/roboto-font-latin-ext/roboto-font-latin-ext.css";
 // Import Quasar css
 import "quasar/src/css/index.sass";
 

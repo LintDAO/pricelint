@@ -1,6 +1,14 @@
+:root {
+  --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+  --font-sans--font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
 html,
 body {
   height: 100%;
+  font-family: var(--font-sans) !important;
+  font-feature-settings: var(--font-sans--font-feature-settings);
 }
 a {
   color: #007bff;
@@ -34,8 +42,22 @@ a:hover {
 .q-table__grid-item-value {
   word-wrap: break-word;
 }
+.q-table__title {
+  font-weight: 600 !important;
+}
+.q-table__middle {
+  margin-top: 24px;
+}
+.q-table thead th {
+  color: #6b7280; /* Tailwind 的 text-gray-500 颜色 */
+  font-size: 13px !important; /* 字体大小 */
+}
 .q-item__label {
   word-wrap: break-word;
+}
+
+.text-break {
+  word-break: break-all; /* 强制在任意字符处换行 */
 }
 
 .q-tooltip--style {

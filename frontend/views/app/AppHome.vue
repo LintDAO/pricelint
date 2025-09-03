@@ -1,80 +1,226 @@
 <template>
-  <q-layout view="lHh lpR lFr" class="home-container">
-    <q-header bordered class="open-header text-dark">
+  <q-layout view="lHh lpR lFr">
+    <!-- Mobile Navbar (visible on smaller screens) -->
+    <q-header reveal class="bg-white header" v-if="$q.screen.lt.md">
       <q-toolbar>
-        <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
-        <q-toolbar-title>
-          <q-avatar>
-            <img src="@/assets/dfinity.svg" />
-          </q-avatar>
-          IC PriceLint
-        </q-toolbar-title>
-        <q-btn color="primary" label="Logout" @click="onLogOut()" />
+        <q-btn
+          flat
+          dense
+          round
+          icon="menu"
+          aria-label="Menu"
+          @click="toggleDrawer"
+          class="q-mr-sm text-grey-9"
+        />
+        <q-space />
+        <!-- User Avatar in Header (Mobile) -->
+        <div
+          class="connection-panel q-mr-md"
+          style="color: black; width: 150px"
+        >
+          <div class="flex items-center justify-between full-width q-pa-sm">
+            <!-- 左侧：Connected + 呼吸灯 -->
+            <div class="flex items-center q-gutter-xs">
+              <div class="breathing-dot"></div>
+              <span class="text-caption">On</span>
+            </div>
+
+            <!-- 中间分隔线 -->
+            <q-separator vertical style="height: 20px" />
+
+            <!-- 右侧：Principal ID -->
+            <div class="flex items-center q-gutter-xs">
+              <span class="text-caption text-grey-7">{{ showUser }}</span>
+              <q-icon
+                name="content_copy"
+                class="cursor-pointer"
+                @click.stop="copyPid()"
+              />
+            </div>
+          </div>
+        </div>
+        <q-icon
+          name="keyboard_arrow_up"
+          class="rotate-icon"
+          style="color: black"
+          :class="{ 'rotate-active': userMenu }"
+        >
+          <q-menu v-model="userMenu" anchor="bottom start" self="top start">
+            <q-list>
+              <template v-for="(item, index) in userMenuItems" :key="index">
+                <q-item
+                  clickable
+                  v-close-popup
+                  @click="item.click ? item.click() : null"
+                >
+                  <q-item-section avatar>
+                    <q-icon :name="item.icon" />
+                  </q-item-section>
+                  <q-item-section>{{ item.label }}</q-item-section>
+                </q-item>
+                <!-- <q-separator v-if="item.separator" /> -->
+              </template>
+            </q-list>
+          </q-menu>
+        </q-icon>
       </q-toolbar>
     </q-header>
 
+    <!-- Sidebar (Drawer) -->
     <q-drawer
-      v-model="leftDrawerOpen"
-      side="left"
+      v-model="drawerOpen"
       show-if-above
+      :width="256"
+      class="bg-grey-11 drawer-container"
       :breakpoint="769"
     >
-      <q-img
-        class="absolute-top"
-        src="@/assets/material.png"
-        style="height: 150px"
-      >
-        <div class="absolute-bottom bg-transparent">
-          <q-avatar size="56px" class="q-mb-sm" :style="{ backgroundColor }">
-            {{ showAvatar }}
-          </q-avatar>
-          <div class="text-weight-bold">
-            {{ showUser }}
-            <q-icon
-              name="content_copy"
-              class="cursor-pointer"
-              @click="copyPid()"
-            />
-          </div>
-          <div>@user</div>
-        </div>
-      </q-img>
-      <q-scroll-area
-        style="
-          height: calc(100% - 150px);
-          margin-top: 150px;
-          border-right: 1px solid #ddd;
-        "
-      >
-        <q-list>
+      <!-- Sidebar Body: Navigation Sections -->
+      <q-list padding class="q-px-sm">
+        <q-item
+          class="q-my-xs q-px-md rounded-borders"
+          style="transition: all 0.2s ease"
+        >
+          <q-item-section avatar>
+            <q-avatar size="sm">
+              <q-img src="@/assets/favicon.svg" alt="Logo" />
+            </q-avatar>
+          </q-item-section>
+          <q-item-section>
+            <span
+              :style="{
+                color: '#4b5563',
+                fontWeight: '600',
+              }"
+            >
+              PriceLint
+            </span>
+          </q-item-section>
+        </q-item>
+        <q-separator class="q-my-md" />
+        <q-scroll-area style="height: calc(100vh - 160px)">
+          <!-- First Section -->
+          <q-item-label header class="text-caption text-grey-7"
+            >Overview</q-item-label
+          >
           <q-item
             v-for="(item, index) in menuItems"
             :key="index"
             clickable
-            v-ripple="true"
+            v-ripple
             :to="item.route"
             :active="item.route === $route.path"
+            active-class="bg-grey-2"
+            class="q-my-xs q-px-md rounded-borders"
+            style="transition: all 0.2s ease"
           >
             <q-item-section avatar>
               <q-icon :name="item.icon" />
             </q-item-section>
             <q-item-section>
-              {{ item.label }}
+              <span
+                :style="{
+                  color: item.route === $route.path ? '#1f2937' : '#4b5563',
+                  fontWeight: item.route === $route.path ? '600' : '500',
+                }"
+              >
+                {{ item.label }}
+              </span>
             </q-item-section>
+            <div
+              v-if="item.route === $route.path"
+              class="active-indicator"
+            ></div>
           </q-item>
-        </q-list>
-        <div class="bottom-icon q-pa-md">
-          <a :href="DISCORD_URL" target="_Blank">
-            <q-icon class="cursor-pointer" size="md" name="discord" />
-          </a>
-        </div>
-      </q-scroll-area>
+        </q-scroll-area>
+      </q-list>
     </q-drawer>
 
-    <q-page-container>
-      <div class="q-pa-md q-gutter-md">
-        <router-view />
+    <!-- Sidebar Footer: User Profile Dropdown -->
+    <div class="absolute-bottom" v-if="drawerOpen && !$q.screen.lt.md">
+      <q-separator />
+      <div class="q-pa-md">
+        <q-item class="rounded-borders">
+          <q-item-section class="connection-panel">
+            <div class="flex items-center justify-between full-width q-pa-sm">
+              <!-- 左侧：Connected + 呼吸灯 -->
+              <div class="flex items-center q-gutter-xs">
+                <div class="breathing-dot"></div>
+                <span class="text-caption">On</span>
+              </div>
+
+              <!-- 中间分隔线 -->
+              <q-separator vertical style="height: 20px" />
+
+              <!-- 右侧：Principal ID -->
+              <div class="flex items-center q-gutter-xs">
+                <span class="text-caption text-grey-7">{{ showUser }}</span>
+                <q-icon
+                  name="content_copy"
+                  class="cursor-pointer"
+                  @click.stop="copyPid()"
+                />
+              </div>
+            </div>
+          </q-item-section>
+          <q-item-section side>
+            <q-btn flat dense round>
+              <q-icon
+                name="keyboard_arrow_down"
+                class="rotate-icon"
+                :class="{ 'rotate-active': userMenu }"
+              />
+              <q-menu v-model="userMenu" anchor="top start" self="bottom start">
+                <q-list>
+                  <template v-for="(item, index) in userMenuItems" :key="index">
+                    <q-item
+                      clickable
+                      v-close-popup
+                      @click="item.click ? item.click() : null"
+                    >
+                      <q-item-section avatar>
+                        <q-icon :name="item.icon" />
+                      </q-item-section>
+                      <q-item-section>{{ item.label }}</q-item-section>
+                    </q-item>
+                    <!-- <q-separator v-if="item.separator" /> -->
+                  </template>
+                </q-list>
+              </q-menu>
+            </q-btn>
+          </q-item-section>
+        </q-item>
       </div>
+    </div>
+    <!-- Main Content Area -->
+    <q-page-container
+      class="bg-grey-11"
+      :class="{ 'q-pa-sm': !$q.screen.lt.md, 'q-pa-none': $q.screen.lt.md }"
+    >
+      <q-page
+        padding
+        class="bg-white"
+        :style="{
+          border: '1px solid #e5e7eb',
+          borderRadius: $q.screen.lt.md ? '0' : '0.5rem',
+          minHeight: $q.screen.lt.md ? '100vh' : 'calc(100vh - 16px)',
+        }"
+      >
+        <!-- 添加面包屑，只有在匹配的详情页路径下显示，使用绝对定位不挤占空间 -->
+        <q-breadcrumbs
+          v-if="showBreadcrumbs"
+          class="absolute-top-left q-pl-md q-pt-sm"
+          style="z-index: 1"
+        >
+          <q-breadcrumbs-el
+            v-for="(item, index) in breadcrumbItems"
+            :key="index"
+            :label="item.label"
+            :to="item.to"
+          />
+          <!-- 假设从路由参数获取 ID -->
+        </q-breadcrumbs>
+        <router-view class="container" />
+      </q-page>
     </q-page-container>
   </q-layout>
 </template>
@@ -82,7 +228,6 @@
 <script lang="ts" setup>
 import { initAuth, signOut } from "@/api/auth";
 import { clearCurrentIdentity, setCurrentIdentity } from "@/api/canister_pool";
-import { DISCORD_URL } from "@/api/constants/docs";
 import { getUserAutoRegister } from "@/api/user";
 import { goHome } from "@/router/routers";
 import { useUserStore } from "@/stores/user";
@@ -91,20 +236,25 @@ import {
   showAvatarName,
   showUsername,
 } from "@/utils/avatars";
-import { showMessageError, showMessageSuccess } from "@/utils/message";
-import { copyToClipboard } from "quasar";
+import { copyText } from "@/utils/common";
+import { showMessageError } from "@/utils/message";
+import { useQuasar } from "quasar";
 import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
+const $q = useQuasar();
 const userStore = useUserStore();
 const router = useRouter();
+const route = useRoute();
 
 const menuItems = [
   { icon: "analytics", label: "Dashboard", route: "/app" },
   { icon: "memory", label: "Canisters", route: "/app/canisters" },
   // { icon: "settings", label: "Settings", route: "/app/settings" },
 ];
-const leftDrawerOpen = ref(false);
+
+const drawerOpen = ref(false);
+const userMenu = ref(false);
 // 与 II 认证相关的信息
 const clientReady = ref(false);
 const signedIn = ref(false); // 是否登录
@@ -114,6 +264,36 @@ const username = ref();
 
 onMounted(() => {
   doInitAuth();
+});
+
+const showBreadcrumbs = computed(() => {
+  // 只在路径以 /app/canisters/ 开头且有更多级（如 ID 或子路径）时显示
+  return (
+    route.path.startsWith("/app/canisters/") && route.path.split("/").length > 3
+  );
+});
+
+const breadcrumbItems = computed(() => {
+  const parts = route.path.split("/").filter((part) => part); // 过滤空部分
+  const items: { label: string; to: string }[] = [];
+  let currentPath: string = "";
+
+  parts.forEach((part, index) => {
+    if (index === 0 && part === "app") {
+      // 从 App 开始
+      items.push({ label: "App", to: "/app" });
+      currentPath = "/app";
+    } else if (index > 0) {
+      currentPath += "/" + part;
+      // 新逻辑：如果包含数字或连字符（可能是 ID），保持原样；否则首字母大写
+      const label = /[0-9-]/.test(part)
+        ? part
+        : part.charAt(0).toUpperCase() + part.slice(1);
+      items.push({ label, to: currentPath });
+    }
+  });
+
+  return items;
 });
 
 const doInitAuth = () => {
@@ -150,13 +330,7 @@ const getUserInfoFromServices = () => {
 };
 
 const copyPid = () => {
-  copyToClipboard(principal.value)
-    .then(() => {
-      showMessageSuccess(`copy ${principal.value} success`);
-    })
-    .catch(() => {
-      showMessageError("copy failed");
-    });
+  copyText(principal.value);
 };
 
 const onLogOut = async () => {
@@ -175,8 +349,8 @@ const onLogOut = async () => {
   }, 500);
 };
 
-const toggleLeftDrawer = () => {
-  leftDrawerOpen.value = !leftDrawerOpen.value;
+const toggleDrawer = () => {
+  drawerOpen.value = !drawerOpen.value;
 };
 const showAvatar = computed<string>(() => {
   const m = showAvatarName("", principal.value);
@@ -190,22 +364,88 @@ const backgroundColor = computed<string>(() => {
 const showUser = computed<string>(() => {
   return showUsername("", principal.value);
 });
+
+// 定义用户菜单项数据
+const userMenuItems = [
+  // {
+  //   label: "Profile",
+  //   to: "/profile",
+  //   icon: "person",
+  // },
+  // {
+  //   label: "Settings",
+  //   to: "/app/settings",
+  //   icon: "settings",
+  //   separator: true, // 仅在此项后添加分隔线
+  // },
+  {
+    label: "Logout",
+    click: onLogOut,
+    icon: "logout",
+  },
+];
 </script>
 
-<style lang="scss">
-.home-container {
-  min-height: 100vh;
-  .q-header {
-    background-color: #0000001a;
-    -webkit-backdrop-filter: blur(7px);
-    backdrop-filter: blur(7px);
+<style lang="scss" scoped>
+.connection-panel {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.breathing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #4caf50;
+  animation: breathing 2s ease-in-out infinite;
+}
+
+@keyframes breathing {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
   }
-  .bottom-icon {
-    position: absolute;
-    bottom: 0;
-    a {
-      color: grey !important;
-    }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
   }
+}
+/* 自定义边框类 */
+.header {
+  border-bottom: 1px solid #e5e7eb; /* 浅灰色边框，模仿 Catalyst UI */
+}
+.active-indicator {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 40px;
+  background-color: #667eea;
+  border-radius: 2px 0 0 2px;
+}
+.drawer-container {
+  .q-item__section--avatar {
+    color: inherit;
+    min-width: 36px;
+    padding-right: 0;
+  }
+}
+
+.absolute-bottom {
+  position: fixed; /* Fix to viewport bottom */
+  bottom: 0;
+  left: 0;
+  width: 256px; /* Match q-drawer width */
+  background: inherit; /* Inherit bg-grey-1 from q-drawer */
+  z-index: 5000; /* Ensure it stays above content */
+}
+.rotate-icon {
+  transition: transform 0.3s ease;
+}
+.rotate-icon.rotate-active {
+  transform: rotate(180deg);
 }
 </style>

@@ -1,11 +1,7 @@
 <template>
-  <q-btn color="primary" @click="createNew()"> Create New </q-btn>
   <div>
-    <span v-if="userCanisterIds.length === 0">
-      You don't have any canister.
-    </span>
     <q-table
-      v-else
+      flat
       title="Canister List"
       :rows="canisterData"
       :columns="columns"
@@ -13,37 +9,47 @@
       :loading="loading"
       :pagination="pagination"
     >
+      <template v-slot:top-right>
+        <div class="q-gutter-md">
+          <q-btn color="primary" @click="importDialogVisible = true" no-caps>
+            Import Canister
+          </q-btn>
+          <q-btn color="primary" @click="createNew()" no-caps>
+            New Canister</q-btn
+          >
+        </div>
+      </template>
+      <template v-slot:body-cell-canisterId="props">
+        <q-td :props="props" class="text-grey-7">
+          <span>{{ showUsername("", props.row.canisterId) }}</span>
+          <q-icon
+            name="content_copy"
+            size="14px"
+            class="q-ml-sm cursor-pointer"
+            @click="copyText(props.row.canisterId)"
+          >
+            <q-tooltip>Copy Canister ID</q-tooltip>
+          </q-icon>
+        </q-td>
+      </template>
       <!-- Operation column -->
       <template v-slot:body-cell-actions="props">
         <q-td :props="props" class="q-gutter-xs">
-          <q-btn
-            v-if="props.row.status === 'stopped'"
-            color="primary"
-            label="Start"
-            :loading="loadingActions[props.row.canisterId]?.start"
-            @click="startThisCanister(props.row.canisterId)"
-          />
-          <q-btn
-            v-if="props.row.status === 'running'"
-            color="negative"
-            label="Stop"
-            :loading="loadingActions[props.row.canisterId]?.stop"
-            @click="stopThisCanister(props.row.canisterId)"
-          />
           <q-btn-dropdown
             split
             color="secondary"
-            :label="
-              props.row.module_hash.length === 0
-                ? 'Install Code'
-                : 'Configuration'
+            :label="props.row.module_hash.length === 0 ? 'Init' : 'Detail'"
+            :loading="
+              loadingActions[props.row.canisterId]?.install ||
+              loadingActions[props.row.canisterId]?.start ||
+              loadingActions[props.row.canisterId]?.stop
             "
-            :loading="loadingActions[props.row.canisterId]?.install"
             @click="
               props.row.module_hash.length === 0
                 ? installCanisterCode(props.row.canisterId)
-                : openConfigurationDialog(props.row.canisterId)
+                : toCanisterDetail(props.row.canisterId)
             "
+            no-caps
           >
             <q-list>
               <q-item
@@ -54,6 +60,38 @@
                 <q-item-section>
                   <q-item-label>Top-up Cycles</q-item-label>
                 </q-item-section>
+              </q-item>
+              <q-separator />
+              <!-- Start 选项 -->
+              <q-item
+                v-if="props.row.status === 'stopped'"
+                clickable
+                v-close-popup
+                @click="startThisCanister(props.row.canisterId)"
+              >
+                <q-item-section>
+                  <q-item-label>Start Canister</q-item-label>
+                </q-item-section>
+              </q-item>
+              <!-- Stop 选项 -->
+              <q-item
+                v-if="props.row.status === 'running'"
+                clickable
+                v-close-popup
+                @click="stopThisCanister(props.row.canisterId)"
+              >
+                <q-item-section>
+                  <q-item-label>Stop Canister</q-item-label>
+                </q-item-section>
+              </q-item>
+              <!-- 将canisterid从已记录的列表中移除，不是删除canister -->
+              <q-item
+                v-if="props.row.status !== 'unknown'"
+                clickable
+                v-close-popup
+                @click="showRemoveDialog(props.row.canisterId)"
+              >
+                Remove Canister
               </q-item>
             </q-list>
           </q-btn-dropdown>
@@ -77,7 +115,7 @@
           <q-btn
             label="Use Recommend"
             color="primary"
-            @click="useRecommend()"
+            @click="useRecommendParam()"
             :loading="loadingActions[selectedCanisterId]?.use"
           />
         </q-card-actions>
@@ -88,6 +126,41 @@
       :operation="operation"
       :targetCanisterId="selectedCanisterId"
     />
+    <q-dialog v-model="importDialogVisible">
+      <q-card style="min-width: 400px">
+        <q-card-section>
+          <div class="text-h6">Import Canister ID</div>
+        </q-card-section>
+        <q-card-section class="q-py-none">
+          Import a canister currently controlled by the principal. Only canister
+          controller can import the canister id.
+        </q-card-section>
+        <q-card-section>
+          <q-input
+            v-model="importCanisterId"
+            label="Enter Canister ID"
+            filled
+            :rules="[
+              (val) => !!val || 'Canister ID is required',
+              (val) => isPrincipal(val) || 'Invalid Canister ID format',
+            ]"
+            @keyup.enter="importConfirm"
+          />
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" color="negative" v-close-popup />
+          <q-btn
+            :loading="importLoading"
+            flat
+            label="Import"
+            color="primary"
+            :disable="!importCanisterId || !isPrincipal(importCanisterId)"
+            @click="importConfirm"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
@@ -96,18 +169,26 @@ import {
   CanisterData,
   callTargetCanister,
   getCanisterList,
+  importCanisterList,
   installCode,
   queryCanisterStatus,
+  removeCanisterFromList,
   startCanister,
   stopCanister,
 } from "@/api/canisters";
 import TopUpCycles from "@/components/TopUpCycles.vue";
 import type { TableColumn } from "@/types/model";
-import { fromTokenAmount } from "@/utils/common";
+import { showUsername } from "@/utils/avatars";
+import { copyText, fromTokenAmount, isPrincipal } from "@/utils/common";
 import { showMessageError } from "@/utils/message";
+import { useQuasar } from "quasar";
 import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 
+const $q = useQuasar();
+const router = useRouter();
 const topUpDialog = ref(false);
+const importDialogVisible = ref(false);
 const operation = ref<"createCanister" | "topUp">("createCanister");
 
 const columns: TableColumn[] = [
@@ -126,13 +207,13 @@ const columns: TableColumn[] = [
     align: "right",
     sortable: true,
   },
-  {
-    name: "cyclesConsumptionRate",
-    label: "Cycles Consumption Rate (Cycles/ Day)",
-    field: "cyclesConsumptionRate",
-    align: "right",
-    sortable: true,
-  },
+  // {
+  //   name: "cyclesConsumptionRate",
+  //   label: "Cycles Consumption Rate (Cycles/ Day)",
+  //   field: "cyclesConsumptionRate",
+  //   align: "right",
+  //   sortable: true,
+  // },
   {
     name: "predictionAccuracy",
     label: "Prediction Accuracy (%)",
@@ -166,7 +247,9 @@ const columns: TableColumn[] = [
 // 表格数据和状态
 const canisterData = ref<CanisterData[]>([]);
 const loading = ref(false);
+const importLoading = ref(false);
 const userCanisterIds = ref<string[]>([]);
+const importCanisterId = ref<string>("");
 const pagination = ref({
   sortBy: "canisterId",
   descending: false,
@@ -187,7 +270,6 @@ const wasmFile = ref<File | null>(null);
 
 // 初始化时获取数据
 onMounted(async () => {
-  userCanisterIds.value = await getCanisterList();
   await getCanisterInfo();
 });
 
@@ -198,6 +280,7 @@ const createNew = async () => {
 
 const getCanisterInfo = async () => {
   loading.value = true;
+  userCanisterIds.value = await getCanisterList();
   canisterData.value = [];
 
   for (const canisterId of userCanisterIds.value) {
@@ -308,14 +391,14 @@ const showTopupCycles = (canisterId: string) => {
   selectedCanisterId.value = canisterId;
 };
 
-// Open install code dialog
-const openConfigurationDialog = (canisterId: string) => {
-  selectedCanisterId.value = canisterId;
-  wasmFile.value = null;
-  showConfigurationDialog.value = true;
+// jump to detail page
+const toCanisterDetail = (canisterId: string) => {
+  router.push({
+    path: `/app/canisters/${canisterId}`,
+  });
 };
 
-const useRecommend = async () => {
+const useRecommendParam = async () => {
   const canisterId = selectedCanisterId.value;
   loadingActions.value[selectedCanisterId.value] = {
     ...loadingActions.value[selectedCanisterId.value],
@@ -326,6 +409,49 @@ const useRecommend = async () => {
     ...loadingActions.value[selectedCanisterId.value],
     use: false,
   };
+};
+
+const importConfirm = async () => {
+  importLoading.value = true;
+  if (!isPrincipal(importCanisterId.value)) return;
+  const success = await importCanisterList(importCanisterId.value);
+  importLoading.value = false;
+  if (success) {
+    console.log("success");
+    importDialogVisible.value = false;
+    getCanisterInfo(); // Refresh data
+  }
+};
+
+const showRemoveDialog = (canisterId: string) => {
+  $q.dialog({
+    title: "Confirm Remove",
+    message: `This operation only removes ${canisterId} from the list and does not actually delete the container.`,
+    cancel: true, // Show cancel button
+    ok: {
+      label: "Remove",
+      color: "negative",
+    },
+  }).onOk(() => {
+    // Show a second confirmation dialog to prevent accidental removal
+    $q.dialog({
+      title: "Are You Sure Remove This Canister Id?",
+      message: `Removing the ID will not affect the canister in any way, but you will no longer be able to locate the corresponding canister.`,
+      cancel: true,
+      ok: {
+        label: "Yes, I accept",
+        color: "negative",
+      },
+    }).onOk(() => {
+      // Only remove if the second confirmation is accepted
+      removeCanister(canisterId);
+    });
+  });
+};
+
+const removeCanister = (canisterId: string) => {
+  removeCanisterFromList(canisterId);
+  getCanisterInfo(); // Refresh data
 };
 </script>
 
