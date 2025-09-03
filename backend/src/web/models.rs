@@ -5,3 +5,4 @@ pub mod predictor_model;
 pub mod wallet_model;
 pub mod biance_model;
 pub mod canister_model;
+pub mod stake_model;
