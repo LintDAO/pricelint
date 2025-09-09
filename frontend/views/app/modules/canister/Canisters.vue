@@ -8,6 +8,7 @@
       row-key="canisterId"
       :loading="loading"
       :pagination="pagination"
+      class="canisters-list"
     >
       <template v-slot:top-right>
         <div class="q-gutter-md">
@@ -454,4 +455,10 @@ const blockCanister = (canisterId: string) => {
 };
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.canisters-list {
+  :deep(.q-table__top) {
+    padding: 0 !important;
+  }
+}
+</style>

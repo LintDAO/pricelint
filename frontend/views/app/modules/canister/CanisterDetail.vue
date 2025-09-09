@@ -27,7 +27,7 @@
             label="Edit"
             class="action-btn"
           />
-          <q-btn color="primary" label="Deploy" class="action-btn" />
+          <q-btn color="primary" label="Stake" class="action-btn" />
         </div>
       </div>
 
