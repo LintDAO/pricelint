@@ -50,7 +50,7 @@
             </div>
             <div class="col-12 col-md-6">
               <q-input
-                :model-value="principalId"
+                :model-value="canisterId"
                 outlined
                 dense
                 readonly
@@ -292,7 +292,7 @@ import { useRoute, useRouter } from "vue-router";
 const route = useRoute();
 const router = useRouter();
 
-const principalId = ref(route.params.principalId as string);
+const canisterId = ref(route.params.canisterId as string);
 
 const loading = ref(false);
 

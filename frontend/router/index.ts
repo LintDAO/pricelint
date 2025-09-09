@@ -39,12 +39,12 @@ const routes: Array<RouteRecordRaw> = [
       { name: "Canisters", path: "canisters", component: Canisters },
       {
         name: "CanisterDetail",
-        path: "canisters/:principalId",
+        path: "canisters/:canisterId",
         component: CanisterDetail,
       },
       {
         name: "CanisterEdit",
-        path: "canisters/edit/:principalId",
+        path: "canisters/edit/:canisterId",
         component: CanisterEdit,
       },
     ],

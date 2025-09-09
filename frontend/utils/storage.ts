@@ -83,7 +83,7 @@ export const setCanisterArrayByPrincipal = (
 ): boolean => {
   try {
     // 1. 从 localStorage 获取现有数据
-    const existingData = getCanisterArrayByPrincipal(key);
+    const existingData = getCanisterArrayByPrincipal(key); // 使用内部 get 函数获取整个 map，但不过滤
     // 2. 确保返回值为对象，如果不是或为空，返回空对象
     const existingMap =
       typeof existingData === "object" && existingData !== null
@@ -95,16 +95,21 @@ export const setCanisterArrayByPrincipal = (
       ? existingMap[principalId]
       : [];
 
-    // 4. 检查是否已存在该项，避免重复添加
-    if (existingArray.includes(canisterId)) {
+    // 4. 检查是否已存在该项（无论是否屏蔽），避免重复添加
+    if (
+      existingArray.some(
+        (item: { canisterId: string; blocked: boolean }) =>
+          item.canisterId === canisterId
+      )
+    ) {
       console.log(
         `Canister ID ${canisterId} already exists for principal ${principalId} in ${key}, skipping storage`
       );
       return false; // 未添加新项
     }
 
-    // 5. 追加新项到对应 principalId 的数组
-    const updatedArray = [...existingArray, canisterId];
+    // 5. 追加新项到对应 principalId 的数组，初始为未屏蔽
+    const updatedArray = [...existingArray, { canisterId, blocked: false }];
 
     // 6. 更新 principalId 对应的数组
     existingMap[principalId] = updatedArray;
@@ -126,13 +131,13 @@ export const setCanisterArrayByPrincipal = (
 };
 
 /**
- * Remove a canister ID from the principal's list in localStorage
+ * Block (shield) a canister ID for the principal in localStorage, marking it as hidden without removing it
  * @param principalId The principal ID
  * @param key Storage key (e.g., CONTROLLER_CANISTERS_KEY)
- * @param canisterId The canister ID to remove
- * @returns True if removed successfully, false if the canisterId doesn't exist or error occurs
+ * @param canisterId The canister ID to block
+ * @returns True if blocked successfully, false if the canisterId doesn't exist, already blocked, or error occurs
  */
-export function removeCanisterArrayByPrincipal(
+export function blockCanisterArrayByPrincipal(
   principalId: string,
   key: string,
   canisterId: string
@@ -147,55 +152,73 @@ export function removeCanisterArrayByPrincipal(
     const existingArray = Array.isArray(existingMap[principalId])
       ? existingMap[principalId]
       : [];
-    if (!existingArray.includes(canisterId)) {
+    const itemIndex = existingArray.findIndex(
+      (item: { canisterId: string; blocked: boolean }) =>
+        item.canisterId === canisterId
+    );
+    if (itemIndex === -1) {
       showMessageError(`Canister ID ${canisterId} does not exist`);
       return false;
     }
+    if (existingArray[itemIndex].blocked) {
+      showMessageError(`Canister ID ${canisterId} is already blocked`);
+      return false;
+    }
 
-    // Remove the canisterId
-    const updatedArray = existingArray.filter(
-      (id: string) => id !== canisterId
-    );
-    existingMap[principalId] = updatedArray;
+    // Block the canisterId by setting blocked to true
+    existingArray[itemIndex].blocked = true;
+    existingMap[principalId] = existingArray;
 
     // Update storage
     localStorage.setItem(key, JSON.stringify(existingMap));
     console.log(
-      `Successfully removed ${canisterId} for principal ${principalId} in ${key}`,
+      `Successfully blocked ${canisterId} for principal ${principalId} in ${key}`,
       existingMap
     );
-    showMessageSuccess(`Canister ID ${canisterId} removed successfully`);
+    showMessageSuccess(`Canister ID ${canisterId} blocked successfully`);
     return true;
   } catch (error) {
     console.error(
-      `Failed to remove canisterId ${canisterId} for principal ${principalId} in ${key}:`,
+      `Failed to block canisterId ${canisterId} for principal ${principalId} in ${key}:`,
       error
     );
-    showMessageError("Failed to remove Canister ID");
+    showMessageError("Failed to block Canister ID");
     return false;
   }
 }
 
 /**
- * 按 principalId 从 localStorage 获取 Canister ID 数组
+ * 按 principalId 从 localStorage 获取 Canister ID 数组（默认只返回未屏蔽的 ID）
  * @param key 存储的键名
  * @param principalId 用户的 principalId（可选，如果不提供则返回整个对象）
- * @returns 指定 principalId 的 Canister ID 数组，或整个存储对象，或 null
+ * @param includeBlocked 是否包含屏蔽的 ID（默认 false，只返回活跃的）
+ * @returns 指定 principalId 的 Canister ID 数组（字符串数组），或整个存储对象，或 null
  */
 export const getCanisterArrayByPrincipal = (
   key: string,
-  principalId?: string
+  principalId?: string,
+  includeBlocked: boolean = false
 ): any | null => {
   const value = localStorage.getItem(key);
   if (value === null) return null;
 
   try {
     const parsed = JSON.parse(value);
-    // 如果提供了 principalId，返回对应数组；否则返回整个对象
+    // 如果提供了 principalId，返回对应数组（过滤屏蔽的，除非 includeBlocked 为 true）
     if (principalId) {
-      return Array.isArray(parsed?.[principalId]) ? parsed[principalId] : [];
+      const array = Array.isArray(parsed?.[principalId])
+        ? parsed[principalId]
+        : [];
+      const filteredArray = includeBlocked
+        ? array
+        : array.filter(
+            (item: { canisterId: string; blocked: boolean }) => !item.blocked
+          );
+      return filteredArray.map(
+        (item: { canisterId: string; blocked: boolean }) => item.canisterId
+      );
     }
-    return parsed;
+    return parsed; // 返回整个对象时不过滤
   } catch (e) {
     console.error(`Failed to read ${key} info:`, e);
     return null;
