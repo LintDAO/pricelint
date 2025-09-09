@@ -1,5 +1,5 @@
 <template>
-  <div class="color-mask predictions-table">
+  <div class="color-mask predictions-table" style="min-height: 100vh">
     <div class="container login-container">
       <div class="description row">
         <div class="col-12">
@@ -164,7 +164,7 @@
             </q-item>
           </q-card>
         </div>
-        <div class="logo q-mt-lg flex justify-center">
+        <div class="logo q-mt-xl flex justify-center">
           <img alt="logo" src="@/assets/on-chain.svg" />
         </div>
       </div>

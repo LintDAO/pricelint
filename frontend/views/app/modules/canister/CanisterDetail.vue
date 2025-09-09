@@ -1,6 +1,5 @@
 <template>
   <div class="canister-detail">
-    Header Section
     <div class="header-section">
       <div class="header-content">
         <div class="canister-info">
@@ -10,7 +9,7 @@
           <div class="canister-details">
             <h1 class="canister-title">Prediction Model Canister</h1>
             <div class="canister-meta">
-              <span class="canister-id">{{ canisterData.id }}</span>
+              <span class="canister-id">{{ canisterId }}</span>
               <span class="separator">•</span>
               <span class="owner">Owner: {{ canisterData.owner }}</span>
               <span class="separator">•</span>
@@ -21,12 +20,17 @@
           </div>
         </div>
         <div class="header-actions">
-          <q-btn outline color="grey-8" label="Edit" class="action-btn" />
-          <q-btn color="primary" label="Deploy" class="action-btn" />
+          <q-btn
+            @click="toCanisterEdit()"
+            outline
+            color="grey-8"
+            label="Edit"
+            class="action-btn"
+          />
+          <q-btn color="primary" label="Stake" class="action-btn" />
         </div>
       </div>
 
-      Status Badge
       <div class="status-section">
         <q-chip
           :color="getStatusColor(canisterData.status)"
@@ -34,17 +38,9 @@
           :label="canisterData.status"
           class="status-chip"
         />
-        <q-chip
-          color="green"
-          text-color="white"
-          label="On Sale"
-          class="sale-chip"
-          v-if="canisterData.tradingPair"
-        />
       </div>
     </div>
 
-    Stats Section
     <div class="stats-section">
       <div class="stat-item">
         <div class="stat-label">Cycles Balance</div>
@@ -73,7 +69,6 @@
       </div>
     </div>
 
-    Model Info Section
     <div class="model-info-section">
       <div class="info-grid">
         <div class="info-item">
@@ -96,55 +91,31 @@
       </div>
     </div>
 
-    Recent Predictions Table
-    <div class="predictions-section">
-      <h2 class="section-title">Recent Predictions</h2>
-
-      <div class="table-container">
-        <table class="predictions-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Predicted</th>
-              <th>Actual</th>
-              <th>Probability</th>
-              <th>Result</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="prediction in predictionHistory" :key="prediction.date">
-              <td class="date-cell">{{ formatDate(prediction.date) }}</td>
-              <td
-                class="prediction-cell"
-                :class="getPredictionCellClass(prediction.predicted)"
-              >
-                {{ prediction.predicted }}
-              </td>
-              <td
-                class="actual-cell"
-                :class="getActualCellClass(prediction.actual)"
-              >
-                {{ prediction.actual }}
-              </td>
-              <td class="probability-cell">{{ prediction.probability }}%</td>
-              <td class="result-cell">
-                <q-icon
-                  :name="prediction.correct ? 'check_circle' : 'cancel'"
-                  :color="prediction.correct ? 'positive' : 'negative'"
-                  size="20px"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Prediction Chart -->
+    <div class="chart-section">
+      <div class="chart-header">
+        <h2>Prediction Analysis</h2>
+      </div>
+      <div class="chart-container">
+        <div ref="chartRef" class="chart"></div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import * as echarts from "echarts";
+import { nextTick, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
+const router = useRouter();
+const route = useRoute();
+
+const canisterId = ref(route.params.canisterId as string);
+// Reactive data
+const chartView = ref("accuracy");
+const chartRef = ref<HTMLElement>();
+let chart: echarts.ECharts | null = null;
 interface CanisterData {
   id: string;
   owner: string;
@@ -159,14 +130,6 @@ interface CanisterData {
   modelVersion: string;
   nextPrediction: "Bullish" | "Bearish";
   lastUpdated: string;
-}
-
-interface PredictionRecord {
-  date: string;
-  predicted: "Bullish" | "Bearish";
-  actual: "Bullish" | "Bearish";
-  probability: number;
-  correct: boolean;
 }
 
 const canisterData = ref<CanisterData>({
@@ -184,65 +147,30 @@ const canisterData = ref<CanisterData>({
   nextPrediction: "Bullish",
   lastUpdated: "May 15, 2024 at 2:30 PM",
 });
+const chartData = ref({
+  dates: [
+    "Jan 6",
+    "Jan 7",
+    "Jan 8",
+    "Jan 9",
+    "Jan 10",
+    "Jan 11",
+    "Jan 12",
+    "Jan 13",
+    "Jan 14",
+    "Jan 15",
+  ],
+  predictedValues: [12.5, 13.2, 12.8, 14.1, 13.9, 15.2, 14.7, 15.8, 15.1, 16.2],
+  actualValues: [12.8, 13.1, 13.2, 14.3, 13.7, 15.1, 14.9, 15.6, 15.3, 16.0],
+  correctPredictions: [1, 1, 0, 1, 0, 1, 1, 1, 1, 1], // 1 = correct, 0 = incorrect
+  accuracyRate: [82, 85, 83, 87, 84, 86, 88, 87, 89, 87],
+});
 
-const predictionHistory = ref<PredictionRecord[]>([
-  {
-    date: "2024-05-15",
-    predicted: "Bullish",
-    actual: "Bullish",
-    probability: 85,
-    correct: true,
-  },
-  {
-    date: "2024-05-14",
-    predicted: "Bearish",
-    actual: "Bearish",
-    probability: 78,
-    correct: true,
-  },
-  {
-    date: "2024-05-13",
-    predicted: "Bullish",
-    actual: "Bearish",
-    probability: 72,
-    correct: false,
-  },
-  {
-    date: "2024-05-12",
-    predicted: "Bearish",
-    actual: "Bearish",
-    probability: 89,
-    correct: true,
-  },
-  {
-    date: "2024-05-11",
-    predicted: "Bullish",
-    actual: "Bullish",
-    probability: 91,
-    correct: true,
-  },
-  {
-    date: "2024-05-10",
-    predicted: "Bearish",
-    actual: "Bullish",
-    probability: 68,
-    correct: false,
-  },
-  {
-    date: "2024-05-09",
-    predicted: "Bullish",
-    actual: "Bullish",
-    probability: 83,
-    correct: true,
-  },
-  {
-    date: "2024-05-08",
-    predicted: "Bearish",
-    actual: "Bearish",
-    probability: 76,
-    correct: true,
-  },
-]);
+const toCanisterEdit = () => {
+  router.push({
+    path: `/app/canisters/edit/${canisterId.value}`,
+  });
+};
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -271,25 +199,165 @@ const getPredictionClass = () => {
     : "bearish";
 };
 
-const getPredictionCellClass = (prediction: string) => {
-  return prediction === "Bullish" ? "bullish" : "bearish";
-};
-
-const getActualCellClass = (actual: string) => {
-  return actual === "Bullish" ? "bullish" : "bearish";
-};
-
 const formatCycles = (cycles: number) => {
   return (cycles / 1000000000000).toFixed(2) + "T";
 };
+const initChart = () => {
+  if (!chartRef.value) return;
 
-const formatDate = (dateStr: string) => {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  chart = echarts.init(chartRef.value);
+
+  const option = {
+    tooltip: {
+      trigger: "axis",
+      backgroundColor: "rgba(255, 255, 255, 0.95)",
+      borderColor: "#e5e7eb",
+      textStyle: { color: "#374151" },
+      formatter: function (params: any) {
+        const dataIndex = params[0].dataIndex;
+        const date = chartData.value.dates[dataIndex];
+        const predicted = chartData.value.predictedValues[dataIndex];
+        const actual = chartData.value.actualValues[dataIndex];
+        const correct = chartData.value.correctPredictions[dataIndex]
+          ? "Correct"
+          : "Incorrect";
+        const accuracy = chartData.value.accuracyRate[dataIndex];
+
+        return `
+          <div style="padding: 8px;">
+            <div style="font-weight: 600; margin-bottom: 4px;">${date}</div>
+            <div>Predicted: $${predicted}</div>
+            <div>Actual: $${actual}</div>
+            <div>Trend: <span style="color: ${
+              chartData.value.correctPredictions[dataIndex]
+                ? "#059669"
+                : "#dc2626"
+            }">${correct}</span></div>
+            <div>Accuracy: ${accuracy}%</div>
+          </div>
+        `;
+      },
+    },
+    legend: {
+      data: ["Predicted Values", "Actual Values", "Accuracy Rate"],
+      top: 10,
+      textStyle: { color: "#374151" },
+    },
+    grid: {
+      left: "3%",
+      right: "8%",
+      bottom: "3%",
+      top: "15%",
+      containLabel: true,
+    },
+    xAxis: {
+      type: "category",
+      data: chartData.value.dates,
+      axisLine: { lineStyle: { color: "#e5e7eb" } },
+      axisTick: { show: false },
+      axisLabel: { color: "#6b7280" },
+    },
+    yAxis: [
+      {
+        type: "value",
+        name: "Price ($)",
+        position: "left",
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: { color: "#6b7280" },
+        splitLine: { lineStyle: { color: "#f3f4f6" } },
+      },
+      {
+        type: "value",
+        name: "Accuracy (%)",
+        position: "right",
+        min: 0,
+        max: 100,
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: { color: "#6b7280" },
+        splitLine: { show: false },
+      },
+    ],
+    series: [
+      {
+        name: "Predicted Values",
+        type: "line",
+        yAxisIndex: 0,
+        data: chartData.value.predictedValues,
+        smooth: true,
+        lineStyle: { color: "#3b82f6", width: 2 },
+        itemStyle: {
+          color: "#3b82f6",
+          borderWidth: 2,
+          borderColor: "#ffffff",
+        },
+        symbol: "circle",
+        symbolSize: 6,
+      },
+      {
+        name: "Actual Values",
+        type: "line",
+        yAxisIndex: 0,
+        data: chartData.value.actualValues,
+        smooth: true,
+        lineStyle: { color: "#10b981", width: 2 },
+        itemStyle: {
+          color: "#10b981",
+          borderWidth: 2,
+          borderColor: "#ffffff",
+        },
+        symbol: "circle",
+        symbolSize: 6,
+      },
+      {
+        name: "Accuracy Rate",
+        type: "bar",
+        yAxisIndex: 1,
+        data: chartData.value.accuracyRate,
+        itemStyle: {
+          color: "rgba(168, 85, 247, 0.3)",
+          borderColor: "#a855f7",
+          borderWidth: 1,
+        },
+        barWidth: "40%",
+      },
+      {
+        name: "Prediction Correctness",
+        type: "scatter",
+        yAxisIndex: 0,
+        data: chartData.value.predictedValues.map((val, index) => ({
+          value: [index, val],
+          itemStyle: {
+            color: chartData.value.correctPredictions[index]
+              ? "#059669"
+              : "#dc2626",
+          },
+        })),
+        symbol: chartData.value.correctPredictions.map((correct) =>
+          correct ? "circle" : "rect"
+        ),
+        symbolSize: 8,
+        tooltip: { show: false },
+      },
+    ],
+  };
+
+  chart.setOption(option);
 };
+// Lifecycle
+onMounted(() => {
+  nextTick(() => {
+    initChart();
+  });
+});
+
+// Watch chart view changes
+watch(chartView, () => {
+  if (chart) {
+    initChart();
+  }
+});
 </script>
 
 <style scoped>
@@ -346,13 +414,6 @@ const formatDate = (dateStr: string) => {
   gap: 8px;
   color: #6b7280;
   font-size: 14px;
-}
-
-.canister-id {
-  font-family: monospace;
-  background: #f3f4f6;
-  padding: 2px 6px;
-  border-radius: 4px;
 }
 
 .separator {
@@ -558,5 +619,108 @@ const formatDate = (dateStr: string) => {
   .predictions-table {
     min-width: 600px;
   }
+}
+
+.chart-section {
+  margin-bottom: 32px;
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.chart-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.chart-container {
+  height: 300px;
+}
+
+.chart {
+  width: 100%;
+  height: 100%;
+}
+
+.activity-section {
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.activity-section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 24px 0;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 6px;
+}
+
+.activity-time {
+  font-size: 12px;
+  color: #6b7280;
+  min-width: 80px;
+}
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 2px;
+}
+
+.activity-description {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.activity-result {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.activity-result.correct {
+  background: #dcfce7;
+  color: #059669;
+}
+
+.activity-result.incorrect {
+  background: #fee2e2;
+  color: #dc2626;
 }
 </style>

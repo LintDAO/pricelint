@@ -245,7 +245,7 @@ const animateNumbers = () => {
 
 const scrollToPredictions = () => {
   // 滚动到预测表格区域
-  const element = document.querySelector(".predictions-table"); // 你需要给表格添加这个class
+  const element = document.querySelector(".predictions-table"); // 需要给表格添加这个class来jump
   if (element) {
     element.scrollIntoView({ behavior: "smooth" });
   } else {

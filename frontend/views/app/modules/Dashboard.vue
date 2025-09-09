@@ -116,7 +116,7 @@
                   <q-card-section>
                     <q-input
                       v-model="sendForm.principal"
-                      label="Recipient  Principal"
+                      label="To This Principal"
                       filled
                       class="q-mb-md"
                     />

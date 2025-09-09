@@ -1,8 +1,8 @@
 import type { ApiResult } from "@/types/types";
 import { showMessageError, showMessageSuccess } from "@/utils/message";
 import {
+  blockCanisterArrayByPrincipal,
   getCanisterArrayByPrincipal,
-  removeCanisterArrayByPrincipal,
   setCanisterArrayByPrincipal,
 } from "@/utils/storage";
 import { Actor } from "@dfinity/agent";
@@ -119,9 +119,9 @@ export async function getCanisterList(): Promise<string[]> {
 }
 
 //删除指定canister
-export function removeCanisterFromList(canisterId: string) {
+export function blockCanisterIdFromList(canisterId: string) {
   const principalId = getCurrentPrincipal();
-  removeCanisterArrayByPrincipal(
+  blockCanisterArrayByPrincipal(
     principalId,
     CONTROLLER_CANISTERS_KEY,
     canisterId

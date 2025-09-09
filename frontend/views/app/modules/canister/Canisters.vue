@@ -8,6 +8,7 @@
       row-key="canisterId"
       :loading="loading"
       :pagination="pagination"
+      class="canisters-list"
     >
       <template v-slot:top-right>
         <div class="q-gutter-md">
@@ -84,15 +85,15 @@
                   <q-item-label>Stop Canister</q-item-label>
                 </q-item-section>
               </q-item>
-              <!-- 将canisterid从已记录的列表中移除，不是删除canister -->
-              <q-item
+              <!-- 将canisterid从已记录的列表中屏蔽，不是删除canister -->
+              <!-- <q-item
                 v-if="props.row.status !== 'unknown'"
                 clickable
                 v-close-popup
-                @click="showRemoveDialog(props.row.canisterId)"
+                @click="showBlockDialog(props.row.canisterId)"
               >
-                Remove Canister
-              </q-item>
+                Block Canister
+              </q-item> -->
             </q-list>
           </q-btn-dropdown>
         </q-td>
@@ -167,12 +168,12 @@
 <script setup lang="ts">
 import {
   CanisterData,
+  blockCanisterIdFromList,
   callTargetCanister,
   getCanisterList,
   importCanisterList,
   installCode,
   queryCanisterStatus,
-  removeCanisterFromList,
   startCanister,
   stopCanister,
 } from "@/api/canisters";
@@ -266,7 +267,6 @@ const loadingActions = ref<
 // Install code dialog state
 const showConfigurationDialog = ref(false);
 const selectedCanisterId = ref("");
-const wasmFile = ref<File | null>(null);
 
 // 初始化时获取数据
 onMounted(async () => {
@@ -423,36 +423,42 @@ const importConfirm = async () => {
   }
 };
 
-const showRemoveDialog = (canisterId: string) => {
+const showBlockDialog = (canisterId: string) => {
   $q.dialog({
-    title: "Confirm Remove",
-    message: `This operation only removes ${canisterId} from the list and does not actually delete the container.`,
+    title: "Confirm Block",
+    message: `This operation only block ${canisterId} from the list and does not actually delete the container.`,
     cancel: true, // Show cancel button
     ok: {
-      label: "Remove",
+      label: "Block",
       color: "negative",
     },
   }).onOk(() => {
     // Show a second confirmation dialog to prevent accidental removal
     $q.dialog({
-      title: "Are You Sure Remove This Canister Id?",
-      message: `Removing the ID will not affect the canister in any way, but you will no longer be able to locate the corresponding canister.`,
+      title: "Are You Sure Block This Canister Id?",
+      message: `This operation only block ${canisterId} from the list and does not actually delete the container.`,
       cancel: true,
       ok: {
-        label: "Yes, I accept",
+        label: "Yes, Block It",
         color: "negative",
       },
     }).onOk(() => {
-      // Only remove if the second confirmation is accepted
-      removeCanister(canisterId);
+      // Only block if the second confirmation is accepted
+      blockCanister(canisterId);
     });
   });
 };
 
-const removeCanister = (canisterId: string) => {
-  removeCanisterFromList(canisterId);
+const blockCanister = (canisterId: string) => {
+  blockCanisterIdFromList(canisterId);
   getCanisterInfo(); // Refresh data
 };
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.canisters-list {
+  :deep(.q-table__top) {
+    padding: 0 !important;
+  }
+}
+</style>
