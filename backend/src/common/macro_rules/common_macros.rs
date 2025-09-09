@@ -53,6 +53,28 @@ macro_rules! impl_storable {
             };
         }
     };
+    
+    ($type:ident <$genric1:ident,$genric2:ident>) => {
+        impl<$genric1,$genric2> Storable for $type<$genric1,$genric2>
+        where
+            $genric1: Serialize + for<'de> Deserialize<'de>,
+            $genric2: Serialize + for<'de> Deserialize<'de>, K: std::cmp::Ord
+        {
+            fn to_bytes(&self) -> Cow<[u8]> {
+                let bytes = bincode::serialize(self).expect("Serialization failed");
+                Cow::Owned(bytes)
+            }
+
+            fn from_bytes(bytes: Cow<[u8]>) -> Self {
+                bincode::deserialize(&bytes).expect("Deserialization failed")
+            }
+
+            const BOUND: Bound = Bound::Bounded {
+                max_size: 10_000_000, // 调整为类型的最大预期大小（字节）
+                is_fixed_size: false,
+            };
+        }
+    };
 
     ($type:ident) => {
         impl Storable for $type {
