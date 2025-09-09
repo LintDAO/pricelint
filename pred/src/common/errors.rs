@@ -22,3 +22,11 @@ pub enum ConfigError{
 }
 
 impl_error!(ConfigError);
+
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum SerializeError{
+    SerializeFailed,
+    DeserializeFailed,
+}
+impl_error!(SerializeError);

@@ -1,11 +1,10 @@
-type DurationRange = variant {
-  Microseconds;
-  Minutes;
-  Seconds;
-  Days;
-  Milliseconds;
-  Hours;
-  Nanoseconds;
+type AdvanceTrainConfig = record {
+  hidden_units : opt vec nat64;
+  early_stopping_patience : opt nat64;
+  validation_split : opt float64;
+  loss_function : opt text;
+  activation : opt text;
+  dropout_rate : opt float64;
 };
 type Pred = record {
   up : float64;
@@ -23,50 +22,36 @@ type Predictor = record {
   create_time : nat64;
   price : float64;
 };
-type PredictorResult = record {
-  trend : opt text;
-  pred : Pred;
-  price : opt float64;
-};
-type PredictorView = record {
-  id : text;
-  now : opt PredictorResult;
-  next : opt PredictorResult;
-  last_1 : opt PredictorResult;
-  last_2 : opt PredictorResult;
-  stake : record { float64; float64 };
-  create_time : nat64;
-  accuracy : float64;
-};
-type Result = variant { Ok : WasmFile; Err : text };
+type Result = variant { Ok : vec text; Err : text };
 type Result_1 = variant { Ok : text; Err : text };
-type Result_2 = variant { Ok : vec Predictor; Err : text };
-type Result_3 = variant { Ok : vec WasmFile; Err : text };
-type Result_4 = variant { Ok : Predictor; Err : text };
-type Result_5 = variant { Ok : PredictorView; Err : text };
-type Result_6 = variant { Ok : User; Err : text };
-type User = record {
-  id : text;
-  owner : principal;
-  name : text;
-  create_time : nat64;
+type Result_2 = variant { Ok : vec float32; Err : text };
+type Result_3 = variant { Ok : Value; Err : text };
+type Result_4 = variant { Ok; Err : text };
+type Result_5 = variant { Ok : Predictor; Err : text };
+type TrainConfig = record {
+  weight_decay : opt float64;
+  advance_train_config : opt AdvanceTrainConfig;
+  batch_size : opt nat64;
+  epochs : opt nat64;
+  optimizer : opt text;
+  momentum : opt float64;
+  learning_rate : opt float64;
 };
-type WasmFile = record {
-  wasm_version : text;
-  wasm_bin : blob;
-  wasm_name : text;
+type Value = variant {
+  Text : text;
+  BtreeMap : vec record { text; text };
+  Vector : vec text;
 };
 service : () -> {
-  delete_wasm : (text, text) -> (Result);
-  find_user_lists : () -> (vec User) query;
-  get_canister_info : () -> (Result_1);
-  get_predictor_vec : () -> (Result_2) query;
-  get_wasm_bin : (text, text) -> (Result) query;
-  get_wasm_lists : () -> (Result_3) query;
-  push_user_pred : (Predictor) -> (Result_4);
-  show_predictions : () -> (Result_5) query;
-  test_1 : (DurationRange) -> (nat64, nat64) query;
-  upload_wasm : (text, text, blob) -> (Result);
-  user_login : () -> (Result_6) query;
-  user_register : () -> (Result_6);
+  collect_metrics : () -> ();
+  find_model_lists : () -> (Result) query;
+  get_canister_info : () -> () query;
+  get_default_model : () -> (Result_1) query;
+  predict : () -> (Result_2);
+  set_default_model : (text) -> (Result_3);
+  set_model_version : (text) -> (Result_4);
+  set_train_params : (TrainConfig) -> (Result_4);
+  test1 : () -> (Result_5);
+  train : () -> (Result_4);
+  update_canister_info : () -> ();
 }

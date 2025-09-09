@@ -9,6 +9,7 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::io::Read;
 use std::slice;
+use candid::CandidType;
 
 type Memory = VirtualMemory<DefaultMemoryImpl>;
 macro_rules! init_stable_memory {
@@ -45,7 +46,7 @@ init_stable_memory!(CONFIG,1,map<String, Value<String>>);
 
 
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(CandidType,Serialize, Deserialize, Debug, Clone)]
 pub enum Value<K: Ord, V = String> {
     Text(String),
     BtreeMap(BTreeMap<K, V>),

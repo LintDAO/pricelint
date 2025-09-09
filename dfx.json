@@ -34,15 +34,17 @@
       "type": "custom",
       "optimize": "cycles",
       "build": [
+        "candid-extractor target/wasm32-unknown-unknown/release/pred.wasm > pred/pred.did",
         "export RUSTFLAGS='--cfg getrandom_backend=\"custom\"'",
         "RUSTFLAGS='--cfg getrandom_backend=\"custom\"' cargo build --target wasm32-unknown-unknown --release -p pred"
       ],
-      "wasm": "target/wasm32-unknown-unknown/release/pred.wasm"
-    },
-    "token_transfer_from_backend": {
-      "candid": "src/token_transfer_from_backend/token_transfer_from_backend.did",
-      "package": "token_transfer_from_backend",
-      "type": "rust"
+      "wasm": "target/wasm32-unknown-unknown/release/pred.wasm",
+      "metadata": [
+        {
+          "name": "candid:service",
+          "visibility": "public"
+        }
+      ]
     },
     "icrc1_ledger_canister": {
       "type": "custom",
