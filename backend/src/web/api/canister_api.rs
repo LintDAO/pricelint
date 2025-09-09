@@ -114,13 +114,14 @@ pub  mod canister_list{
 
     //仅删除canister列表中的canister  实际操作前端agent调用api完成
     pub fn remove_canister(canister_id:String)->Result<Vec<String>, String> {
-        CANISTER_LIST.with(|map | {
-            let string_vec=map.borrow_mut().get(&caller().to_text());
-            let mut  string_vec =string_vec.ok_or(GetKeyIsNotExist.to_string())?.0;
-            string_vec.retain(|x| *x != canister_id);
-            map.borrow_mut().insert(caller().to_text(), StringVec(string_vec.clone()));
-            Ok(string_vec)
-        })
+        // CANISTER_LIST.with(|map | {
+        //     let string_vec=map.borrow_mut().get(&caller().to_text());
+        //     let mut  string_vec =string_vec.ok_or(GetKeyIsNotExist.to_string())?.0;
+        //     string_vec.retain(|x| *x != canister_id);
+        //     map.borrow_mut().insert(caller().to_text(), StringVec(string_vec.clone()));
+        //     Ok(string_vec)
+        // })
+        Ok(vec![])
     }
 
 }
