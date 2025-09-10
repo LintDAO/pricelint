@@ -7,7 +7,7 @@ use burn::backend::ndarray::NdArrayDevice;
 use burn::backend::{Autodiff, NdArray};
 use burn::tensor::{DataError, Tensor, TensorData};
 use ic_cdk::{query, update};
-use crate::api::train::default_model_api::get_default_model;
+use crate::api::config::default_model_config::get_default_model;
 
 #[update(guard = "is_owner")]
 fn train() -> Result<(), String> {
@@ -80,30 +80,3 @@ fn predict() -> Result<Vec<f32>, String> {
     }
 }
 
-pub mod default_model_api {
-    use ic_cdk::{query, update};
-    use crate::common::guard::is_owner;
-    use crate::common::constants::config::DEFAULT_MODEL_KEY;
-    use crate::common::errors::ConfigError;
-    use crate::common::lifecycle::{Value, CONFIG};
-
-    #[query(guard = "is_owner")]
-   pub fn get_default_model() -> Result<String, String> {
-        let default_model_name = CONFIG
-            .with(|rc| rc.borrow_mut().get(&DEFAULT_MODEL_KEY.to_string()))
-            .ok_or(ConfigError::HasNotSetDefaultModel.to_string())?;
-        if let Value::Text(val) = default_model_name {
-            Ok(val)
-        } else {
-            Err(ConfigError::ValueMatchPatternError.to_string())
-        }
-    }
-
-    #[update(guard = "is_owner")]
-    fn set_default_model(model_name: String) -> Result<Value<String>, String> {
-        let default_model_name = CONFIG
-            .with(|rc| rc.borrow_mut().insert(DEFAULT_MODEL_KEY.to_string(),Value::Text(model_name)))
-            .ok_or(ConfigError::SetDefaultModelError.to_string())?;
-        Ok(default_model_name)
-    }
-}

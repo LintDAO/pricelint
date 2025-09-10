@@ -72,6 +72,7 @@ where
     };
 }
 use getrandom::Error;
+use crate::api::config::config_entity::Config;
 
 #[no_mangle]
 unsafe extern "Rust" fn __getrandom_v03_custom(
