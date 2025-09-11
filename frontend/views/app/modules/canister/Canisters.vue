@@ -376,13 +376,16 @@ const stopThisCanister = async (canisterId: string) => {
 const installCanisterCode = async (canisterId: string) => {
   loadingActions.value[canisterId] = {
     ...loadingActions.value[canisterId],
-    use: true,
+    install: true,
   };
-  await installCode(canisterId, "0.0.1");
+  //TODO 版本号写死了，后面要可以选模型
+  await installCode(canisterId, "lstm", "v2");
   loadingActions.value[canisterId] = {
     ...loadingActions.value[canisterId],
-    use: false,
+    install: false,
   };
+  //安装完成后调用方法刷新数据
+  getCanisterInfo();
 };
 
 const showTopupCycles = (canisterId: string) => {

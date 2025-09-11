@@ -8,8 +8,11 @@ import {
 import { Actor } from "@dfinity/agent";
 import { ICManagementCanister, chunk_hash } from "@dfinity/ic-management";
 import { Principal } from "@dfinity/principal";
-import { backend } from "canisters/backend";
-import { createIIAgent, getCurrentPrincipal } from "./canister_pool";
+import {
+  createIIAgent,
+  getBackend,
+  getCurrentPrincipal,
+} from "./canister_pool";
 import { CONTROLLER_CANISTERS_KEY } from "./icp";
 
 // 定义 Canister 数据接口
@@ -192,8 +195,11 @@ export async function stopCanister(canisterId: string): Promise<void> {
 }
 
 //防止直接使用返回值导致ts报错：不存在属性“Err”。类型“{ Ok: [] | [User]; }”上不存在属性“Err
-export async function getWasmCode(version: string): Promise<ApiResult<any>> {
-  return backend.get_wasm(version);
+export async function getWasmFile(
+  name: string,
+  version: string
+): Promise<ApiResult<any>> {
+  return getBackend().get_wasm_bin(name, version);
 }
 
 // 计算 SHA256 哈希并转换为十六进制字符串
@@ -214,17 +220,18 @@ const CHUNK_SIZE = 1024 * 1024; // 1MB
  */
 export async function installCode(
   canisterId: string,
+  wasm_name: string,
   version: string
 ): Promise<void> {
   const managementCanister = initManage();
   try {
     // 获取 WASM 文件
-    const wasmResult = await getWasmCode(version);
+    const wasmResult = await getWasmFile(wasm_name, version);
     if (!wasmResult.Ok) {
       throw new Error(`Failed to retrieve WASM file: ${wasmResult.Err}`);
     }
 
-    const wasmModule = wasmResult.Ok;
+    const wasmModule = wasmResult.Ok.wasm_bin;
     if (!wasmModule || wasmModule.length === 0) {
       throw new Error("Retrieved WASM file is empty");
     }

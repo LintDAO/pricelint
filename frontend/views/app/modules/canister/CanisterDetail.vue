@@ -11,11 +11,9 @@
             <div class="canister-meta">
               <span class="canister-id">{{ canisterId }}</span>
               <span class="separator">•</span>
-              <span class="owner">Owner: {{ canisterData.owner }}</span>
-              <span class="separator">•</span>
-              <span class="last-updated"
-                >Last updated {{ canisterData.lastUpdated }}</span
-              >
+              <span class="last-updated">
+                Last updated {{ canisterData.lastUpdated }}
+              </span>
             </div>
           </div>
         </div>

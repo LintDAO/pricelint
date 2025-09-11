@@ -1,6 +1,6 @@
 import { fromTokenAmount, p2a, toTokenAmount } from "@/utils/common";
 import { showMessageError } from "@/utils/message";
-import { setArrayStorage } from "@/utils/storage";
+import { setCanisterArrayByPrincipal } from "@/utils/storage";
 import { Actor } from "@dfinity/agent";
 import { CMCCanister } from "@dfinity/cmc";
 import { SubAccount } from "@dfinity/ledger-icp";
@@ -190,11 +190,16 @@ export const burnICPcreateCanister = async (
     // 将 Canister ID 转换为字符串并存储到 localStorage
     const canisterId = notifyResult.toString();
     if (canisterId) {
-      setArrayStorage(CONTROLLER_CANISTERS_KEY, canisterId);
+      setCanisterArrayByPrincipal(
+        principal,
+        CONTROLLER_CANISTERS_KEY,
+        canisterId
+      );
     }
     return true;
   } catch (error) {
     console.error("Failed to burn ICP:", error);
+    showMessageError("Failed to burn ICP:" + error);
     throw error;
   }
 };
