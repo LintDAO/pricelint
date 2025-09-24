@@ -9,6 +9,7 @@ export const NET_ID = {
 };
 export const ROSETTA_URL = "https://rosetta-api.internetcomputer.org";
 export const IC_LEDGER_URL = "https://ledger-api.internetcomputer.org";
+export const IC_DASHBOARD_URL = "https://dashboard.internetcomputer.org";
 export const BINANCE_URL = "https://data-api.binance.vision";
 export const ROSETTA_WEBSITE = "Binance";
 export const ICRC_WEBSITE = "ICPSwap";

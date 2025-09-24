@@ -451,7 +451,7 @@ const showBlockDialog = (canisterId: string) => {
     });
   });
 };
-
+// 屏蔽canister，而非从列表删除
 const blockCanister = (canisterId: string) => {
   blockCanisterIdFromList(canisterId);
   getCanisterInfo(); // Refresh data
