@@ -291,7 +291,6 @@ const showButtons = computed(() => {
 // 动态生成按钮
 const buttons = computed(() => {
   if (!showButtons.value) return [];
-  console.log("show buttons");
   // 获取当前 canister ID
   const canisterId = route.params.canisterId as string | undefined;
   if (!canisterId) return [];
@@ -302,7 +301,7 @@ const buttons = computed(() => {
       to: `/app/canisters/${canisterId}`,
     },
     {
-      label: "Setting",
+      label: "Settings",
       to: `/app/canisters/${canisterId}/edit`,
     },
   ];

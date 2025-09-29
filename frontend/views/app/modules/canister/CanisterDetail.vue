@@ -1,8 +1,32 @@
 <template>
   <div class="project-overview color-mask">
+    <q-banner v-if="showBanner" inline-actions class="banner-container q-mb-md">
+      <template v-slot:avatar>
+        <q-icon name="info" class="banner-icon" />
+      </template>
+      <div class="banner-text">
+        Your Canister version ({{ currentVersion }}) is outdated. Please upgrade
+        to the latest version ({{ latestVersion }}) for better performance and
+        security.
+      </div>
+      <template v-slot:action>
+        <q-btn
+          flat
+          class="banner-btn-primary"
+          label="Upgrade"
+          @click="handleUpgrade"
+        />
+        <q-btn
+          flat
+          class="banner-btn-secondary"
+          label="Don't Show Again"
+          @click="handleDontShowAgain"
+        />
+      </template>
+    </q-banner>
     <div class="overview-container">
       <!-- Left Sidebar - Project Info -->
-      <div class="project-sidebar">
+      <div class="project-sidebar q-pt-md">
         <div class="project-card">
           <!-- Project Preview -->
           <div class="project-preview">
@@ -55,25 +79,37 @@
                   </div>
                 </div>
               </div>
+              <div>
+                <div class="meta-item">
+                  <span class="meta-label">Next:</span>
+                  <div class="meta-value">
+                    <span>{{ canisterData.nextPrediction }}</span>
+                  </div>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Update:</span>
+                  <div class="meta-value">
+                    <span>{{ canisterData.lastUpdated }}</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="site-structure">
               <div class="structure-header">
                 <span class="structure-title"> Latest</span>
               </div>
-
-              <div class="structure-item">
-                <span>Next: {{ canisterData.nextPrediction }}</span>
-              </div>
-              <div class="structure-item">
-                <span>Update: {{ canisterData.lastUpdated }}</span>
-              </div>
+              <q-btn
+                label="Start Predict"
+                color="primary"
+                no-caps
+                :loading="startPredictLoading"
+                @click="startPredict(true)"
+              ></q-btn>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- Main Content -->
       <div class="main-content">
         <!-- Insights Section -->
         <div>
@@ -96,52 +132,83 @@
           </div>
 
           <div class="insights-grid">
+            <!-- Model Accuracy Card -->
             <div class="insight-card">
-              <div class="insight-label">Model Accuracy</div>
-              <div class="insight-value">{{ canisterData.accuracy }}%</div>
-              <div
-                class="insight-change"
-                :class="getNumberChangeClass(canisterData.accuracy)"
-              >
-                {{ canisterData.accuracyChange }}% from last week
+              <div v-if="isDataLoading">
+                <div class="insight-label">Model Accuracy</div>
+                <q-skeleton type="text" width="60px" class="insight-value" />
+                <q-skeleton type="text" width="80px" class="insight-change" />
+              </div>
+              <div v-else>
+                <div class="insight-label">Model Accuracy</div>
+                <div class="insight-value">{{ canisterData.accuracy }}%</div>
+                <div
+                  class="insight-change"
+                  :class="getNumberChangeClass(canisterData.accuracyChange)"
+                >
+                  {{ canisterData.accuracyChange }}% from last week
+                </div>
               </div>
             </div>
 
+            <!-- Total Stake Card -->
             <div class="insight-card">
-              <div class="insight-label">Total Stake</div>
-              <div class="insight-value">{{ canisterData.totalStake }}</div>
-              <div
-                class="insight-change"
-                :class="getNumberChangeClass(canisterData.stakeChange)"
-              >
-                {{ canisterData.stakeChange }}% from last week
+              <div v-if="isDataLoading">
+                <div class="insight-label">Total Stake</div>
+                <q-skeleton type="text" width="60px" class="insight-value" />
+                <q-skeleton type="text" width="80px" class="insight-change" />
+              </div>
+              <div v-else>
+                <div class="insight-label">Total Stake</div>
+                <div class="insight-value">{{ canisterData.totalStake }}</div>
+                <div
+                  class="insight-change"
+                  :class="getNumberChangeClass(canisterData.stakeChange)"
+                >
+                  {{ canisterData.stakeChange }}% from last week
+                </div>
               </div>
             </div>
 
+            <!-- Cycles Balance Card -->
             <div class="insight-card">
-              <div class="insight-label">Cycles Balance</div>
-              <div class="insight-value">
-                {{ canisterData.cyclesBalance }} T
+              <div v-if="isDataLoading">
+                <div class="insight-label">Cycles Balance</div>
+                <q-skeleton type="text" width="60px" class="insight-value" />
+                <q-skeleton type="text" width="80px" class="insight-change" />
               </div>
-              <div
-                class="insight-change"
-                :class="getNumberChangeClass(canisterData.cyclesChange)"
-              >
-                {{ canisterData.cyclesChange }}% from last week
+              <div v-else>
+                <div class="insight-label">Cycles Balance</div>
+                <div class="insight-value">
+                  {{ canisterData.cyclesBalance }} T
+                </div>
+                <div
+                  class="insight-change"
+                  :class="getNumberChangeClass(canisterData.cyclesChange)"
+                >
+                  {{ canisterData.cyclesChange }}% from last week
+                </div>
               </div>
             </div>
 
+            <!-- Shutdowns Card -->
             <div class="insight-card">
-              <div class="insight-label">Shutdowns</div>
-              <div class="insight-value">0</div>
-              <div class="insight-change">0% from last week</div>
+              <div v-if="isDataLoading">
+                <div class="insight-label">Shutdowns</div>
+                <q-skeleton type="text" width="60px" class="insight-value" />
+                <q-skeleton type="text" width="80px" class="insight-change" />
+              </div>
+              <div v-else>
+                <div class="insight-label">Shutdowns</div>
+                <div class="insight-value">0</div>
+                <div class="insight-change">0% from last week</div>
+              </div>
             </div>
           </div>
         </div>
-
         <!-- Quick Start Section -->
-        <div class="quick-start-section">
-          <div class="section-header">
+        <div>
+          <div class="q-pt-md">
             <div class="header-left">
               <h4 class="section-title">Quick Start</h4>
             </div>
@@ -152,8 +219,8 @@
             ref="stepper"
             color="primary"
             animated
-            header-nav
             flat
+            header-nav
             vertical
           >
             <q-step
@@ -203,7 +270,16 @@
 </template>
 
 <script setup lang="ts">
-import { IC_DASHBOARD_URL } from "@/api/constants/ic";
+import { onPredict, queryCanisterStatus } from "@/api/canisters";
+import {
+  DONT_SHOW_AGIAN_STORAGE_KEY,
+  IC_DASHBOARD_URL,
+} from "@/api/constants/ic";
+import { fromTokenAmount } from "@/utils/common";
+import {
+  getStringArrayByPrincipal,
+  setStringArrayByPrincipal,
+} from "@/utils/storage";
 import * as echarts from "echarts";
 import { nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -211,7 +287,15 @@ import { useRoute, useRouter } from "vue-router";
 const route = useRoute();
 const router = useRouter();
 
+// 定义 Banner 是否显示
+const showBanner = ref(true);
+const isDataLoading = ref(true);
+const startPredictLoading = ref(false);
+
 const canisterId = ref(route.params.canisterId as string);
+// 当前 Canister 版本和最新版本（示例数据）
+const currentVersion = "1.2.3";
+const latestVersion = "1.5.0";
 // Reactive data
 const chartView = ref("accuracy");
 const chartRef = ref<HTMLElement>();
@@ -265,7 +349,8 @@ const quickStartItems = [
 const canisterData = ref({
   owner: "alice-principal-id",
   status: "Running",
-  cyclesBalance: 12500,
+  module_hash: "",
+  cyclesBalance: "0",
   cyclesChange: -2.1,
   totalStake: "45,230 ICP",
   stakeChange: 8.3,
@@ -276,6 +361,41 @@ const canisterData = ref({
   nextPrediction: "Bullish",
   lastUpdated: "May 15, 2024 at 2:30 PM",
 });
+
+//获取canister信息
+const getCanisterInfo = async () => {
+  isDataLoading.value = true;
+  try {
+    const status = await queryCanisterStatus(canisterId.value);
+    if (!status) {
+      throw new Error(`Canister ${canisterId.value} status is undefined`);
+    }
+    canisterData.value = {
+      ...canisterData.value,
+      status: Object.keys(status.status)[0] as
+        | "running"
+        | "stopping"
+        | "stopped",
+      module_hash: status.module_hash,
+      cyclesBalance: `${fromTokenAmount(status.cycles.toString(), 12).toFixed(
+        2
+      )}`,
+      owner: status.settings.controllers.map((p) => p.toText()),
+    };
+  } catch (error) {
+    console.error(`Error fetching status for canister ${canisterId}:`, error);
+  }
+  isDataLoading.value = false;
+};
+
+//开始预测，true为开始，false为停止
+const startPredict = async (start: boolean) => {
+  startPredictLoading.value = true;
+  try {
+    await onPredict(canisterId.value, start);
+  } catch (error) {}
+  startPredictLoading.value = false;
+};
 
 const initChart = () => {
   if (!chartRef.value) return;
@@ -380,6 +500,9 @@ const initChart = () => {
 };
 // Lifecycle
 onMounted(() => {
+  getCanisterInfo();
+  // 检查是否启用升级版本的banner
+  showBanner.value = !checkIfDismissed();
   nextTick(() => {
     initChart();
   });
@@ -411,6 +534,42 @@ const completeQuickStart = () => {
   console.log("Quick Start Completed");
   // Handle completion logic here
 };
+
+// 检查是否已屏蔽当前版本的提示
+const checkIfDismissed = (): boolean => {
+  try {
+    const dismissedVersions = getStringArrayByPrincipal(
+      DONT_SHOW_AGIAN_STORAGE_KEY
+    );
+    if (dismissedVersions === null) return false;
+    return dismissedVersions.includes(currentVersion);
+  } catch (error) {
+    console.error("Error checking dismissed versions:", error);
+    return false;
+  }
+};
+
+// 处理升级按钮点击事件
+const handleUpgrade = () => {
+  // 这里可以添加升级逻辑，比如跳转到升级页面或触发升级流程
+  console.log("Initiating Canister upgrade...");
+  // 模拟升级后关闭 Banner
+  showBanner.value = false;
+};
+
+// 处理关闭 Banner
+const handleDontShowAgain = () => {
+  const success = setStringArrayByPrincipal(
+    DONT_SHOW_AGIAN_STORAGE_KEY,
+    currentVersion
+  );
+  if (success) {
+    showBanner.value = false;
+    console.log(`Version ${currentVersion} dismissed`);
+  } else {
+    console.log(`Failed to dismiss version ${currentVersion}`);
+  }
+};
 </script>
 
 <style lang="scss" scoped>
@@ -424,7 +583,6 @@ const completeQuickStart = () => {
   height: 100%;
 }
 .color-mask {
-  overflow: hidden;
   position: relative;
   &::before {
     content: "";
@@ -443,6 +601,27 @@ const completeQuickStart = () => {
     filter: blur(300px); // 模糊效果
   }
 }
+
+.q-stepper {
+  border: 1px solid rgb(234, 235, 238);
+}
+
+.banner-container {
+  background-color: #e0f2fe; /* 类似 Tailwind 的 blue-100，浅蓝色背景 */
+  // color: #1e40af; /* 类似 Tailwind 的 blue-800，深蓝色文字 */
+  border: 1px solid #bfdbfe; /* 类似 Tailwind 的 blue-200，浅蓝色边框 */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* 类似 Tailwind 的 shadow-sm */
+}
+
+.banner-icon {
+  color: #2563eb; /* 类似 Tailwind 的 blue-600，柔和的蓝色图标 */
+}
+
+.banner-text {
+  font-size: 14px; /* 类似 Tailwind 的 text-sm */
+  line-height: 1.5; /* 类似 Tailwind 的 leading-normal */
+}
+
 .project-overview {
   // min-height: 100vh;
 }
@@ -467,21 +646,6 @@ const completeQuickStart = () => {
   border-radius: 12px;
   border: 1px solid #e5e7eb;
   overflow: hidden;
-}
-
-.preview-mockup {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-
-.logo-section {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
 }
 
 .welcome-text {
@@ -576,14 +740,6 @@ const completeQuickStart = () => {
 .main-content {
   display: flex;
   flex-direction: column;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 0;
-  border-bottom: 1px solid #f3f4f6;
 }
 
 .header-left {

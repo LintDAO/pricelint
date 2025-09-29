@@ -169,13 +169,13 @@
 import {
   CanisterData,
   blockCanisterIdFromList,
-  callTargetCanister,
   getCanisterList,
   importCanisterList,
   installCode,
   queryCanisterStatus,
   startCanister,
   stopCanister,
+  useRecommendSetTrainParam,
 } from "@/api/canisters";
 import TopUpCycles from "@/components/TopUpCycles.vue";
 import type { TableColumn } from "@/types/model";
@@ -407,7 +407,7 @@ const useRecommendParam = async () => {
     ...loadingActions.value[selectedCanisterId.value],
     use: true,
   };
-  await callTargetCanister(canisterId);
+  await useRecommendSetTrainParam(canisterId);
   loadingActions.value[selectedCanisterId.value] = {
     ...loadingActions.value[selectedCanisterId.value],
     use: false,

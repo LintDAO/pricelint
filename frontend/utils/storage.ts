@@ -1,3 +1,4 @@
+import { getCurrentPrincipal } from "@/api/canister_pool";
 import { isPrincipal } from "./common";
 import { showMessageError, showMessageSuccess } from "./message";
 
@@ -70,7 +71,95 @@ export const deleteUserInfoStorage = (principal: string): void => {
 };
 
 /**
- * 按 principalId 向 localStorage 中的数组追加 Canister ID，并避免重复
+ * 按 不同用户的 principalId 向 localStorage 中的数组追加字符串，并避免重复
+ * @param principalId 用户的 principalId
+ * @param key 存储的键名
+ * @param string 要存储的字符串（字符串类型）
+ * @returns 是否成功追加并存储（如果项已存在，返回 false）
+ */
+export const setStringArrayByPrincipal = (
+  key: string,
+  string: string
+): boolean => {
+  try {
+    // 获取当前用户principal ID
+    const principalId = getCurrentPrincipal();
+    if (!principalId)
+      throw new Error("User not authenticated: Principal not found");
+    // 1. 从 localStorage 获取现有数据
+    const existingData = getCanisterArrayByPrincipal(key); // 使用内部 get 函数获取整个 map，但不过滤
+    // 2. 确保返回值为对象，如果不是或为空，返回空对象
+    const existingMap =
+      typeof existingData === "object" && existingData !== null
+        ? existingData
+        : {};
+
+    // 3. 获取当前 principalId 对应的数组，如果不存在则初始化为空数组
+    const existingArray = Array.isArray(existingMap[principalId])
+      ? existingMap[principalId]
+      : [];
+
+    // 4. 检查是否已存在该项（无论是否屏蔽），避免重复添加
+    if (
+      existingArray.some((item: { string: string }) => item.string === string)
+    ) {
+      console.log(
+        `${string} already exists for principal ${principalId} in ${key}, skipping storage`
+      );
+      return false; // 未添加新项
+    }
+
+    // 5. 追加新项到对应 principalId 的数组，初始为未屏蔽
+    const updatedArray = [...existingArray, { string }];
+
+    // 6. 更新 principalId 对应的数组
+    existingMap[principalId] = updatedArray;
+
+    // 7. 存储更新后的对象
+    setStorage(key, existingMap);
+    console.log(
+      `Successfully stored ${string} for principal ${principalId} in ${key}, updated map:`,
+      existingMap
+    );
+    return true; // 成功添加新项
+  } catch (error) {
+    console.error(
+      `Failed to store string ${string} for principal in ${key}:`,
+      error
+    );
+    return false; // 存储失败
+  }
+};
+
+/**
+ * 从 localStorage 获取 当前 principal ID 存储的 字符串 数组
+ * @param key 存储的键名
+ * @returns 指定 principalId 的字符串数组，或 null
+ */
+export const getStringArrayByPrincipal = (key: string): string[] | null => {
+  const principalId = getCurrentPrincipal();
+  if (!principalId) {
+    throw new Error("User not authenticated: Principal not found");
+  }
+  const value = localStorage.getItem(key);
+  if (value === null) return null;
+
+  try {
+    const parsed = JSON.parse(value);
+    // 返回对应 principalId 的数组
+    const array = Array.isArray(parsed?.[principalId])
+      ? parsed[principalId]
+      : [];
+    // 直接映射为字符串数组（假设存储结构为 { string: string }）
+    return array.map((item: { string: string }) => item.string);
+  } catch (e) {
+    console.error(`Failed to read ${key} info:`, e);
+    return null;
+  }
+};
+
+/**
+ * 按 principalId 向 localStorage 中的数组追加 Canister ID，并避免重复，默认不拉黑，也就是会显示
  * @param principalId 用户的 principalId
  * @param key 存储的键名
  * @param canisterId 要追加的 Canister ID（字符串类型）

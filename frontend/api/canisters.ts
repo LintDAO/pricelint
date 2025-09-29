@@ -40,6 +40,8 @@ const initManage = () => {
 const userCanisterIdlFactory = ({ IDL }) => {
   return IDL.Service({
     set_train_params: IDL.Func([], [], []), // 无参数，无返回值
+    set_start_predict: IDL.Func([], [], []), // 无参数，无返回值
+    set_stop_predict: IDL.Func([], [], []), // 无参数，无返回值
   });
 };
 
@@ -298,19 +300,44 @@ export async function installCode(
   }
 }
 
-export const callTargetCanister = async (canisterId: string): Promise<void> => {
+export const useRecommendSetTrainParam = async (
+  canisterId: string
+): Promise<void> => {
   console.log(
     `Calling set_train_params for canister ${canisterId} with params:`
   );
   try {
     const canisterActor = await initTargetCanister(canisterId);
     const res = await canisterActor.set_train_params();
-    console.log("callTargetCanister", res);
+    console.log("useRecommendSetTrainParam", res);
   } catch (error) {
     console.error(
       `Error calling set_train_params on canister ${canisterId}:`,
       error
     );
+    throw error;
+  }
+};
+
+//启动用户canister的预测，true为开始，false为停止
+export const onPredict = async (
+  canisterId: string,
+  start: boolean
+): Promise<void> => {
+  console.log(
+    `Calling set_train_params for canister ${canisterId} with params:`
+  );
+  try {
+    const canisterActor = await initTargetCanister(canisterId);
+    if (start) {
+      const res = await canisterActor.set_start_predict();
+      console.log("set_start_predict", res);
+    } else {
+      const res = await canisterActor.set_stop_predict();
+      console.log("set_stop_predict", res);
+    }
+  } catch (error) {
+    console.error(`Error calling onPredict on canister ${canisterId}:`, error);
     throw error;
   }
 };
