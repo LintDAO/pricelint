@@ -3,6 +3,7 @@ import { setCurrentIdentity } from "@/api/canister_pool";
 import App from "@/views/app/AppHome.vue";
 import CanisterDetail from "@/views/app/modules/canister/CanisterDetail.vue";
 import CanisterEdit from "@/views/app/modules/canister/CanisterEdit.vue";
+import CanisterInsights from "@/views/app/modules/canister/CanisterInsights.vue";
 import Canisters from "@/views/app/modules/canister/Canisters.vue";
 import DashBoard from "@/views/app/modules/Dashboard.vue";
 import Home from "@/views/home/Home.vue";
@@ -46,6 +47,17 @@ const routes: Array<RouteRecordRaw> = [
         name: "CanisterEdit",
         path: "canisters/:canisterId/edit",
         component: CanisterEdit,
+        meta: {
+          sidebar: [{ label: "General", to: "/general", icon: "home" }],
+        },
+      },
+      {
+        name: "CanisterInsights",
+        path: "canisters/:canisterId/insights",
+        component: CanisterInsights,
+        meta: {
+          sidebar: [{ label: "Traffic", to: "/traffic", icon: "home" }],
+        },
       },
     ],
   },

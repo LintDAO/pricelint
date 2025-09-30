@@ -284,7 +284,7 @@ onMounted(() => {
 });
 // 判断是否显示按钮（匹配 /app/canisters/:canisterId 及其子路由）
 const showButtons = computed(() => {
-  const regex = /^\/app\/canisters\/[^/]+(\/edit)?$/;
+  const regex = /^\/app\/canisters\/[^/]+(\/.*)?$/;
   return regex.test(route.path);
 });
 
@@ -299,6 +299,10 @@ const buttons = computed(() => {
     {
       label: "Overview",
       to: `/app/canisters/${canisterId}`,
+    },
+    {
+      label: "Insights",
+      to: `/app/canisters/${canisterId}/insights`,
     },
     {
       label: "Settings",

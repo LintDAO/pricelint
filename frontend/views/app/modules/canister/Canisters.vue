@@ -2,7 +2,6 @@
   <div>
     <q-table
       flat
-      title="Canister List"
       :rows="canisterData"
       :columns="columns"
       row-key="canisterId"
@@ -10,6 +9,9 @@
       :pagination="pagination"
       class="canisters-list"
     >
+      <template v-slot:top-left>
+        <div class="text-h6 text-grey-8">Canister List</div>
+      </template>
       <template v-slot:top-right>
         <div class="q-gutter-md">
           <q-btn color="primary" @click="importDialogVisible = true" no-caps>

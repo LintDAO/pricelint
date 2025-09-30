@@ -94,11 +94,13 @@
                       </q-item-label>
                       <q-btn-dropdown flat round dense>
                         <q-list dense>
-                          <q-item clickable v-close-popup>
+                          <q-item
+                            clickable
+                            v-close-popup
+                            @click.stop="openSendDialog(token)"
+                          >
                             <q-item-section>
-                              <q-item-label @click="openSendDialog(token)">
-                                Send
-                              </q-item-label>
+                              <q-item-label> Send </q-item-label>
                             </q-item-section>
                           </q-item>
                         </q-list>
@@ -461,11 +463,6 @@ const openSendDialog = (token) => {
   sendForm.value.principal = "";
   sendForm.value.amount = 0;
   showSendDialog.value = true;
-  console.log(
-    "  selectedToken.value ",
-    selectedToken.value,
-    showSendDialog.value
-  );
 };
 // 不清理状态的话会导致切换代币时无法正常打开dialog
 const closeSendDialog = () => {
