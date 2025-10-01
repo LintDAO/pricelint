@@ -94,11 +94,13 @@
                       </q-item-label>
                       <q-btn-dropdown flat round dense>
                         <q-list dense>
-                          <q-item clickable v-close-popup>
+                          <q-item
+                            clickable
+                            v-close-popup
+                            @click.stop="openSendDialog(token)"
+                          >
                             <q-item-section>
-                              <q-item-label @click="openSendDialog(token)">
-                                Send
-                              </q-item-label>
+                              <q-item-label> Send </q-item-label>
                             </q-item-section>
                           </q-item>
                         </q-list>
@@ -119,6 +121,10 @@
                       label="To This Principal"
                       filled
                       class="q-mb-md"
+                      :rules="[
+                        (val) => !!val || 'Principal ID is required',
+                        (val) => isPrincipal(val) || 'Invalid Principal ID',
+                      ]"
                     />
                     <q-input
                       v-model.number="sendForm.amount"
@@ -127,7 +133,7 @@
                       filled
                       :suffix="selectedToken?.symbol"
                       :rules="[
-                (val: number) => val > 0 && val <= (selectedToken?.amount ?? 0) || 'ineffective balance'
+                (val: number) => val > 0 && val <= (selectedToken?.amount ?? 0) || 'insufficient balance'
               ]"
                     />
                   </q-card-section>
@@ -136,6 +142,7 @@
                     <q-btn
                       color="primary"
                       label="confirm"
+                      :loading="loadingSend"
                       @click="sendToken"
                       :disable="!sendForm.principal || sendForm.amount == null"
                     />
@@ -276,9 +283,9 @@
 
 <script lang="ts" setup>
 import { ICP_LOGO } from "@/api/constants/tokens";
-import { getCyclesBalance, getICPBalance } from "@/api/icp";
+import { getCyclesBalance, getICPBalance, transferICP } from "@/api/icp";
 import { useUserStore } from "@/stores/user";
-import { p2a } from "@/utils/common";
+import { isPrincipal, p2a } from "@/utils/common";
 import { useQuasar } from "quasar";
 import { computed, onMounted, ref } from "vue";
 
@@ -286,6 +293,7 @@ import { computed, onMounted, ref } from "vue";
 const $q = useQuasar();
 const userStore = useUserStore();
 const loading = ref(true);
+const loadingSend = ref(false);
 const showSendDialog = ref(false);
 const selectedToken = ref<{
   name: string;
@@ -417,7 +425,14 @@ const getUserInfo = () => {
   });
 };
 
-const sendToken = () => {};
+const sendToken = async () => {
+  loadingSend.value = true;
+  try {
+    await transferICP(sendForm.value.principal, sendForm.value.amount);
+  } catch (error) {}
+  loadingSend.value = false;
+  showSendDialog.value = false;
+};
 
 // 计算 Cycles 余额进度条百分比（假设最大值为 1000 万）
 const cyclesPercentage = computed(() =>

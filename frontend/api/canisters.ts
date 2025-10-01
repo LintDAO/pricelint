@@ -8,8 +8,11 @@ import {
 import { Actor } from "@dfinity/agent";
 import { ICManagementCanister, chunk_hash } from "@dfinity/ic-management";
 import { Principal } from "@dfinity/principal";
-import { backend } from "canisters/backend";
-import { createIIAgent, getCurrentPrincipal } from "./canister_pool";
+import {
+  createIIAgent,
+  getBackend,
+  getCurrentPrincipal,
+} from "./canister_pool";
 import { CONTROLLER_CANISTERS_KEY } from "./icp";
 
 // 定义 Canister 数据接口
@@ -37,6 +40,8 @@ const initManage = () => {
 const userCanisterIdlFactory = ({ IDL }) => {
   return IDL.Service({
     set_train_params: IDL.Func([], [], []), // 无参数，无返回值
+    set_start_predict: IDL.Func([], [], []), // 无参数，无返回值
+    set_stop_predict: IDL.Func([], [], []), // 无参数，无返回值
   });
 };
 
@@ -192,8 +197,11 @@ export async function stopCanister(canisterId: string): Promise<void> {
 }
 
 //防止直接使用返回值导致ts报错：不存在属性“Err”。类型“{ Ok: [] | [User]; }”上不存在属性“Err
-export async function getWasmCode(version: string): Promise<ApiResult<any>> {
-  return backend.get_wasm(version);
+export async function getWasmFile(
+  name: string,
+  version: string
+): Promise<ApiResult<any>> {
+  return getBackend().get_wasm_bin(name, version);
 }
 
 // 计算 SHA256 哈希并转换为十六进制字符串
@@ -214,17 +222,18 @@ const CHUNK_SIZE = 1024 * 1024; // 1MB
  */
 export async function installCode(
   canisterId: string,
+  wasm_name: string,
   version: string
 ): Promise<void> {
   const managementCanister = initManage();
   try {
     // 获取 WASM 文件
-    const wasmResult = await getWasmCode(version);
+    const wasmResult = await getWasmFile(wasm_name, version);
     if (!wasmResult.Ok) {
       throw new Error(`Failed to retrieve WASM file: ${wasmResult.Err}`);
     }
 
-    const wasmModule = wasmResult.Ok;
+    const wasmModule = wasmResult.Ok.wasm_bin;
     if (!wasmModule || wasmModule.length === 0) {
       throw new Error("Retrieved WASM file is empty");
     }
@@ -291,19 +300,44 @@ export async function installCode(
   }
 }
 
-export const callTargetCanister = async (canisterId: string): Promise<void> => {
+export const useRecommendSetTrainParam = async (
+  canisterId: string
+): Promise<void> => {
   console.log(
     `Calling set_train_params for canister ${canisterId} with params:`
   );
   try {
     const canisterActor = await initTargetCanister(canisterId);
     const res = await canisterActor.set_train_params();
-    console.log("callTargetCanister", res);
+    console.log("useRecommendSetTrainParam", res);
   } catch (error) {
     console.error(
       `Error calling set_train_params on canister ${canisterId}:`,
       error
     );
+    throw error;
+  }
+};
+
+//启动用户canister的预测，true为开始，false为停止
+export const onPredict = async (
+  canisterId: string,
+  start: boolean
+): Promise<void> => {
+  console.log(
+    `Calling set_train_params for canister ${canisterId} with params:`
+  );
+  try {
+    const canisterActor = await initTargetCanister(canisterId);
+    if (start) {
+      const res = await canisterActor.set_start_predict();
+      console.log("set_start_predict", res);
+    } else {
+      const res = await canisterActor.set_stop_predict();
+      console.log("set_stop_predict", res);
+    }
+  } catch (error) {
+    console.error(`Error calling onPredict on canister ${canisterId}:`, error);
     throw error;
   }
 };

@@ -10,7 +10,7 @@
           {{
             operation === "topUp"
               ? `These ICP will be topped up to ${targetCanisterId} canister.`
-              : "At least 1T Cycles is required to create a new canister."
+              : `At least ${minimumCycles}T Cycles is required to create a new canister.`
           }}
         </div>
       </q-card-section>
@@ -66,8 +66,8 @@
             readonly
             :rules="[
               (val) =>
-                val >= 1 ||
-                'At least 1T cycles are required to successfully create.',
+                val >= minimumCycles ||
+                `At least ${minimumCycles}T cycles are required to successfully create.`,
             ]"
             class="swap-input"
           >
@@ -110,11 +110,7 @@ import {
   topupCycles,
 } from "@/api/icp";
 import { p2a } from "@/utils/common";
-import {
-  showMessageError,
-  showMessageSuccess,
-  showResultError,
-} from "@/utils/message";
+import { showMessageError, showMessageSuccess } from "@/utils/message";
 import { computed, onMounted, ref, watch } from "vue";
 
 interface Props {
@@ -131,6 +127,7 @@ const emit = defineEmits<{
 
 const userICP = ref<number>(0); // 用户 ICP 余额
 const icpToCyclesRate = ref<number>(0); // 转换比例
+const minimumCycles = 0.5; //最低充值cycles的额度，0.5T
 const icpInput = ref<number>(0); // 用户输入的 ICP 数量
 const localDialogVisible = ref<boolean>(props.visible); // 本地 Dialog 显示状态
 const isLoading = ref<boolean>(false); // 确认操作加载状态
@@ -169,7 +166,7 @@ const fetchUserICP = async () => {
   }
 };
 
-//TODO 模拟 Top Up Cycles
+//Top Up Cycles
 const topUpCycles = async (icpAmount: number) => {
   isLoading.value = true;
   if (props.targetCanisterId) {
@@ -197,7 +194,10 @@ const convertedCycles = computed((): number => {
 // 确认按钮禁用逻辑
 const isConfirmDisabled = computed(() => {
   if (icpInput.value <= 0 || icpInput.value > userICP.value) return true;
-  if (props.operation === "createCanister" && convertedCycles.value < 1)
+  if (
+    props.operation === "createCanister" &&
+    convertedCycles.value < minimumCycles
+  )
     return true;
   return false;
 });
@@ -218,8 +218,13 @@ const handleConfirm = async () => {
     showMessageError("Insufficient ICP balance");
     return;
   }
-  if (props.operation === "createCanister" && convertedCycles.value < 1) {
-    showMessageError("Minimum 1 TCycle required for canister creation");
+  if (
+    props.operation === "createCanister" &&
+    convertedCycles.value < minimumCycles
+  ) {
+    showMessageError(
+      `Minimum ${minimumCycles} TCycle required for canister creation`
+    );
     return;
   }
 
@@ -228,19 +233,17 @@ const handleConfirm = async () => {
     if (props.operation === "topUp") {
       await topUpCycles(icpInput.value);
       showMessageSuccess(
-        `Successfully topped up ${convertedCycles.value} Cycles from ${icpInput.value} ICP`
+        `Successfully topped up ${convertedCycles.value} T Cycles from ${icpInput.value} ICP`
       );
     } else {
-      await createCanister(convertedCycles.value);
+      await createCanister(icpInput.value);
       showMessageSuccess(
-        `Successfully created canister with ${convertedCycles.value} Cycles`
+        `Successfully created canister with ${convertedCycles.value} T Cycles`
       );
     }
-
     // 更新余额
     userICP.value -= icpInput.value;
   } catch (error) {
-    showResultError(error);
   } finally {
     isLoading.value = false;
   }

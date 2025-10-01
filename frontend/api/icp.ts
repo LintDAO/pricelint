@@ -1,6 +1,6 @@
 import { fromTokenAmount, p2a, toTokenAmount } from "@/utils/common";
-import { showMessageError } from "@/utils/message";
-import { setArrayStorage } from "@/utils/storage";
+import { showMessageError, showMessageSuccess } from "@/utils/message";
+import { setCanisterArrayByPrincipal } from "@/utils/storage";
 import { Actor } from "@dfinity/agent";
 import { CMCCanister } from "@dfinity/cmc";
 import { SubAccount } from "@dfinity/ledger-icp";
@@ -190,11 +190,16 @@ export const burnICPcreateCanister = async (
     // 将 Canister ID 转换为字符串并存储到 localStorage
     const canisterId = notifyResult.toString();
     if (canisterId) {
-      setArrayStorage(CONTROLLER_CANISTERS_KEY, canisterId);
+      setCanisterArrayByPrincipal(
+        principal,
+        CONTROLLER_CANISTERS_KEY,
+        canisterId
+      );
     }
     return true;
   } catch (error) {
     console.error("Failed to burn ICP:", error);
+    showMessageError("Failed to burn ICP:" + error);
     throw error;
   }
 };
@@ -256,6 +261,57 @@ export const topupCycles = async (
     return true;
   } catch (error) {
     console.error(`Failed to top up Cycles for canister ${canisterId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * 向指定 Principal 转账 ICP。
+ * @param toPrincipal 接收方的 Principal ID（字符串格式）
+ * @param icpAmount 要转账的 ICP 数量
+ * @returns Promise<boolean> 转账成功返回 true，否则抛出错误
+ */
+export const transferICP = async (
+  toPrincipal: string,
+  icpAmount: number
+): Promise<boolean> => {
+  try {
+    const principal = getCurrentPrincipal();
+    if (!principal) {
+      throw new Error("User not authenticated: Principal not found");
+    }
+
+    // 检查 ICP 余额
+    const icpBalance = await getICPBalance(p2a(principal));
+    if (icpBalance < icpAmount) {
+      throw new Error(
+        `Insufficient ICP balance: ${icpBalance} ICP available, ${icpAmount} ICP required`
+      );
+    }
+
+    // 将 ICP 转换为 e8s（1 ICP = 10^8 e8s）
+    const amountE8s = toTokenAmount(icpAmount, currency.decimals);
+    const ledger = initIcrcLedger(ICP_LEDGER_CANISTER);
+
+    // 调用 ICP ledger 的 transfer 方法
+    const blockIndex = await ledger.transfer({
+      to: {
+        owner: Principal.fromText(toPrincipal),
+        subaccount: [], // 默认使用接收方的主账户
+      },
+      amount: amountE8s,
+    });
+
+    console.log(
+      `Successfully transferred ${icpAmount} ICP to ${toPrincipal}, block index: ${blockIndex}`
+    );
+    showMessageSuccess(
+      `Successfully transferred ${icpAmount} ICP to ${toPrincipal}, block index: ${blockIndex}`
+    );
+    return true;
+  } catch (error) {
+    console.error(`Failed to transfer ICP to ${toPrincipal}:`, error);
+    showMessageError(`Failed to transfer ICP to ${toPrincipal}:` + error);
     throw error;
   }
 };

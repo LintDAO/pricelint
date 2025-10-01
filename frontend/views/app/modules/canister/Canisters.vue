@@ -2,7 +2,6 @@
   <div>
     <q-table
       flat
-      title="Canister List"
       :rows="canisterData"
       :columns="columns"
       row-key="canisterId"
@@ -10,6 +9,9 @@
       :pagination="pagination"
       class="canisters-list"
     >
+      <template v-slot:top-left>
+        <div class="text-h6 text-grey-8">Canister List</div>
+      </template>
       <template v-slot:top-right>
         <div class="q-gutter-md">
           <q-btn color="primary" @click="importDialogVisible = true" no-caps>
@@ -169,13 +171,13 @@
 import {
   CanisterData,
   blockCanisterIdFromList,
-  callTargetCanister,
   getCanisterList,
   importCanisterList,
   installCode,
   queryCanisterStatus,
   startCanister,
   stopCanister,
+  useRecommendSetTrainParam,
 } from "@/api/canisters";
 import TopUpCycles from "@/components/TopUpCycles.vue";
 import type { TableColumn } from "@/types/model";
@@ -376,13 +378,16 @@ const stopThisCanister = async (canisterId: string) => {
 const installCanisterCode = async (canisterId: string) => {
   loadingActions.value[canisterId] = {
     ...loadingActions.value[canisterId],
-    use: true,
+    install: true,
   };
-  await installCode(canisterId, "0.0.1");
+  //TODO 版本号写死了，后面要可以选模型
+  await installCode(canisterId, "lstm", "v2");
   loadingActions.value[canisterId] = {
     ...loadingActions.value[canisterId],
-    use: false,
+    install: false,
   };
+  //安装完成后调用方法刷新数据
+  getCanisterInfo();
 };
 
 const showTopupCycles = (canisterId: string) => {
@@ -404,7 +409,7 @@ const useRecommendParam = async () => {
     ...loadingActions.value[selectedCanisterId.value],
     use: true,
   };
-  await callTargetCanister(canisterId);
+  await useRecommendSetTrainParam(canisterId);
   loadingActions.value[selectedCanisterId.value] = {
     ...loadingActions.value[selectedCanisterId.value],
     use: false,
@@ -448,7 +453,7 @@ const showBlockDialog = (canisterId: string) => {
     });
   });
 };
-
+// 屏蔽canister，而非从列表删除
 const blockCanister = (canisterId: string) => {
   blockCanisterIdFromList(canisterId);
   getCanisterInfo(); // Refresh data

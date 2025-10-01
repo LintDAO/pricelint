@@ -9,9 +9,12 @@ export const NET_ID = {
 };
 export const ROSETTA_URL = "https://rosetta-api.internetcomputer.org";
 export const IC_LEDGER_URL = "https://ledger-api.internetcomputer.org";
+export const IC_DASHBOARD_URL = "https://dashboard.internetcomputer.org";
 export const BINANCE_URL = "https://data-api.binance.vision";
 export const ROSETTA_WEBSITE = "Binance";
 export const ICRC_WEBSITE = "ICPSwap";
 
 export const MILI_PER_SECOND = 1000000; // 处理时间戳从19位ns改为常用的13位ms，
 export const S_TO_MS = 1000; // 处理时间戳从10位s改为放进后端的13位ms，
+
+export const DONT_SHOW_AGIAN_STORAGE_KEY = "DONT_SHOW_AGIAN";

@@ -1,12 +1,13 @@
 import { Notify } from "quasar";
 
-export const showMessageError = (message: string) =>
+export const showMessageError = (message: string) => {
   Notify.create({
     message,
     type: "negative",
     progress: true,
     position: "top",
   });
+};
 export const showResultError = (res: any) => {
   let message: string;
   if (res.Err) {

@@ -197,7 +197,6 @@
       :class="{ 'q-pa-sm': !$q.screen.lt.md, 'q-pa-none': $q.screen.lt.md }"
     >
       <q-page
-        padding
         class="bg-white"
         :style="{
           border: '1px solid #e5e7eb',
@@ -205,20 +204,38 @@
           minHeight: $q.screen.lt.md ? '100vh' : 'calc(100vh - 16px)',
         }"
       >
-        <!-- 添加面包屑，只有在匹配的详情页路径下显示，使用绝对定位不挤占空间 -->
-        <q-breadcrumbs
-          v-if="showBreadcrumbs"
-          class="absolute-top-left q-pl-md q-pt-sm"
-          style="z-index: 1"
-        >
+        <!-- 面包屑占位 -->
+        <div v-if="!showBreadcrumbs" style="height: 30px"></div>
+        <q-breadcrumbs v-if="showBreadcrumbs" class="breadcrumb-content">
           <q-breadcrumbs-el
             v-for="(item, index) in breadcrumbItems"
             :key="index"
             :label="item.label"
             :to="item.to"
           />
-          <!-- 假设从路由参数获取 ID -->
+          <!-- 面包屑按钮区域 -->
+          <div v-if="showButtons" class="q-ml-md">
+            <q-btn
+              v-for="btn in buttons"
+              :key="btn.label"
+              :label="btn.label"
+              :to="btn.to"
+              flat
+              no-caps
+              dense
+              class="text-grey-8 rounded-borders q-mr-sm q-px-sm q-py-xs"
+              :ripple="false"
+              :class="{
+                'bg-grey-3': $route.path === btn.to,
+                'text-grey-10': $route.path === btn.to,
+              }"
+              unelevated
+            />
+          </div>
         </q-breadcrumbs>
+
+        <q-separator v-if="showBreadcrumbs" />
+
         <router-view class="container" />
       </q-page>
     </q-page-container>
@@ -265,33 +282,55 @@ const username = ref();
 onMounted(() => {
   doInitAuth();
 });
-
-const showBreadcrumbs = computed(() => {
-  // 只在路径以 /app/canisters/ 开头且有更多级（如 ID 或子路径）时显示
-  return (
-    route.path.startsWith("/app/canisters/") && route.path.split("/").length > 3
-  );
+// 判断是否显示按钮（匹配 /app/canisters/:canisterId 及其子路由）
+const showButtons = computed(() => {
+  const regex = /^\/app\/canisters\/[^/]+(\/.*)?$/;
+  return regex.test(route.path);
 });
 
-const breadcrumbItems = computed(() => {
-  const parts = route.path.split("/").filter((part) => part); // 过滤空部分
-  const items: { label: string; to: string }[] = [];
-  let currentPath: string = "";
+// 动态生成按钮
+const buttons = computed(() => {
+  if (!showButtons.value) return [];
+  // 获取当前 canister ID
+  const canisterId = route.params.canisterId as string | undefined;
+  if (!canisterId) return [];
 
-  parts.forEach((part, index) => {
-    if (index === 0 && part === "app") {
-      // 从 App 开始
-      items.push({ label: "App", to: "/app" });
-      currentPath = "/app";
-    } else if (index > 0) {
-      currentPath += "/" + part;
-      // 新逻辑：如果包含数字或连字符（可能是 ID），保持原样；否则首字母大写
-      const label = /[0-9-]/.test(part)
-        ? part
-        : part.charAt(0).toUpperCase() + part.slice(1);
-      items.push({ label, to: currentPath });
-    }
-  });
+  return [
+    {
+      label: "Overview",
+      to: `/app/canisters/${canisterId}`,
+    },
+    {
+      label: "Insights",
+      to: `/app/canisters/${canisterId}/insights`,
+    },
+    {
+      label: "Settings",
+      to: `/app/canisters/${canisterId}/edit`,
+    },
+  ];
+});
+
+// 显示面包屑的条件
+const showBreadcrumbs = computed(() => {
+  return route.path.startsWith("/app/canisters/");
+});
+
+// 通用面包屑生成逻辑，仅显示到 canister ID
+const breadcrumbItems = computed((): { label: string; to: string }[] => {
+  const parts = route.path.split("/").filter((part) => part);
+  const items: { label: string; to: string }[] = [];
+  let currentPath = "";
+
+  // 只处理到 /app/canisters/:canisterid
+  const maxParts = Math.min(parts.length, 3); // 限制为 app, canisters, :canisterid
+  for (let i = 0; i < maxParts; i++) {
+    currentPath += `/${parts[i]}`;
+    const label = parts[i];
+    // 最后一项（canister ID）不设置 to
+    const to = i === maxParts - 1 ? "" : currentPath;
+    items.push({ label, to });
+  }
 
   return items;
 });
@@ -447,5 +486,8 @@ const userMenuItems = [
 }
 .rotate-icon.rotate-active {
   transform: rotate(180deg);
+}
+.breadcrumb-content {
+  padding: 14px 22px;
 }
 </style>
