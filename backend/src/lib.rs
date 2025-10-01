@@ -55,6 +55,8 @@ macro_rules! init_stable_memory {
 init_stable_memory!(MODEL_MAP,111,map<String, Vec<u8>>);
 init_stable_memory!(STATE_MAP,112,map<String, State>);
 use std::collections::BTreeMap as StdBTreeMap;
+
+
 //存储各种临时数据
 init_stable_memory!(TEMP_VEC,0,vec<String>);
 init_stable_memory!(TEMP_MAP,1,map<String,String>);
@@ -68,6 +70,7 @@ init_stable_memory!(EXCHANGE_RATE,7,map<String, ExchangeRate>);
 init_stable_memory!(PREDICTOR_QUANTIFY,8,vec<PredictorView>);
 init_stable_memory!(STAKE,9,map<String,Stake>);
 init_stable_memory!(CANISTER_LIST,9,map<String,StringVec>);
+// init_stable_memory!(XRC,10,map<String,Vec<ExchangeRate>>);
 
 
 
@@ -104,12 +107,36 @@ pub mod impl_storable {
     pub struct WasmFile {
         pub wasm_name: String,
         pub wasm_version: String,
-        pub wasm_bin: Vec<u8>,
+        pub wasm_bin: Option<Vec<u8>>,
+        pub upload_time: u64,
+        pub update_type: UpdateType //功能性更新或者模型更新
+    }
+    #[derive(Deserialize, Serialize, Clone, CandidType)]
+    #[derive(PartialEq)]
+    pub  enum UpdateType {
+        FunctionUpdate,
+        ModelUpdate
     }
     impl_storable!(WasmFile);
     impl_storable!(ExchangeRate);
     impl_storable!(PredictorView);
     impl_storable!(Stake);
+
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub enum TempMapValue<K: Ord, V = String> {
+        Text(String),
+        Number(u64),
+        BtreeMap(BTreeMap<K, V>),
+        Vector(Vec<V>),
+    }
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub enum TempVecValue<T> {
+        Text(String),
+        Number(u64),
+        Vector(Vec<T>),
+    }
+    impl_storable!(TempMapValue<K,V>);
+    impl_storable!(TempVecValue<T>);
 
 }
 
@@ -132,6 +159,7 @@ pub mod export_candid {
     use icrc_ledger_types::icrc1::account::Account;
     use icrc_ledger_types::icrc3::blocks::{GetBlocksResponse,GetBlocksRequest};
     use icrc_ledger_types::icrc3::transactions::{GetTransactionsResponse,GetTransactionsRequest};
+    use crate::impl_storable::UpdateType;
     export_candid!();
 }
 //TODO: lifecycles和api canid 导出先写到一起  后续需要分canisters再进行重构分离

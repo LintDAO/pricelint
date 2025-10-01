@@ -31,6 +31,7 @@ fn get_predictor_vec() -> Result<Vec<Predictor>, String> {
     }
 }
 
+// 查询自己的数据+公共数据
 #[query(guard = "is_named_user")]
 fn show_predictions() -> Result<PredictorView, String> {
     let mut view = PredictorView {

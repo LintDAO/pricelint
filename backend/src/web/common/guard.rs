@@ -53,7 +53,7 @@ pub fn is_named_user<'user>() -> Result<(), String> {
 
     Err(GuardError::IsAnonymousUser.to_string())
 }
-pub fn is_canister()->Result<(), String>{
+pub fn is_canister() -> Result<(), String> {
     //TODO:安装pred的canister代码后 记录canister id 只允许这些canister id调用
     Ok(())
 }
@@ -64,7 +64,7 @@ pub fn init_admin() {
         "vsqls-6k2en-jqrej-7dvmj-x27gn-e6bzr-asyr6-k7k6f-zl4xe-yykp4-uqe",
         "gq66f-io24f-torxu-ftmfi-chzvv-umdni-3jkai-s734u-wdzps-jmlkk-2ae",
         //nns/ii
-        "c6dif-csraj-5ckyd-3m3h6-r5td3-3b2wi-a7bpn-ccf3k-c6q3i-7fjb6-jae",
+        "y4qkv-s2rge-6ux5s-n7h2x-mvapy-cqc54-kjxmu-fgspq-3hpz3-ooqa3-pae",
     ];
 
     // 启动时候初始化管理员还有 用户列表  还有 bind role

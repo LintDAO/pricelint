@@ -2,9 +2,7 @@ use crate::common::utils::xrc;
 use crate::common::utils::xrc::{
     Asset, AssetClass, ExchangeRate, GetExchangeRateRequest, GetExchangeRateResult,
 };
-use crate::web::common::constants::{
-    API_VERSION, BASE_BIANCE_API, BIANCE_KLINES_API, BIANCE_TICKER_API,
-};
+use crate::web::common::constants::{API_VERSION, BASE_BIANCE_API, BIANCE_KLINES_API, BIANCE_TICKER_API, XRC_CANISTER_ID};
 use crate::web::models::context::Context;
 use crate::web::models::predictor_model::Predictor;
 use crate::{map_get, map_insert, Memory, EXCHANGE_RATE, PREDICTOR_CONTEXT, USER_CONTEXT};
@@ -125,7 +123,7 @@ impl ExtendPredictorService for Predictor {
         quote_asset: Asset,
     ) -> Result<ExchangeRate, String> {
         let principal =
-            Principal::from_text("uf6dk-hyaaa-aaaaq-qaaaq-cai").map_err(|e| e.to_string())?;
+            Principal::from_text(XRC_CANISTER_ID).map_err(|e| e.to_string())?;
         let (ret,) = xrc::get_exchange_rate(
             principal,
             1_000_000_000,

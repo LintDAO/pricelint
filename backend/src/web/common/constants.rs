@@ -14,4 +14,5 @@ pub const  OWNER_ROLE_TAG:&str="owner";
 
 
 pub const ICRC1_LEDGER_CANISTER_ID:&str="tx6gn-wqaaa-aaaac-qbrma-cai";
+pub const XRC_CANISTER_ID:&str="uf6dk-hyaaa-aaaaq-qaaaq-cai";
 

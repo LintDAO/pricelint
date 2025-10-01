@@ -25,6 +25,7 @@ fn pre_upgrade() {
 #[post_upgrade]
 fn post_upgrade() {
     ic_cdk::println!("post_upgrade:");
+    init_admin();
     spawn(async move {
         init_timer().await;
     })
