@@ -14,6 +14,7 @@ import {
   getCurrentPrincipal,
 } from "./canister_pool";
 import { CONTROLLER_CANISTERS_KEY } from "./icp";
+import { backend } from "canisters/backend";
 
 // 定义 Canister 数据接口
 export interface CanisterData {
@@ -53,6 +54,11 @@ const initTargetCanister = async (canisterId: string) => {
     canisterId: Principal.fromText(canisterId),
   });
 };
+
+//检查最新的系统版本号是多少，用于通知用户更新，添加新的api
+export function checkSystemLatestVersion() {
+  // const version = backend.get_latest_version();
+}
 
 /**
  * Set the canister list for the current principal

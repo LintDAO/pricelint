@@ -295,20 +295,34 @@ const buttons = computed(() => {
   const canisterId = route.params.canisterId as string | undefined;
   if (!canisterId) return [];
 
-  return [
-    {
-      label: "Overview",
-      to: `/app/canisters/${canisterId}`,
-    },
-    {
-      label: "Insights",
-      to: `/app/canisters/${canisterId}/insights`,
-    },
-    {
-      label: "Settings",
-      to: `/app/canisters/${canisterId}/edit`,
-    },
-  ];
+  const routes = router.getRoutes();
+  // 查找与 /app 相关的子路由
+  const appRoute = routes.find((r) => r.path === "/app");
+  if (!appRoute || !appRoute.children) return [];
+
+  // 过滤出与当前 canisterId 相关的路由
+  const relevantRoutes = appRoute.children.filter((child) => {
+    // 匹配路径以 /app/canisters/:canisterId 开头的路由
+    return child.path.startsWith("canisters/:canisterId") && child.name;
+  });
+  console.log("relevantRoutes", relevantRoutes, routes);
+  // 动态生成按钮
+  return relevantRoutes.map((child) => {
+    // 构造按钮的 to 路径，替换 :canisterId 为实际值
+    const to = child.path.replace(":canisterId", canisterId);
+
+    // 使用 meta 中的信息（如果存在）或路由名称作为标签
+    const label =
+      child.meta?.sidebar?.[0]?.label ||
+      child.name ||
+      child.path.split("/").pop() ||
+      "Unknown";
+
+    return {
+      label,
+      to: `/app/${to}`, // 确保路径以 /app 开头
+    };
+  });
 });
 
 // 显示面包屑的条件

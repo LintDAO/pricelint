@@ -3,7 +3,8 @@ import { setCurrentIdentity } from "@/api/canister_pool";
 import App from "@/views/app/AppHome.vue";
 import CanisterDetail from "@/views/app/modules/canister/CanisterDetail.vue";
 import CanisterEdit from "@/views/app/modules/canister/CanisterEdit.vue";
-import CanisterInsights from "@/views/app/modules/canister/CanisterInsights.vue";
+import CanisterInsights from "@/views/app/modules/canister/insights/CanisterInsights.vue";
+import CanisterInsightsTable from "@/views/app/modules/canister/insights/Table.vue";
 import Canisters from "@/views/app/modules/canister/Canisters.vue";
 import DashBoard from "@/views/app/modules/Dashboard.vue";
 import Home from "@/views/home/Home.vue";
@@ -48,15 +49,23 @@ const routes: Array<RouteRecordRaw> = [
         path: "canisters/:canisterId/edit",
         component: CanisterEdit,
         meta: {
-          sidebar: [{ label: "General", to: "/general", icon: "home" }],
+          sidebar: [{ label: "General", to: "general", icon: "home" }],
         },
       },
       {
         name: "CanisterInsights",
         path: "canisters/:canisterId/insights",
         component: CanisterInsights,
+        redirect: { name: "CanisterInsightsTable" },
+        children: [
+          {
+            path: "table", // 子路径，匹配 canisters/:canisterId/insights/table
+            component: CanisterInsightsTable, // 渲染 CanisterInsights
+            name: "CanisterInsightsTable",
+          },
+        ],
         meta: {
-          sidebar: [{ label: "Traffic", to: "/traffic", icon: "home" }],
+          sidebar: [{ label: "Table", to: "table", icon: "table_chart" }],
         },
       },
     ],

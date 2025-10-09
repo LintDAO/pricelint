@@ -359,7 +359,7 @@ const canisterData = ref({
   tradingPair: "ICP/USDT",
   modelVersion: "v2.1.3",
   nextPrediction: "Bullish",
-  lastUpdated: "May 15, 2024 at 2:30 PM",
+  lastUpdated: "October 9, 2025 at 2:30 PM",
 });
 
 //获取canister信息
