@@ -136,6 +136,7 @@ type Transfer = record {
   amount : nat;
   spender : opt Account;
 };
+type UpdateType = variant { FunctionUpdate; ModelUpdate };
 type User = record {
   id : text;
   owner : principal;
@@ -162,7 +163,9 @@ type Vec = vec variant {
 };
 type WasmFile = record {
   wasm_version : text;
-  wasm_bin : blob;
+  update_type : UpdateType;
+  wasm_bin : opt blob;
+  upload_time : nat64;
   wasm_name : text;
 };
 service : {
@@ -171,6 +174,7 @@ service : {
   find_user_lists : () -> (vec User) query;
   get_blocks : (GetBlocksRequest) -> (Result_1);
   get_canister_info : () -> (Result_2);
+  get_latest_version : (UpdateType) -> (Result) query;
   get_predictor_vec : () -> (Result_3) query;
   get_principal : () -> (principal) query;
   get_state : () -> (State) query;
@@ -192,7 +196,7 @@ service : {
   train : (nat64) -> ();
   unstake : () -> (Result_10);
   upload_json_file : (blob) -> ();
-  upload_wasm : (text, text, blob) -> (Result_2);
+  upload_wasm : (text, text, blob, UpdateType) -> (Result_2);
   user_login : () -> (Result_11) query;
   user_register : () -> (Result_11);
 }

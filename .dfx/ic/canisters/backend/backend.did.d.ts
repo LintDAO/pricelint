@@ -153,6 +153,8 @@ export interface Transfer {
   'amount' : bigint,
   'spender' : [] | [Account],
 }
+export type UpdateType = { 'FunctionUpdate' : null } |
+  { 'ModelUpdate' : null };
 export interface User {
   'id' : string,
   'owner' : Principal,
@@ -177,7 +179,9 @@ export type Vec = Array<
 >;
 export interface WasmFile {
   'wasm_version' : string,
-  'wasm_bin' : Uint8Array | number[],
+  'update_type' : UpdateType,
+  'wasm_bin' : [] | [Uint8Array | number[]],
+  'upload_time' : bigint,
   'wasm_name' : string,
 }
 export interface _SERVICE {
@@ -186,6 +190,7 @@ export interface _SERVICE {
   'find_user_lists' : ActorMethod<[], Array<User>>,
   'get_blocks' : ActorMethod<[GetBlocksRequest], Result_1>,
   'get_canister_info' : ActorMethod<[], Result_2>,
+  'get_latest_version' : ActorMethod<[UpdateType], Result>,
   'get_predictor_vec' : ActorMethod<[], Result_3>,
   'get_principal' : ActorMethod<[], Principal>,
   'get_state' : ActorMethod<[], State>,
@@ -214,7 +219,7 @@ export interface _SERVICE {
   'unstake' : ActorMethod<[], Result_10>,
   'upload_json_file' : ActorMethod<[Uint8Array | number[]], undefined>,
   'upload_wasm' : ActorMethod<
-    [string, string, Uint8Array | number[]],
+    [string, string, Uint8Array | number[], UpdateType],
     Result_2
   >,
   'user_login' : ActorMethod<[], Result_11>,
