@@ -17,8 +17,11 @@ pub fn band_role(principal: String, role_name: String) {
             map_insert!(ROLE_USER_TREE, role_name, StringVec(vec![principal]));
         }
         Some(StringVec(mut vec)) => {
-            vec.push(principal);
-            map_insert!(ROLE_USER_TREE, role_name, StringVec(vec));
+            if  !vec.contains(&principal) {
+                vec.push(principal);
+                map_insert!(ROLE_USER_TREE, role_name, StringVec(vec));    
+            }
+      
         }
     }
 }

@@ -47,6 +47,7 @@ service : () -> {
   collect_metrics : () -> ();
   find_model_lists : () -> (Result) query;
   get_canister_info : () -> () query;
+  get_current_version : () -> () query;
   get_default_model : () -> (Result_1) query;
   is_predict_running : () -> (bool) query;
   predict : () -> (Result_2);

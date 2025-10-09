@@ -2,14 +2,14 @@ use crate::impl_storable::WasmFile;
 
 use crate::web::common::errors::BtreeMapError;
 use crate::web::services::canister_service::canister_info;
-use crate::WASM_FILES;
+use crate::{BACKUP_DATA, TEMP_MAP, TEMP_VEC, WASM_FILES};
 use candid::types::principal::PrincipalError;
-use candid::{Error, Principal};
+use candid::{Error, Nat, Principal};
 use ic_cdk::api::management_canister::main::uninstall_code;
 use ic_cdk::{caller, id, query, update};
+use ic_stable_structures::Storable;
 use std::fs::read;
 
-// #[query]
 #[update]
 async fn get_canister_info() -> Result<String, String> {
     let principal: String = "eov5t-niaaa-aaaah-arepa-cai".to_string();
@@ -23,6 +23,199 @@ async fn get_canister_info() -> Result<String, String> {
     let ret = ret.controllers.get(0).unwrap().to_string();
     //eov5t-niaaa-aaaah-arepa-cai
     Ok(ret)
+}
+pub mod backup_api {
+    use crate::impl_storable::{
+        BackupData, ExchangeRate, StringVec, TempMapValue, TempVecValue, WasmFile,
+    };
+    use crate::web::common::constants::memory_manager::EXPORT_MEMORY_IDS;
+    use crate::web::common::errors::BtreeMapError;
+    use crate::web::models::context::Context;
+    use crate::web::models::predictor_model::{Predictor, PredictorView};
+    use crate::web::models::stake_model::Stake;
+    use crate::web::models::user_model::User;
+    use crate::web::models::wallet_model::Wallet;
+    use crate::{
+        BACKUP_DATA, CANISTER_LIST, EXCHANGE_RATE, MEMORY_MANAGER, PREDICTOR_CONTEXT,
+        PREDICTOR_QUANTIFY, ROLE_USER_TREE, STAKE, TEMP_MAP, TEMP_VEC, USER_CONTEXT,
+        WALLET_CONTEXT, WASM_FILES,
+    };
+    use candid::{Nat, Principal};
+    use ic_cdk::api::time;
+    use ic_cdk::{query, update};
+    use ic_stable_structures::memory_manager::MemoryId;
+    use ic_stable_structures::Storable;
+    use serde::Serialize;
+
+    macro_rules! collect_memory_data {
+        ($name:ident) => {
+            $name.with(|rc| rc.borrow().iter().collect::<Vec<_>>())
+        };
+    }
+    macro_rules! restore_from_data {
+        ($name:ident,$data:expr,map) => {
+            $name.with(|rc| {
+                let mut bm = rc.borrow_mut();
+                for data in $data {
+                    bm.insert(data.0.clone(), data.1.clone());
+                }
+            })
+        };
+        ($name:ident,$data:expr,vec) => {
+            $name.with(|rc| {
+                let mut bm = rc.borrow_mut();
+                for data in $data {
+                    let _ = bm.push(&data);
+                }
+            })
+        };
+
+    }
+    #[derive(Serialize, Deserialize)]
+    struct ExportData {
+        temp_vec_data: Vec<TempVecValue<String>>,
+        temp_map_data: Vec<(String, TempMapValue<String>)>,
+        user_context_data: Vec<(String, Context<User>)>,
+        wallet_context_data: Vec<(String, Context<Wallet>)>,
+        predictor_context_data: Vec<(String, Context<Predictor>)>,
+        role_user_tree_data: Vec<(String, StringVec)>,
+        wasm_files_data: Vec<(String, WasmFile)>,
+        exchange_rate_data: Vec<(String, ExchangeRate)>,
+        predictor_quantify_data: Vec<PredictorView>,
+        stake_data: Vec<(String, Stake)>,
+        canister_list_data: Vec<(String, StringVec)>,
+    }
+
+    //查询所有备份数据概览
+    #[query]
+    fn find_backup_lists() -> Vec<(u64, usize)> {
+        let ret = BACKUP_DATA.with(|rc| {
+            let bm = rc.borrow_mut();
+            let ret = bm.iter().map(|(k, v)| (k, v.0.len())).collect::<Vec<_>>();
+            ret
+        });
+        ret
+    }
+
+    //仅备份稳定内存的数据 手动触发或者pre_upgrade时自动
+    #[update]
+    fn backup_stable_memory() -> Result<(), String> {
+        let temp_vec_data = collect_memory_data!(TEMP_VEC);
+        let temp_map_data = collect_memory_data!(TEMP_MAP);
+        let user_context_data = collect_memory_data!(USER_CONTEXT);
+        let wallet_context_data = collect_memory_data!(WALLET_CONTEXT);
+        let predictor_context_data = collect_memory_data!(PREDICTOR_CONTEXT);
+        let role_user_tree_data = collect_memory_data!(ROLE_USER_TREE);
+        let wasm_files_data = collect_memory_data!(WASM_FILES);
+        let exchange_rate_data = collect_memory_data!(EXCHANGE_RATE);
+        let predictor_quantify_data = collect_memory_data!(PREDICTOR_QUANTIFY);
+        let stake_data = collect_memory_data!(STAKE);
+        let canister_list_data = collect_memory_data!(CANISTER_LIST);
+        let export_data = ExportData {
+            temp_vec_data,
+            temp_map_data,
+            user_context_data,
+            wallet_context_data,
+            predictor_context_data,
+            role_user_tree_data,
+            wasm_files_data,
+            exchange_rate_data,
+            predictor_quantify_data,
+            stake_data,
+            canister_list_data,
+        };
+        let export_data_json = serde_json::to_string(&export_data).map_err(|e| e.to_string())?;
+        BACKUP_DATA.with(|rc| rc.borrow_mut().insert(time(), BackupData(export_data_json)));
+        Ok(())
+    }
+
+    //删除备份数据
+    #[update]
+    fn delete_backup_data(key: u64) -> bool {
+        BACKUP_DATA.with(|rc| rc.borrow_mut().remove(&key).is_some())
+    }
+    //删除备份数据
+    #[update]
+    fn find_backup_data(key: u64) -> Option<String> {
+        BACKUP_DATA.with(|rc| {
+            let bm = rc.borrow_mut();
+            if bm.contains_key(&key) {
+                Some(bm.get(&key).unwrap().0.clone())
+            } else {
+                None
+            }
+        })
+    }
+    // 定义 HTTP 请求和响应类型
+    pub type HeaderField = (String, String);
+    #[derive(CandidType, Deserialize)]
+    pub struct HttpRequest {
+        pub method: String,
+        pub url: String,
+        pub headers: Vec<HeaderField>,
+        pub body: Vec<u8>,
+    }
+
+    #[derive(CandidType, Deserialize)]
+    pub struct HttpResponse {
+        pub status_code: u16,
+        pub headers: Vec<HeaderField>,
+        pub body: Vec<u8>,
+    }
+    //导出稳定内存的数据到json文件
+    #[query]
+    fn dump_stable_memory(key: Option<u64>) -> HttpResponse {
+        let ret = BACKUP_DATA.with(|rc| {
+            let ref_mut = rc.borrow_mut();
+            if key.is_none() {
+                let last_element = ref_mut.iter().next_back();
+                if last_element.is_none() {
+                    return None;
+                }
+                return Some(last_element.unwrap().1.clone());
+            }
+            ref_mut.get(&key.unwrap())
+        });
+        let body = if ret.is_some() {
+            ret.unwrap().to_bytes().to_vec()
+        } else {
+            vec![]
+        };
+        HttpResponse {
+            status_code: 200,
+            body,
+            headers: vec![
+                (
+                    "Content-Type".to_string(),
+                    "application/octet-stream".to_string(),
+                ),
+                (
+                    "Content-Disposition".to_string(),
+                    "attachment; filename=\"backup.json\"".to_string(),
+                ),
+            ],
+        }
+    }
+
+    //从json文件中恢复稳定内存的数据
+    #[update]
+    fn restore_from_file(export_data_json: String) -> Result<(), String> {
+
+        let export_data: ExportData = serde_json::from_str(&export_data_json).map_err(|e| e.to_string())?;
+        //因为导入json的情况是手动触发，事先需要清空数据 所以不需要清空map和vec
+        restore_from_data!(TEMP_VEC,export_data.temp_vec_data,vec);
+        restore_from_data!(TEMP_MAP,export_data.temp_map_data,map);
+        restore_from_data!(USER_CONTEXT,export_data.user_context_data,map);
+        restore_from_data!(WALLET_CONTEXT,export_data.wallet_context_data,map);
+        restore_from_data!(PREDICTOR_CONTEXT,export_data.predictor_context_data,map);
+        restore_from_data!(ROLE_USER_TREE,export_data.role_user_tree_data,map);
+        restore_from_data!(WASM_FILES,export_data.wasm_files_data,map);
+        restore_from_data!(EXCHANGE_RATE,export_data.exchange_rate_data,map);
+        restore_from_data!(PREDICTOR_QUANTIFY,export_data.predictor_quantify_data,vec);
+        restore_from_data!(STAKE,export_data.stake_data,map);
+        restore_from_data!(CANISTER_LIST,export_data.canister_list_data,map);
+        Ok(())
+    }
 }
 
 pub mod wasm_api {
@@ -117,14 +310,15 @@ pub mod wasm_api {
     #[query(guard = "is_named_user")]
     fn get_latest_version(update_type: UpdateType) -> Result<WasmFile, String> {
         let latest_version: Result<WasmFile, String> = WASM_FILES.with(|rc| {
-            let mut ret=rc.borrow_mut()
+            let mut ret = rc
+                .borrow_mut()
                 .iter()
                 .filter(|(k, v)| v.update_type == update_type)
                 .max_by(|(k, v), (k2, v2)| v.upload_time.cmp(&v2.upload_time))
                 .map(|(k, v)| v.clone())
                 .ok_or(BtreeMapError::GetKeyIsNotExist.to_string())?;
             //向前端隐藏此内容
-            ret.wasm_bin=None;
+            ret.wasm_bin = None;
             Ok(ret)
         });
         latest_version

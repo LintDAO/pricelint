@@ -106,13 +106,13 @@ export interface PriceData {
 }
 export type Result = { 'Ok' : WasmFile } |
   { 'Err' : string };
-export type Result_1 = { 'Ok' : GetBlocksResponse } |
+export type Result_1 = { 'Ok' : string } |
   { 'Err' : string };
 export type Result_10 = { 'Ok' : null } |
   { 'Err' : string };
 export type Result_11 = { 'Ok' : User } |
   { 'Err' : string };
-export type Result_2 = { 'Ok' : string } |
+export type Result_2 = { 'Ok' : GetBlocksResponse } |
   { 'Err' : string };
 export type Result_3 = { 'Ok' : Array<Predictor> } |
   { 'Err' : string };
@@ -153,6 +153,8 @@ export interface Transfer {
   'amount' : bigint,
   'spender' : [] | [Account],
 }
+export type UpdateType = { 'FunctionUpdate' : null } |
+  { 'ModelUpdate' : null };
 export interface User {
   'id' : string,
   'owner' : Principal,
@@ -177,15 +179,19 @@ export type Vec = Array<
 >;
 export interface WasmFile {
   'wasm_version' : string,
-  'wasm_bin' : Uint8Array | number[],
+  'update_type' : UpdateType,
+  'wasm_bin' : [] | [Uint8Array | number[]],
+  'upload_time' : bigint,
   'wasm_name' : string,
 }
 export interface _SERVICE {
   'add_price' : ActorMethod<[PriceData], undefined>,
   'delete_wasm' : ActorMethod<[string, string], Result>,
+  'dump_stable_memory' : ActorMethod<[], Result_1>,
   'find_user_lists' : ActorMethod<[], Array<User>>,
-  'get_blocks' : ActorMethod<[GetBlocksRequest], Result_1>,
-  'get_canister_info' : ActorMethod<[], Result_2>,
+  'get_blocks' : ActorMethod<[GetBlocksRequest], Result_2>,
+  'get_canister_info' : ActorMethod<[], Result_1>,
+  'get_latest_version' : ActorMethod<[UpdateType], Result>,
   'get_predictor_vec' : ActorMethod<[], Result_3>,
   'get_principal' : ActorMethod<[], Principal>,
   'get_state' : ActorMethod<[], State>,
@@ -198,7 +204,7 @@ export interface _SERVICE {
     Result_6
   >,
   'icrc2_allowance' : ActorMethod<[Account], Result_7>,
-  'icrc2_approve' : ActorMethod<[bigint], Result_2>,
+  'icrc2_approve' : ActorMethod<[bigint], Result_1>,
   'icrc2_transfer_from' : ActorMethod<
     [Account, bigint, [] | [Uint8Array | number[]]],
     Result_6
@@ -207,6 +213,7 @@ export interface _SERVICE {
   'predict' : ActorMethod<[], number>,
   'push_user_pred' : ActorMethod<[Predictor], Result_8>,
   'refill_random_buffer' : ActorMethod<[number], undefined>,
+  'restore_from_file' : ActorMethod<[], Result_1>,
   'show_predictions' : ActorMethod<[], Result_9>,
   'stake' : ActorMethod<[bigint, bigint], Result_10>,
   'test_1' : ActorMethod<[DurationRange], [bigint, bigint]>,
@@ -214,8 +221,8 @@ export interface _SERVICE {
   'unstake' : ActorMethod<[], Result_10>,
   'upload_json_file' : ActorMethod<[Uint8Array | number[]], undefined>,
   'upload_wasm' : ActorMethod<
-    [string, string, Uint8Array | number[]],
-    Result_2
+    [string, string, Uint8Array | number[], UpdateType],
+    Result_1
   >,
   'user_login' : ActorMethod<[], Result_11>,
   'user_register' : ActorMethod<[], Result_11>,

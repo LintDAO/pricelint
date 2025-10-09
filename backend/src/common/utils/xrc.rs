@@ -8,13 +8,13 @@ use std::fmt::{Display, Formatter};
 use std::iter::Cycle;
 use serde::{Deserialize, Serialize};
 
-#[derive(CandidType, Serialize,Deserialize)]
+#[derive(CandidType, Serialize, Deserialize, Clone)]
 pub enum AssetClass {
     Cryptocurrency,
     FiatCurrency,
 }
 
-#[derive(CandidType, Serialize,Deserialize)]
+#[derive(CandidType, Serialize, Deserialize, Clone)]
 pub struct Asset {
     pub class: AssetClass,
     pub symbol: String,
@@ -28,6 +28,7 @@ pub struct GetExchangeRateRequest {
 }
 
 #[derive(CandidType, Serialize,Deserialize)]
+#[derive(Clone)]
 pub struct ExchangeRateMetadata {
     pub decimals: u32,
     pub forex_timestamp: Option<u64>,
@@ -38,7 +39,7 @@ pub struct ExchangeRateMetadata {
     pub quote_asset_num_queried_sources: u64,
 }
 
-#[derive(CandidType, Serialize,Deserialize)]
+#[derive(CandidType, Serialize,Deserialize,Clone)]
 pub struct ExchangeRate {
     pub metadata: ExchangeRateMetadata,
     pub rate: u64,

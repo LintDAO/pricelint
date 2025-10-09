@@ -34,9 +34,9 @@
       "type": "custom",
       "optimize": "cycles",
       "build": [
-        "candid-extractor target/wasm32-unknown-unknown/release/pred.wasm > pred/pred.did",
         "export RUSTFLAGS='--cfg getrandom_backend=\"custom\"'",
-        "RUSTFLAGS='--cfg getrandom_backend=\"custom\"' cargo build --target wasm32-unknown-unknown --release -p pred"
+        "RUSTFLAGS='--cfg getrandom_backend=\"custom\"' cargo build --target wasm32-unknown-unknown --release -p pred",
+        "candid-extractor target/wasm32-unknown-unknown/release/pred.wasm > pred/pred.did"
       ],
       "wasm": "target/wasm32-unknown-unknown/release/pred.wasm",
       "metadata": [

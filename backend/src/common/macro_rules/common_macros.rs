@@ -36,15 +36,14 @@ macro_rules! impl_storable {
     ($type:ident <$genric:ident >) => {
         impl<$genric> Storable for $type<$genric>
         where
-            $genric: Serialize + for<'de> Deserialize<'de>,
+            $genric: Serialize + for<'de> Deserialize<'de>, $genric: candid::CandidType
         {
             fn to_bytes(&self) -> Cow<[u8]> {
-                let bytes = bincode::serialize(self).expect("Serialization failed");
-                Cow::Owned(bytes)
+                Cow::Owned(Encode!(self).unwrap())
             }
 
             fn from_bytes(bytes: Cow<[u8]>) -> Self {
-                bincode::deserialize(&bytes).expect("Deserialization failed")
+                Decode!(bytes.as_ref(), Self).unwrap()
             }
 
             const BOUND: Bound = Bound::Bounded {
@@ -58,15 +57,14 @@ macro_rules! impl_storable {
         impl<$genric1,$genric2> Storable for $type<$genric1,$genric2>
         where
             $genric1: Serialize + for<'de> Deserialize<'de>,
-            $genric2: Serialize + for<'de> Deserialize<'de>, K: std::cmp::Ord
+            $genric2: Serialize + for<'de> Deserialize<'de>, $genric1: std::cmp::Ord+candid::CandidType, $genric2: candid::CandidType
         {
             fn to_bytes(&self) -> Cow<[u8]> {
-                let bytes = bincode::serialize(self).expect("Serialization failed");
-                Cow::Owned(bytes)
+                Cow::Owned(Encode!(self).unwrap())
             }
 
             fn from_bytes(bytes: Cow<[u8]>) -> Self {
-                bincode::deserialize(&bytes).expect("Deserialization failed")
+                Decode!(bytes.as_ref(), Self).unwrap()
             }
 
             const BOUND: Bound = Bound::Bounded {
@@ -79,12 +77,11 @@ macro_rules! impl_storable {
     ($type:ident) => {
         impl Storable for $type {
             fn to_bytes(&self) -> Cow<[u8]> {
-                let bytes = bincode::serialize(self).expect("Serialization failed");
-                Cow::Owned(bytes)
+                Cow::Owned(Encode!(self).unwrap())
             }
 
             fn from_bytes(bytes: Cow<[u8]>) -> Self {
-                bincode::deserialize(&bytes).expect("Deserialization failed")
+                Decode!(bytes.as_ref(), Self).unwrap()
             }
 
             const BOUND: Bound = Bound::Bounded {

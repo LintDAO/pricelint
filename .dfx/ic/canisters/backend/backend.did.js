@@ -9,12 +9,19 @@ export const idlFactory = ({ IDL }) => {
     'volume' : IDL.Float32,
     'price_diff' : IDL.Float32,
   });
+  const UpdateType = IDL.Variant({
+    'FunctionUpdate' : IDL.Null,
+    'ModelUpdate' : IDL.Null,
+  });
   const WasmFile = IDL.Record({
     'wasm_version' : IDL.Text,
-    'wasm_bin' : IDL.Vec(IDL.Nat8),
+    'update_type' : UpdateType,
+    'wasm_bin' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+    'upload_time' : IDL.Nat64,
     'wasm_name' : IDL.Text,
   });
   const Result = IDL.Variant({ 'Ok' : WasmFile, 'Err' : IDL.Text });
+  const Result_1 = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
   const User = IDL.Record({
     'id' : IDL.Text,
     'owner' : IDL.Principal,
@@ -62,8 +69,7 @@ export const idlFactory = ({ IDL }) => {
     'chain_length' : IDL.Nat64,
     'archived_blocks' : IDL.Vec(ArchivedRange),
   });
-  const Result_1 = IDL.Variant({ 'Ok' : GetBlocksResponse, 'Err' : IDL.Text });
-  const Result_2 = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
+  const Result_2 = IDL.Variant({ 'Ok' : GetBlocksResponse, 'Err' : IDL.Text });
   const Pred = IDL.Record({
     'up' : IDL.Float64,
     'staked' : IDL.Float64,
@@ -191,9 +197,11 @@ export const idlFactory = ({ IDL }) => {
   return IDL.Service({
     'add_price' : IDL.Func([PriceData], [], []),
     'delete_wasm' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
+    'dump_stable_memory' : IDL.Func([], [Result_1], []),
     'find_user_lists' : IDL.Func([], [IDL.Vec(User)], ['query']),
-    'get_blocks' : IDL.Func([GetBlocksRequest], [Result_1], []),
-    'get_canister_info' : IDL.Func([], [Result_2], []),
+    'get_blocks' : IDL.Func([GetBlocksRequest], [Result_2], []),
+    'get_canister_info' : IDL.Func([], [Result_1], []),
+    'get_latest_version' : IDL.Func([UpdateType], [Result], ['query']),
     'get_predictor_vec' : IDL.Func([], [Result_3], ['query']),
     'get_principal' : IDL.Func([], [IDL.Principal], ['query']),
     'get_state' : IDL.Func([], [State], ['query']),
@@ -207,7 +215,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'icrc2_allowance' : IDL.Func([Account], [Result_7], []),
-    'icrc2_approve' : IDL.Func([IDL.Nat], [Result_2], []),
+    'icrc2_approve' : IDL.Func([IDL.Nat], [Result_1], []),
     'icrc2_transfer_from' : IDL.Func(
         [Account, IDL.Nat, IDL.Opt(IDL.Vec(IDL.Nat8))],
         [Result_6],
@@ -217,6 +225,7 @@ export const idlFactory = ({ IDL }) => {
     'predict' : IDL.Func([], [IDL.Float32], ['query']),
     'push_user_pred' : IDL.Func([Predictor], [Result_8], []),
     'refill_random_buffer' : IDL.Func([IDL.Nat32], [], []),
+    'restore_from_file' : IDL.Func([], [Result_1], []),
     'show_predictions' : IDL.Func([], [Result_9], ['query']),
     'stake' : IDL.Func([IDL.Nat, IDL.Nat64], [Result_10], []),
     'test_1' : IDL.Func([DurationRange], [IDL.Nat64, IDL.Nat64], ['query']),
@@ -224,8 +233,8 @@ export const idlFactory = ({ IDL }) => {
     'unstake' : IDL.Func([], [Result_10], []),
     'upload_json_file' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
     'upload_wasm' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Vec(IDL.Nat8)],
-        [Result_2],
+        [IDL.Text, IDL.Text, IDL.Vec(IDL.Nat8), UpdateType],
+        [Result_1],
         [],
       ),
     'user_login' : IDL.Func([], [Result_11], ['query']),

@@ -1,4 +1,7 @@
-use crate::impl_storable::{ExchangeRate, StringVec, WasmFile};
+#[macro_use]
+extern crate candid;
+
+use crate::impl_storable::{BackupData, ExchangeRate, StringVec, TempMapValue, TempVecValue, WasmFile};
 use crate::ml::model::{default_model, record};
 use crate::web::models::context::Context;
 use crate::web::models::predictor_model::{Predictor, PredictorView};
@@ -17,6 +20,7 @@ use std::cell::RefCell;
 use std::clone::Clone;
 use std::collections::HashMap;
 use crate::ml::api::default_api::State;
+use crate::web::common::constants::memory_manager::{BACKUP_DATA_MEMORY_ID, CANISTER_LIST_MEMORY_ID, EXCHANGE_RATE_MEMORY_ID, PREDICTOR_CONTEXT_MEMORY_ID, PREDICTOR_QUANTIFY_MEMORY_ID, ROLE_USER_TREE_MEMORY_ID, STAKE_MEMORY_ID, TEMP_MAP_MEMORY_ID, TEMP_VEC_MEMORY_ID, USER_CONTEXT_MEMORY_ID, WALLET_CONTEXT_MEMORY_ID, WASM_FILES_MEMORY_ID};
 use crate::web::models::stake_model::Stake;
 
 type Memory = VirtualMemory<DefaultMemoryImpl>;
@@ -54,23 +58,23 @@ macro_rules! init_stable_memory {
 
 init_stable_memory!(MODEL_MAP,111,map<String, Vec<u8>>);
 init_stable_memory!(STATE_MAP,112,map<String, State>);
-use std::collections::BTreeMap as StdBTreeMap;
 
 
+init_stable_memory!(BACKUP_DATA,BACKUP_DATA_MEMORY_ID,map<u64,BackupData>);
 //存储各种临时数据
-init_stable_memory!(TEMP_VEC,0,vec<String>);
-init_stable_memory!(TEMP_MAP,1,map<String,String>);
+init_stable_memory!(TEMP_VEC,TEMP_VEC_MEMORY_ID,vec<TempVecValue<String>>);
+init_stable_memory!(TEMP_MAP,TEMP_MAP_MEMORY_ID,map<String,TempMapValue<String>>);
 
-init_stable_memory!(USER_CONTEXT,2,map<String, Context<User>>);
-init_stable_memory!(WALLET_CONTEXT,3,map<String, Context<Wallet>>);
-init_stable_memory!(PREDICTOR_CONTEXT,4,map<String, Context<Predictor>>);
-init_stable_memory!(ROLE_USER_TREE,5,map<String, StringVec>);
-init_stable_memory!(WASM_FILES,6,map<String, WasmFile>);
-init_stable_memory!(EXCHANGE_RATE,7,map<String, ExchangeRate>);
-init_stable_memory!(PREDICTOR_QUANTIFY,8,vec<PredictorView>);
-init_stable_memory!(STAKE,9,map<String,Stake>);
-init_stable_memory!(CANISTER_LIST,9,map<String,StringVec>);
-// init_stable_memory!(XRC,10,map<String,Vec<ExchangeRate>>);
+init_stable_memory!(USER_CONTEXT,USER_CONTEXT_MEMORY_ID,map<String, Context<User>>);
+init_stable_memory!(WALLET_CONTEXT,WALLET_CONTEXT_MEMORY_ID,map<String, Context<Wallet>>);
+init_stable_memory!(PREDICTOR_CONTEXT,PREDICTOR_CONTEXT_MEMORY_ID,map<String, Context<Predictor>>);
+init_stable_memory!(ROLE_USER_TREE,ROLE_USER_TREE_MEMORY_ID,map<String, StringVec>);
+init_stable_memory!(WASM_FILES,WASM_FILES_MEMORY_ID,map<String, WasmFile>);
+init_stable_memory!(EXCHANGE_RATE,EXCHANGE_RATE_MEMORY_ID,map<String, ExchangeRate>);
+init_stable_memory!(PREDICTOR_QUANTIFY,PREDICTOR_QUANTIFY_MEMORY_ID,vec<PredictorView>);
+init_stable_memory!(STAKE,STAKE_MEMORY_ID,map<String,Stake>);
+init_stable_memory!(CANISTER_LIST,CANISTER_LIST_MEMORY_ID,map<String,StringVec>);
+// init_stable_memory!(XRC,XRC_MEMORY_ID,map<String,Vec<ExchangeRate>>);
 
 
 
@@ -98,8 +102,10 @@ pub mod impl_storable {
     use std::borrow::Cow;
     use std::collections::BTreeMap;
     use crate::web::models::stake_model::Stake;
+    use candid::{Decode, Encode};
 
-    #[derive(Deserialize, Serialize, Clone)]
+
+    #[derive(Deserialize, Serialize, Clone, CandidType)]
     pub struct StringVec(pub Vec<String>);
     impl_storable!(StringVec);
 
@@ -122,14 +128,14 @@ pub mod impl_storable {
     impl_storable!(PredictorView);
     impl_storable!(Stake);
 
-    #[derive(Serialize, Deserialize, Debug, Clone)]
+    #[derive(Serialize, Deserialize, Debug, Clone, CandidType)]
     pub enum TempMapValue<K: Ord, V = String> {
         Text(String),
         Number(u64),
         BtreeMap(BTreeMap<K, V>),
         Vector(Vec<V>),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone)]
+    #[derive(Serialize, Deserialize, Debug, Clone, CandidType)]
     pub enum TempVecValue<T> {
         Text(String),
         Number(u64),
@@ -137,6 +143,21 @@ pub mod impl_storable {
     }
     impl_storable!(TempMapValue<K,V>);
     impl_storable!(TempVecValue<T>);
+
+     #[derive(Deserialize, Serialize, Clone, CandidType)]
+    pub  struct  BackupData(pub String);
+    impl Storable for BackupData {
+        fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+            Cow::Owned(Encode!(self).unwrap())
+        }
+        fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
+            Decode!(bytes.as_ref(), Self).unwrap()
+        }
+        const BOUND: Bound = Bound::Bounded {
+            max_size: 100*1024*1024, //100m
+            is_fixed_size: false,
+        };
+    }
 
 }
 
@@ -160,6 +181,7 @@ pub mod export_candid {
     use icrc_ledger_types::icrc3::blocks::{GetBlocksResponse,GetBlocksRequest};
     use icrc_ledger_types::icrc3::transactions::{GetTransactionsResponse,GetTransactionsRequest};
     use crate::impl_storable::UpdateType;
+    use crate::web::api::canister_api::backup_api::{HttpResponse,HttpRequest};
     export_candid!();
 }
 //TODO: lifecycles和api canid 导出先写到一起  后续需要分canisters再进行重构分离

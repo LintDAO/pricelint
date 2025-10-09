@@ -5,6 +5,7 @@ pub mod config{
    pub const MODEL_PARAMETERS_KEY :&str  = "model_parameters"; 
    pub const PREDICT_FLAG_KEY :&str  = "predict_flag";
    pub const TIMER_INTERVAL_KEY :&str  = "timer_interval";
+   pub const CURRENT_VERSION_KEY :&str  = "current_version";
    pub const FIVE_MIN_TIMER_INTERVAL :u64  = 5*60;
    pub const ONE_HOUR_IMER_INTERVAL :u64  = 60*60;
    pub const F_FLAG :&str  = "0";

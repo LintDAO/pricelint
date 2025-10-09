@@ -121,11 +121,12 @@ pub mod default_model_config {
     }
 }
 pub mod predict_config {
-    use crate::common::constants::config::{FIVE_MIN_TIMER_INTERVAL, F_FLAG, ONE_HOUR_IMER_INTERVAL, PREDICT_FLAG_KEY, TIMER_INTERVAL_KEY, T_FLAG};
+    use crate::common::constants::config::{CURRENT_VERSION_KEY, FIVE_MIN_TIMER_INTERVAL, F_FLAG, ONE_HOUR_IMER_INTERVAL, PREDICT_FLAG_KEY, TIMER_INTERVAL_KEY, T_FLAG};
     use crate::common::guard::is_owner;
     use crate::common::lifecycle::{periodic_task, Value, CONFIG, TIMER_ID};
     use ic_cdk::{query, update};
     use std::time::Duration;
+    use ic_cdk::api::management_canister::main::WasmModule;
     use ic_cdk_timers::clear_timer;
 
     #[update(guard = "is_owner")]
@@ -190,5 +191,13 @@ pub mod predict_config {
         } else {
             false
         }
+    }
+
+    #[query(guard = "is_owner")]
+    pub fn get_current_version()->(){
+        CONFIG.with(|rc| {
+            let ret = rc.borrow_mut().get(&CURRENT_VERSION_KEY.to_string());
+   
+        })  
     }
 }
