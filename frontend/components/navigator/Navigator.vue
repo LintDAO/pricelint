@@ -88,8 +88,8 @@ const signedIn = ref(false); // 是否登录
 
 const loading = ref(false);
 const onLogin = async () => {
-  const auth = await initAuth();
   loading.value = true;
+  const auth = await initAuth();
   //TODO 先不使用登录缓存，有点问题
   // if (!auth.info) {
   //检查用户是否已登录，未登录就登录
@@ -101,9 +101,10 @@ const onLogin = async () => {
     })
     .catch((e) => {
       console.error("e", e);
+      loading.value = false;
     })
     .finally(() => {
-      loading.value = false;
+      // loading.value = false;
     });
   // } else {
   //   //存在auth.info，说明用户已登录，不需要再登录
@@ -116,6 +117,7 @@ const loginSuccess = (ii: IdentityInfo) => {
   setCurrentIdentity(ii.identity, ii.principal);
   // 保存 principal 到状态
   userStore.setPrincipal(ii.principal).then(() => {
+    loading.value = false;
     //直接跳转到应用中，在应用里获取userInfo，加快速度。
     router.push({
       path: "/app",

@@ -1,6 +1,6 @@
 <template>
   <q-page class="row" style="gap: 4rem">
-    <div class="col-auto" style="width: 200px">
+    <div class="col-auto q-mt-md" style="width: 200px">
       <SideBar />
     </div>
     <div class="col">

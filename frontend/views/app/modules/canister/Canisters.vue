@@ -399,7 +399,7 @@ const showTopupCycles = (canisterId: string) => {
 // jump to detail page
 const toCanisterDetail = (canisterId: string) => {
   router.push({
-    path: `/app/canisters/${canisterId}`,
+    path: `/app/canisters/${canisterId}/overview`,
   });
 };
 

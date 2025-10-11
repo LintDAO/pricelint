@@ -226,8 +226,8 @@
               class="text-grey-8 rounded-borders q-mr-sm q-px-sm q-py-xs"
               :ripple="false"
               :class="{
-                'bg-grey-3': $route.path === btn.to,
-                'text-grey-10': $route.path === btn.to,
+                'bg-grey-3': $route.path.startsWith(btn.to),
+                'text-grey-10': $route.path.startsWith(btn.to),
               }"
               unelevated
             />
@@ -296,31 +296,40 @@ const buttons = computed(() => {
   if (!canisterId) return [];
 
   const routes = router.getRoutes();
-  // 查找与 /app 相关的子路由
-  const appRoute = routes.find((r) => r.path === "/app");
-  if (!appRoute || !appRoute.children) return [];
+  // 查找 /app 路由，确保有 children
+  const appRoute = routes.find(
+    (r) => r.path === "/app" && r.children && r.children.length > 0
+  );
+  if (!appRoute || !appRoute.children) {
+    console.warn("No /app route with children found");
+    return [];
+  }
 
-  // 过滤出与当前 canisterId 相关的路由
+  // 过滤出与当前 canisterId 相关的子路由
   const relevantRoutes = appRoute.children.filter((child) => {
-    // 匹配路径以 /app/canisters/:canisterId 开头的路由
-    return child.path.startsWith("canisters/:canisterId") && child.name;
+    // 匹配相对路径以 canisters/:canisterId 开头的路由
+    const matches =
+      child.path.startsWith("canisters/:canisterId") && child.name;
+    return matches;
   });
-  console.log("relevantRoutes", relevantRoutes, routes);
+
   // 动态生成按钮
   return relevantRoutes.map((child) => {
     // 构造按钮的 to 路径，替换 :canisterId 为实际值
     const to = child.path.replace(":canisterId", canisterId);
 
-    // 使用 meta 中的信息（如果存在）或路由名称作为标签
-    const label =
-      child.meta?.sidebar?.[0]?.label ||
-      child.name ||
-      child.path.split("/").pop() ||
-      "Unknown";
+    const meta = child.meta as
+      | {
+          label?: string;
+          sidebar?: Array<{ label: string; to: string; icon: string }>;
+        }
+      | undefined;
+    const label: string =
+      meta?.label ?? (typeof child.name === "string" ? child.name : "Unknown");
 
     return {
       label,
-      to: `/app/${to}`, // 确保路径以 /app 开头
+      to: `/app/${to}`, // 补全完整路径
     };
   });
 });
@@ -369,6 +378,7 @@ const getUserInfoFromServices = () => {
     .then((info) => {
       if (info.Ok) {
         username.value = info.Ok.name;
+        console.log("getUserAutoRegister console", info);
       } else if (info.Err) {
         console.error("no information for unregister user: ", info);
       } else {

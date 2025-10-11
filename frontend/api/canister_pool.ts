@@ -65,6 +65,7 @@ export function clearCurrentIdentity() {
 
 /**
  * A ready-to-use agent for the backend canister
+ * 注意，不要直接调用 .backend 方法，而是需要调用 .getBackend() ，直接调用 backend 只会生成匿名用户，会导致 IsAnonymousUser 错误。
  */
 export const getBackend = (principal?: string): ActorSubclass<_SERVICE> => {
   return ACTOR_CACHE[principal ?? currentPrincipal].backend;

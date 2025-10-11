@@ -3,9 +3,9 @@ import { setCurrentIdentity } from "@/api/canister_pool";
 import App from "@/views/app/AppHome.vue";
 import CanisterDetail from "@/views/app/modules/canister/CanisterDetail.vue";
 import CanisterEdit from "@/views/app/modules/canister/CanisterEdit.vue";
+import Canisters from "@/views/app/modules/canister/Canisters.vue";
 import CanisterInsights from "@/views/app/modules/canister/insights/CanisterInsights.vue";
 import CanisterInsightsTable from "@/views/app/modules/canister/insights/Table.vue";
-import Canisters from "@/views/app/modules/canister/Canisters.vue";
 import DashBoard from "@/views/app/modules/Dashboard.vue";
 import Home from "@/views/home/Home.vue";
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
@@ -41,16 +41,9 @@ const routes: Array<RouteRecordRaw> = [
       { name: "Canisters", path: "canisters", component: Canisters },
       {
         name: "CanisterDetail",
-        path: "canisters/:canisterId",
+        path: "canisters/:canisterId/overview",
         component: CanisterDetail,
-      },
-      {
-        name: "CanisterEdit",
-        path: "canisters/:canisterId/edit",
-        component: CanisterEdit,
-        meta: {
-          sidebar: [{ label: "General", to: "general", icon: "home" }],
-        },
+        meta: { label: "Overview" },
       },
       {
         name: "CanisterInsights",
@@ -65,7 +58,17 @@ const routes: Array<RouteRecordRaw> = [
           },
         ],
         meta: {
+          label: "Insights",
           sidebar: [{ label: "Table", to: "table", icon: "table_chart" }],
+        },
+      },
+      {
+        name: "CanisterEdit",
+        path: "canisters/:canisterId/edit",
+        component: CanisterEdit,
+        meta: {
+          label: "Settings",
+          sidebar: [{ label: "General", to: "general", icon: "home" }],
         },
       },
     ],

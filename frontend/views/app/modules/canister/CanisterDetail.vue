@@ -270,16 +270,17 @@
 </template>
 
 <script setup lang="ts">
-import { onPredict, queryCanisterStatus } from "@/api/canisters";
 import {
-  DONT_SHOW_AGIAN_STORAGE_KEY,
+  checkSystemLatestVersion,
+  onPredict,
+  queryCanisterStatus,
+} from "@/api/canisters";
+import {
+  DONT_SHOW_AGAIN_STORAGE_KEY,
   IC_DASHBOARD_URL,
 } from "@/api/constants/ic";
 import { fromTokenAmount } from "@/utils/common";
-import {
-  getStringArrayByPrincipal,
-  setStringArrayByPrincipal,
-} from "@/utils/storage";
+import { getStringByPrincipal, setStringByPrincipal } from "@/utils/storage";
 import * as echarts from "echarts";
 import { nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -288,14 +289,14 @@ const route = useRoute();
 const router = useRouter();
 
 // 定义 Banner 是否显示
-const showBanner = ref(true);
+const showBanner = ref(false);
 const isDataLoading = ref(true);
 const startPredictLoading = ref(false);
 
 const canisterId = ref(route.params.canisterId as string);
 // 当前 Canister 版本和最新版本（示例数据）
-const currentVersion = "1.2.3";
-const latestVersion = "1.5.0";
+const currentVersion = ref("0.0.0");
+const latestVersion = ref("0.0.0");
 // Reactive data
 const chartView = ref("accuracy");
 const chartRef = ref<HTMLElement>();
@@ -499,13 +500,13 @@ const initChart = () => {
   chart.setOption(option);
 };
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
   getCanisterInfo();
-  // 检查是否启用升级版本的banner
-  showBanner.value = !checkIfDismissed();
   nextTick(() => {
     initChart();
   });
+  // 检查是否启用升级版本的banner
+  showBanner.value = await checkVersion();
 });
 
 // Watch chart view changes
@@ -535,20 +536,71 @@ const completeQuickStart = () => {
   // Handle completion logic here
 };
 
-// 检查是否已屏蔽当前版本的提示
-const checkIfDismissed = (): boolean => {
+// 检查是否有新版本需要提示更新
+const checkVersion = async (): Promise<boolean> => {
   try {
-    const dismissedVersions = getStringArrayByPrincipal(
-      DONT_SHOW_AGIAN_STORAGE_KEY
-    );
-    if (dismissedVersions === null) return false;
-    return dismissedVersions.includes(currentVersion);
+    // 调用后端获取最新版本
+    const latestVersionResult = await checkSystemLatestVersion();
+    console.log("latestVersionResult", latestVersionResult);
+
+    // 假设 checkSystemLatestVersion 返回 Result 类型，例如 { Ok: string } | { Err: string }
+    if ("Err" in latestVersionResult) {
+      console.error("Failed to fetch latest version:", latestVersionResult.Err);
+      return false; // 如果后端返回错误，假设无需提示更新
+    }
+
+    latestVersion.value = latestVersionResult.Ok.wasm_version; // 获取最新版本号
+    currentVersion.value = "0.0.9"; // TODO 临时占位符，替换为实际调用用户 canister 接口的逻辑
+    // 示例：const currentVersion = await userCanister.getCurrentVersion();
+
+    // 检查本地存储中用户屏蔽的版本
+    const dismissedVersions = getStringByPrincipal(DONT_SHOW_AGAIN_STORAGE_KEY);
+    console.log("dismissedVersions", dismissedVersions);
+    //如果不存在屏蔽版本，直接显示
+    if (!dismissedVersions) return true;
+
+    // 比较版本号
+    const isNewerVersion =
+      compareVersions(latestVersion.value, currentVersion.value) > 0;
+
+    if (isNewerVersion) {
+      // 如果有新版本，检查用户是否屏蔽了 *最新版本*
+      if (
+        dismissedVersions !== null &&
+        dismissedVersions.includes(latestVersion.value)
+      ) {
+        return false; // 用户已屏蔽最新版本的提示，不显示
+      }
+      return true; // 有新版本，且未被屏蔽，显示提示
+    } else {
+      // 没有新版本，检查是否屏蔽了当前版本
+      if (
+        dismissedVersions !== null &&
+        dismissedVersions.includes(currentVersion.value)
+      ) {
+        return false; // 用户屏蔽了当前版本，不显示提示
+      }
+      return false; // 没有新版本，无需提示
+    }
   } catch (error) {
-    console.error("Error checking dismissed versions:", error);
-    return false;
+    console.error("Error checking version update:", error);
+    return false; // 发生错误，假设无需提示
   }
 };
 
+// 版本号比较函数
+function compareVersions(latest: string, current: string): number {
+  const latestParts = latest.split(".").map(Number);
+  const currentParts = current.split(".").map(Number);
+
+  for (let i = 0; i < Math.max(latestParts.length, currentParts.length); i++) {
+    const latestNum = latestParts[i] || 0;
+    const currentNum = currentParts[i] || 0;
+    if (latestNum > currentNum) return 1;
+    if (latestNum < currentNum) return -1;
+  }
+  return 0;
+}
 // 处理升级按钮点击事件
 const handleUpgrade = () => {
   // 这里可以添加升级逻辑，比如跳转到升级页面或触发升级流程
@@ -559,15 +611,15 @@ const handleUpgrade = () => {
 
 // 处理关闭 Banner
 const handleDontShowAgain = () => {
-  const success = setStringArrayByPrincipal(
-    DONT_SHOW_AGIAN_STORAGE_KEY,
-    currentVersion
+  const success = setStringByPrincipal(
+    DONT_SHOW_AGAIN_STORAGE_KEY,
+    latestVersion.value
   );
   if (success) {
     showBanner.value = false;
-    console.log(`Version ${currentVersion} dismissed`);
+    console.log(`Version ${latestVersion.value} dismissed`);
   } else {
-    console.log(`Failed to dismiss version ${currentVersion}`);
+    console.log(`Failed to dismiss version ${latestVersion.value}`);
   }
 };
 </script>
