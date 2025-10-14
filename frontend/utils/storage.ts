@@ -379,3 +379,90 @@ export const getCanisterArrayByPrincipal = (
     return null;
   }
 };
+
+/**
+ * 从 localStorage 获取 当前 principal ID 和 canister ID 存储的字符串
+ * @param key 存储的键名
+ * @param canisterId canister 的 ID
+ * @returns 指定 principalId 和 canisterId 的字符串，或 null
+ */
+export const getStringByPrincipalAndCanister = (
+  key: string,
+  canisterId: string
+): string | null => {
+  const principalId = getCurrentPrincipal();
+  if (!principalId) {
+    throw new Error("User not authenticated: Principal not found");
+  }
+  const value = localStorage.getItem(key);
+  if (value === null) return null;
+
+  try {
+    const parsed = JSON.parse(value);
+    // 返回对应 principalId 和 canisterId 的字符串
+    return typeof parsed?.[principalId]?.[canisterId] === "string"
+      ? parsed[principalId][canisterId]
+      : null;
+  } catch (e) {
+    console.error(`Failed to read ${key} info for canister ${canisterId}:`, e);
+    return null;
+  }
+};
+
+/**
+ * 按用户的 principalId 和 canisterId 向 localStorage 存储字符串
+ * @param key 存储的键名
+ * @param canisterId canister 的 ID
+ * @param string 要存储的字符串
+ * @returns 是否成功存储（如果已存在相同字符串，返回 false）
+ */
+export const setStringByPrincipalAndCanister = (
+  key: string,
+  canisterId: string,
+  string: string
+): boolean => {
+  try {
+    const principalId = getCurrentPrincipal();
+    if (!principalId)
+      throw new Error("User not authenticated: Principal not found");
+
+    const existingData = localStorage.getItem(key);
+    let existingMap: Record<string, Record<string, string>> = {};
+
+    // 解析现有数据
+    if (existingData) {
+      try {
+        existingMap = JSON.parse(existingData);
+      } catch (e) {
+        console.error(`Failed to parse existing data for ${key}:`, e);
+      }
+    }
+
+    // 初始化 principalId 的结构
+    if (!existingMap[principalId]) {
+      existingMap[principalId] = {};
+    }
+
+    // 检查是否已存在相同字符串
+    if (existingMap[principalId][canisterId] === string) {
+      console.log(
+        `String ${string} already exists for principal ${principalId} and canister ${canisterId} in ${key}, skipping storage`
+      );
+      return false;
+    }
+
+    // 存储字符串（覆盖旧值）
+    existingMap[principalId][canisterId] = string;
+    setStorage(key, existingMap);
+    console.log(
+      `Successfully stored string ${string} for principal ${principalId} and canister ${canisterId} in ${key}`
+    );
+    return true;
+  } catch (error) {
+    console.error(
+      `Failed to store string ${string} for principal and canister ${canisterId} in ${key}:`,
+      error
+    );
+    return false;
+  }
+};

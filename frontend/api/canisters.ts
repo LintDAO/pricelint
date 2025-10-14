@@ -6,7 +6,11 @@ import {
   setCanisterArrayByPrincipal,
 } from "@/utils/storage";
 import { Actor } from "@dfinity/agent";
-import { ICManagementCanister, chunk_hash } from "@dfinity/ic-management";
+import {
+  ICManagementCanister,
+  canister_install_mode,
+  chunk_hash,
+} from "@dfinity/ic-management";
 import { Principal } from "@dfinity/principal";
 import {
   createIIAgent,
@@ -38,10 +42,15 @@ const initManage = () => {
 
 // 手动定义 Candid 接口
 const userCanisterIdlFactory = ({ IDL }) => {
+  const Result = IDL.Variant({
+    Ok: IDL.Null, // 成功时无返回值
+    Err: IDL.Text, // 失败时返回错误信息
+  });
   return IDL.Service({
     set_train_params: IDL.Func([], [], []), // 无参数，无返回值
-    set_start_predict: IDL.Func([], [], []), // 无参数，无返回值
-    set_stop_predict: IDL.Func([], [], []), // 无参数，无返回值
+    set_start_predict: IDL.Func([], [Result], []), // 返回 Result
+    set_stop_predict: IDL.Func([], [Result], []), // 返回 Result
+    is_predict_running: IDL.Func([], [IDL.Bool], []),
   });
 };
 
@@ -232,7 +241,8 @@ const CHUNK_SIZE = 1024 * 1024; // 1MB
 export async function installCode(
   canisterId: string,
   wasm_name: string,
-  version: string
+  version: string,
+  mode: "install" | "upgrade" = "install" // 字符串参数，用于指定模式
 ): Promise<void> {
   const managementCanister = initManage();
   try {
@@ -242,24 +252,26 @@ export async function installCode(
       throw new Error(`Failed to retrieve WASM file: ${wasmResult.Err}`);
     }
 
-    const wasmModule = wasmResult.Ok.wasm_bin;
+    const wasmModule = wasmResult.Ok.wasm_bin[0];
     if (!wasmModule || wasmModule.length === 0) {
       throw new Error("Retrieved WASM file is empty");
     }
-
     console.log(
       `Retrieved WASM file for version ${version}, size: ${wasmModule.length} bytes`
     );
 
     const targetCanisterId = Principal.fromText(canisterId);
-
+    // 确定安装代码的模式
+    const installMode: canister_install_mode =
+      mode === "install" ? { install: null } : { upgrade: [] };
+    console.log("installMode", installMode);
     // 如果 WASM 小于 2MB，直接使用 installCode
     if (wasmModule.length <= 2097152) {
       await managementCanister.installCode({
         canisterId: targetCanisterId,
         wasmModule: wasmModule,
         arg: new Uint8Array([]),
-        mode: { install: null },
+        mode: installMode,
       });
       console.log(
         `Code installed successfully on canister ${canisterId} using installCode`
@@ -297,7 +309,7 @@ export async function installCode(
       wasmModuleHash,
       chunkHashesList,
       arg: new Uint8Array([]),
-      mode: { install: null },
+      mode: installMode,
     });
 
     console.log(
@@ -333,9 +345,6 @@ export const onPredict = async (
   canisterId: string,
   start: boolean
 ): Promise<void> => {
-  console.log(
-    `Calling set_train_params for canister ${canisterId} with params:`
-  );
   try {
     const canisterActor = await initTargetCanister(canisterId);
     if (start) {
@@ -350,3 +359,33 @@ export const onPredict = async (
     throw error;
   }
 };
+
+export async function checkIsPredictRunning(
+  canisterId: string
+): Promise<boolean> {
+  try {
+    const canisterActor = await initTargetCanister(canisterId);
+    const res = await canisterActor.is_predict_running();
+    return res as boolean;
+  } catch (error) {
+    console.error(
+      `Error calling checkIsPredictRunning on canister ${canisterId}:`,
+      error
+    );
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (
+      errorMessage.includes(
+        "Canister has no update method 'is_predict_running'"
+      )
+    ) {
+      showMessageError(
+        "Your canister version is outdated and requires updating."
+      );
+    } else {
+      showMessageError(
+        `Error calling checkIsPredictRunning on canister ${canisterId}: ${errorMessage}`
+      );
+    }
+    throw error;
+  }
+}

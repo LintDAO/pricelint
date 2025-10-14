@@ -31,14 +31,29 @@
           <!-- Project Preview -->
           <div class="project-preview">
             <div class="chart-container">
-              <div ref="chartRef" class="chart"></div>
+              <q-skeleton v-if="isStatusLoading" height="200px" />
+              <div v-else ref="chartRef" class="chart"></div>
             </div>
           </div>
 
           <!-- Project Details -->
           <div class="project-details">
-            <div class="project-type">Model Version</div>
-            <div class="text-h6 q-mb-sm">{{ canisterData.modelVersion }}</div>
+            <q-skeleton
+              v-if="isStatusLoading"
+              type="text"
+              class="q-mb-sm"
+              width="150px"
+            />
+            <div v-else class="project-type">Model Version</div>
+            <q-skeleton
+              v-if="isStatusLoading"
+              type="text"
+              class="q-mb-sm"
+              width="200px"
+            />
+            <div v-else class="text-h6 q-mb-sm">
+              {{ canisterData.modelVersion }}
+            </div>
 
             <div class="project-meta">
               <div class="meta-item">
@@ -59,7 +74,9 @@
                 <div class="meta-item">
                   <span class="meta-label">Status</span>
                   <div class="meta-value">
+                    <q-skeleton v-if="isStatusLoading" type="QChip" />
                     <q-chip
+                      v-else
                       :color="getStatusColor(canisterData.status)"
                       text-color="white"
                       size="sm"
@@ -68,9 +85,11 @@
                   </div>
                 </div>
                 <div class="meta-item">
-                  <span class="meta-label">Trading Pair</span>
+                  <span class="meta-label">Token Pair</span>
                   <div class="meta-value">
+                    <q-skeleton v-if="isStatusLoading" type="QChip" />
                     <q-chip
+                      v-else
                       color="blue"
                       text-color="white"
                       size="sm"
@@ -83,13 +102,23 @@
                 <div class="meta-item">
                   <span class="meta-label">Next:</span>
                   <div class="meta-value">
-                    <span>{{ canisterData.nextPrediction }}</span>
+                    <q-skeleton
+                      v-if="isStatusLoading"
+                      type="text"
+                      width="100px"
+                    />
+                    <span v-else>{{ canisterData.nextPrediction }}</span>
                   </div>
                 </div>
                 <div class="meta-item">
                   <span class="meta-label">Update:</span>
                   <div class="meta-value">
-                    <span>{{ canisterData.lastUpdated }}</span>
+                    <q-skeleton
+                      v-if="isStatusLoading"
+                      type="text"
+                      width="100px"
+                    />
+                    <span v-else>{{ canisterData.lastUpdated }}</span>
                   </div>
                 </div>
               </div>
@@ -97,15 +126,27 @@
 
             <div class="site-structure">
               <div class="structure-header">
-                <span class="structure-title"> Latest</span>
+                <span class="structure-title">Actions</span>
               </div>
-              <q-btn
-                label="Start Predict"
-                color="primary"
-                no-caps
-                :loading="startPredictLoading"
-                @click="startPredict(true)"
-              ></q-btn>
+              <q-skeleton v-if="isStatusLoading" type="QBtn" width="120px" />
+              <template v-else>
+                <q-btn
+                  v-if="canisterData.status !== 'Predicting'"
+                  label="Start Predict"
+                  color="primary"
+                  no-caps
+                  :loading="startPredictLoading"
+                  @click="startPredict(true)"
+                />
+                <q-btn
+                  v-else
+                  label="Stop Predict"
+                  color="negative"
+                  no-caps
+                  :loading="startPredictLoading"
+                  @click="startPredict(false)"
+                />
+              </template>
             </div>
           </div>
         </div>
@@ -271,7 +312,9 @@
 
 <script setup lang="ts">
 import {
+  checkIsPredictRunning,
   checkSystemLatestVersion,
+  installCode,
   onPredict,
   queryCanisterStatus,
 } from "@/api/canisters";
@@ -280,8 +323,13 @@ import {
   IC_DASHBOARD_URL,
 } from "@/api/constants/ic";
 import { fromTokenAmount } from "@/utils/common";
-import { getStringByPrincipal, setStringByPrincipal } from "@/utils/storage";
+import { showMessageSuccess } from "@/utils/message";
+import {
+  getStringByPrincipalAndCanister,
+  setStringByPrincipalAndCanister,
+} from "@/utils/storage";
 import * as echarts from "echarts";
+import { Notify } from "quasar";
 import { nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
@@ -291,12 +339,14 @@ const router = useRouter();
 // 定义 Banner 是否显示
 const showBanner = ref(false);
 const isDataLoading = ref(true);
+const isStatusLoading = ref(true);
 const startPredictLoading = ref(false);
 
 const canisterId = ref(route.params.canisterId as string);
 // 当前 Canister 版本和最新版本（示例数据）
 const currentVersion = ref("0.0.0");
 const latestVersion = ref("0.0.0");
+const latestVersionName = ref("");
 // Reactive data
 const chartView = ref("accuracy");
 const chartRef = ref<HTMLElement>();
@@ -348,8 +398,8 @@ const quickStartItems = [
 ];
 
 const canisterData = ref({
-  owner: "alice-principal-id",
-  status: "Running",
+  owner: "",
+  status: "Standby",
   module_hash: "",
   cyclesBalance: "0",
   cyclesChange: -2.1,
@@ -358,9 +408,9 @@ const canisterData = ref({
   accuracy: 0,
   accuracyChange: 1.2,
   tradingPair: "ICP/USDT",
-  modelVersion: "v2.1.3",
-  nextPrediction: "Bullish",
-  lastUpdated: "October 9, 2025 at 2:30 PM",
+  modelVersion: "v0.0.1",
+  nextPrediction: "None",
+  lastUpdated: "None",
 });
 
 //获取canister信息
@@ -373,10 +423,10 @@ const getCanisterInfo = async () => {
     }
     canisterData.value = {
       ...canisterData.value,
-      status: Object.keys(status.status)[0] as
-        | "running"
-        | "stopping"
-        | "stopped",
+      // status: Object.keys(status.status)[0] as
+      //   | "running"
+      //   | "stopping"
+      //   | "stopped",
       module_hash: status.module_hash,
       cyclesBalance: `${fromTokenAmount(status.cycles.toString(), 12).toFixed(
         2
@@ -502,9 +552,18 @@ const initChart = () => {
 // Lifecycle
 onMounted(async () => {
   getCanisterInfo();
-  nextTick(() => {
-    initChart();
-  });
+
+  checkIsPredictRunning(canisterId.value)
+    .then((res) => {
+      canisterData.value.status = res ? "Predicting" : "Standby";
+    })
+    .finally(() => {
+      isStatusLoading.value = false;
+      nextTick(() => {
+        initChart();
+      });
+    });
+
   // 检查是否启用升级版本的banner
   showBanner.value = await checkVersion();
 });
@@ -518,7 +577,7 @@ watch(chartView, () => {
 
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
-    case "running":
+    case "predicting":
       return "positive";
     case "stopped":
       return "negative";
@@ -550,11 +609,15 @@ const checkVersion = async (): Promise<boolean> => {
     }
 
     latestVersion.value = latestVersionResult.Ok.wasm_version; // 获取最新版本号
+    latestVersionName.value = latestVersionResult.Ok.wasm_name; // 获取最新版本号
     currentVersion.value = "0.0.9"; // TODO 临时占位符，替换为实际调用用户 canister 接口的逻辑
     // 示例：const currentVersion = await userCanister.getCurrentVersion();
 
     // 检查本地存储中用户屏蔽的版本
-    const dismissedVersions = getStringByPrincipal(DONT_SHOW_AGAIN_STORAGE_KEY);
+    const dismissedVersions = getStringByPrincipalAndCanister(
+      DONT_SHOW_AGAIN_STORAGE_KEY,
+      canisterId.value
+    );
     console.log("dismissedVersions", dismissedVersions);
     //如果不存在屏蔽版本，直接显示
     if (!dismissedVersions) return true;
@@ -602,24 +665,69 @@ function compareVersions(latest: string, current: string): number {
   return 0;
 }
 // 处理升级按钮点击事件
-const handleUpgrade = () => {
-  // 这里可以添加升级逻辑，比如跳转到升级页面或触发升级流程
-  console.log("Initiating Canister upgrade...");
-  // 模拟升级后关闭 Banner
+const handleUpgrade = async () => {
+  console.log(
+    "Initiating Canister upgrade...",
+    latestVersionName.value,
+    latestVersion.value
+  );
+  // Create a persistent notification with a progress bar
+  const notify = Notify.create({
+    message:
+      "System upgrade in progress. Please do not leave this page until the update is complete.",
+    type: "info",
+    position: "top",
+    timeout: 0, // Persistent until manually dismissed
+    progress: true, // Enable progress bar
+    actions: [
+      {
+        label: "Dismiss",
+        color: "white",
+        handler: () => false, // Prevent dismissal during upgrade
+      },
+    ],
+  });
+
+  try {
+    await installCode(
+      canisterId.value,
+      latestVersionName.value,
+      latestVersion.value,
+      "upgrade"
+    );
+    //成功升级系统版本后自动不再提示当前版本。
+    const success = setStringByPrincipalAndCanister(
+      DONT_SHOW_AGAIN_STORAGE_KEY,
+      canisterId.value,
+      latestVersion.value
+    );
+    showMessageSuccess(
+      `System successfully installed with the latest version ${latestVersion.value}`
+    );
+  } catch (error) {
+    console.log(`Failed to upgrade system ${error}`);
+  }
+
+  // 升级后关闭 Banner
   showBanner.value = false;
 };
 
 // 处理关闭 Banner
 const handleDontShowAgain = () => {
-  const success = setStringByPrincipal(
+  const success = setStringByPrincipalAndCanister(
     DONT_SHOW_AGAIN_STORAGE_KEY,
-    latestVersion.value
+    canisterId.value,
+    latestVersion.value // 假设 latestVersion.value 是字符串
   );
   if (success) {
     showBanner.value = false;
-    console.log(`Version ${latestVersion.value} dismissed`);
+    console.log(
+      `String ${latestVersion.value} dismissed for canister ${canisterId}`
+    );
   } else {
-    console.log(`Failed to dismiss version ${latestVersion.value}`);
+    console.log(
+      `Failed to dismiss string ${latestVersion.value} for canister ${canisterId}`
+    );
   }
 };
 </script>
