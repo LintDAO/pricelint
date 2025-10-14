@@ -381,7 +381,7 @@ const installCanisterCode = async (canisterId: string) => {
     install: true,
   };
   //TODO 版本号写死了，后面要可以选模型
-  await installCode(canisterId, "lstm", "v2");
+  await installCode(canisterId, "lstm", "v2", "install");
   loadingActions.value[canisterId] = {
     ...loadingActions.value[canisterId],
     install: false,
@@ -399,7 +399,7 @@ const showTopupCycles = (canisterId: string) => {
 // jump to detail page
 const toCanisterDetail = (canisterId: string) => {
   router.push({
-    path: `/app/canisters/${canisterId}`,
+    path: `/app/canisters/${canisterId}/overview`,
   });
 };
 

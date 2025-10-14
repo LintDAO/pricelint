@@ -1,13 +1,14 @@
 <template>
-  <q-page class="row">
-    <q-col class="col-auto" style="width: 200px">
+  <q-page class="row" style="gap: 4rem">
+    <div class="col-auto q-mt-md" style="width: 200px">
       <SideBar />
-    </q-col>
-    <q-col class="col">
+    </div>
+    <div class="col">
       <div class="q-pa-md">
-        <h2>Content</h2>
+        <!-- 子路由内容将在这里渲染 -->
+        <router-view />
       </div>
-    </q-col>
+    </div>
   </q-page>
 </template>
 
