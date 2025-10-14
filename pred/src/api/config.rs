@@ -193,11 +193,26 @@ pub mod predict_config {
         }
     }
 
+    //安装wasm后设置当前版本
     #[query(guard = "is_owner")]
-    pub fn get_current_version()->(){
+    pub fn set_current_version(name:String,version:String)->(){
+        CONFIG.with(|rc| {
+            let ret = rc.borrow_mut().insert(CURRENT_VERSION_KEY.to_string(), Value::Tuple2(name,version));
+        })
+    }
+    #[query(guard = "is_owner")]
+    pub fn get_current_version()->Option<(String,String)>{
         CONFIG.with(|rc| {
             let ret = rc.borrow_mut().get(&CURRENT_VERSION_KEY.to_string());
-   
+            if ret.is_some(){
+                if let Value::Tuple2(name,version)=ret.unwrap(){
+                    return Some((name.clone(),version.clone()));
+                }  else {
+                    return None 
+                }
+            }
+            return None
+            
         })  
     }
 }

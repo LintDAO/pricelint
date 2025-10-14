@@ -61,6 +61,9 @@ init_stable_memory!(LOG,String,log<index:2, data:3>);
 pub enum Value<K: Ord, V = String> {
     Text(String),
     Number(u64),
+    Tuple1(V),
+    Tuple2(V,V),
+    Tuple3(V,V,V),
     BtreeMap(BTreeMap<K, V>),
     Vector(Vec<V>), // 可以添加更多变体
 }
