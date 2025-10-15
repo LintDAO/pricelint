@@ -259,7 +259,7 @@ export async function installCode(
     console.log(
       `Retrieved WASM file for version ${version}, size: ${wasmModule.length} bytes`
     );
-
+    return;
     const targetCanisterId = Principal.fromText(canisterId);
     // 确定安装代码的模式
     const installMode: canister_install_mode =

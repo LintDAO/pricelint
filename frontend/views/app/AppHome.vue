@@ -378,7 +378,6 @@ const getUserInfoFromServices = () => {
     .then((info) => {
       if (info.Ok) {
         username.value = info.Ok.name;
-        console.log("getUserAutoRegister console", info);
       } else if (info.Err) {
         console.error("no information for unregister user: ", info);
       } else {

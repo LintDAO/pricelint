@@ -19,7 +19,7 @@
         <q-btn
           flat
           class="banner-btn-secondary"
-          label="Don't Show Again"
+          label="Dismiss"
           @click="handleDontShowAgain"
         />
       </template>
@@ -323,7 +323,7 @@ import {
   IC_DASHBOARD_URL,
 } from "@/api/constants/ic";
 import { fromTokenAmount } from "@/utils/common";
-import { showMessageSuccess } from "@/utils/message";
+import { showMessageError, showMessageSuccess } from "@/utils/message";
 import {
   getStringByPrincipalAndCanister,
   setStringByPrincipalAndCanister,
@@ -618,7 +618,6 @@ const checkVersion = async (): Promise<boolean> => {
       DONT_SHOW_AGAIN_STORAGE_KEY,
       canisterId.value
     );
-    console.log("dismissedVersions", dismissedVersions);
     //如果不存在屏蔽版本，直接显示
     if (!dismissedVersions) return true;
 
@@ -673,12 +672,13 @@ const handleUpgrade = async () => {
   );
   // Create a persistent notification with a progress bar
   const notify = Notify.create({
+    spinner: true,
     message:
       "System upgrade in progress. Please do not leave this page until the update is complete.",
-    type: "info",
+    type: "positive",
     position: "top",
-    timeout: 0, // Persistent until manually dismissed
-    progress: true, // Enable progress bar
+    timeout: 0,
+    group: false,
     actions: [
       {
         label: "Dismiss",
@@ -701,10 +701,14 @@ const handleUpgrade = async () => {
       canisterId.value,
       latestVersion.value
     );
+    // 直接调用 notify() 触发 Api.dismiss() 关闭弹窗
+    notify();
     showMessageSuccess(
       `System successfully installed with the latest version ${latestVersion.value}`
     );
   } catch (error) {
+    notify();
+    showMessageError(`Failed to upgrade system ${error}`);
     console.log(`Failed to upgrade system ${error}`);
   }
 
