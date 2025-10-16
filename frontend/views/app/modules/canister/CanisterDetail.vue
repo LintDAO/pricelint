@@ -5,9 +5,9 @@
         <q-icon name="info" class="banner-icon" />
       </template>
       <div class="banner-text">
-        Your Canister version ({{ currentVersion }}) is outdated. Please upgrade
-        to the latest version ({{ latestVersion }}) for better performance and
-        security.
+        Your Canister System version ({{ currentVersion }}) is outdated. Please
+        upgrade to the latest version ({{ latestVersion }}) for better
+        performance and security.
       </div>
       <template v-slot:action>
         <q-btn
