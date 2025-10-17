@@ -1,13 +1,15 @@
+import { showMessageError } from "@/utils/message";
 import axios from "axios";
 import { BINANCE_URL } from "./constants/ic";
-import { showMessageError } from "@/utils/message";
 
 export interface YearTimestamp {
   year: number | string;
   timestamp: { start: number; end: number };
 }
 
-export const getTokenPriceHistory = async (): Promise<any> => {
+export const getTokenPriceHistory = async (
+  tokenSymbol: string
+): Promise<any> => {
   try {
     //获取binance的所有ICP价格历史数据，目前coingecko只允许调用一年以内的数据，无法使用。
     const url = `${BINANCE_URL}/api/v3/klines`;
@@ -18,7 +20,7 @@ export const getTokenPriceHistory = async (): Promise<any> => {
     } of getYearTimestamps()) {
       //获取从2021年开始的每年数据
       const params = {
-        symbol: "ICPUSDT",
+        symbol: tokenSymbol.toUpperCase() + "USDT",
         startTime: start,
         endTime: end,
         interval: "1d",
@@ -41,7 +43,7 @@ export const getTokenPriceHistory = async (): Promise<any> => {
         //   "17928899.62484339", // 请忽略该参数
         // ]
 
-        // priceData 包含时间戳和价格数据
+        // priceData 目前只筛选使用开盘时间戳和开盘价
         const timestampAndPrice = response.data.map((item) => [
           item[0],
           Number(item[1]),
@@ -49,21 +51,20 @@ export const getTokenPriceHistory = async (): Promise<any> => {
         priceData = priceData.concat(timestampAndPrice);
       }
     }
-    console.log("priceData", priceData);
     return priceData;
   } catch (error) {
     showMessageError(
       "Can not connect Binance api, please check if you have access to Binance or try later"
     );
-    console.error("Error fetching ICP price data:", error);
+    console.error(`Error fetching ${tokenSymbol} price data:`, error);
     throw error;
   }
 };
-
+// 可以根据年份返回对应的时间戳数组，以此来满足API的timerange
 export const getYearTimestamps = (): YearTimestamp[] => {
   const currentYear = new Date().getFullYear();
   const timestamps: YearTimestamp[] = [];
-  //从ICP的2021年上线开始，至今。
+  //从2021年上线开始，至今。
   for (let year = 2021; year <= currentYear; year++) {
     const startOfYear = new Date(year, 0, 1); // January 1st
     const endOfYear = new Date(year, 11, 31, 23, 59, 59); // December 31st, 23:59:59
