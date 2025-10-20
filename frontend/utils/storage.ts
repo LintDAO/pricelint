@@ -234,7 +234,7 @@ export const getStringByPrincipal = (key: string): string | null => {
 export const setCanisterArrayByPrincipal = (
   principalId: string,
   key: string,
-  canisterId: string
+  canisterId: any
 ): boolean => {
   try {
     // 1. 从 localStorage 获取现有数据

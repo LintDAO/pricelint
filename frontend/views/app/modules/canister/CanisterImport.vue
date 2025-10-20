@@ -18,6 +18,7 @@
         :loading="isLoadingImport"
         @click="importData"
       />
+      <q-btn label="Export as JSON Data" color="primary" @click="exportJson" />
     </div>
   </div>
 </template>
@@ -130,6 +131,32 @@ const importData = async () => {
     // For example: await someImportFunction();
   } finally {
     isLoadingImport.value = false;
+  }
+};
+//将数据导出为json文件
+const exportJson = async () => {
+  try {
+    // Convert priceData ref to JSON string
+    const jsonData = JSON.stringify(priceData.value, null, 2);
+
+    // Create a Blob with the JSON data
+    const blob = new Blob([jsonData], { type: "application/json" });
+
+    // Create a temporary URL for the Blob
+    const url = window.URL.createObjectURL(blob);
+
+    // Create a temporary link element for downloading
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "priceData.json"; // File name for download
+    document.body.appendChild(link);
+    link.click();
+
+    // Clean up
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Error exporting JSON:", error);
   }
 };
 </script>
