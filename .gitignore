@@ -29,15 +29,15 @@ target/
 
 /.dfx/*
 # 例外：跟踪本地环境的 service 相关文件
-!/.dfx/local/canisters/backend/service.did
-!/.dfx/local/canisters/backend/service.did.d.ts
-!/.dfx/local/canisters/backend/service.did.js
+!/.dfx/local/canisters/backend/backend.did
+!/.dfx/local/canisters/backend/backend.did.d.ts
+!/.dfx/local/canisters/backend/backend.did.js
 !/.dfx/local/canisters/backend/index.js
 
 # 例外：跟踪主网环境的 service 相关文件
-!/.dfx/ic/canisters/backend/service.did
-!/.dfx/ic/canisters/backend/service.did.d.ts
-!/.dfx/ic/canisters/backend/service.did.js
+!/.dfx/ic/canisters/backend/backend.did
+!/.dfx/ic/canisters/backend/backend.did.d.ts
+!/.dfx/ic/canisters/backend/backend.did.js
 !/.dfx/ic/canisters/backend/index.js
 .log
 

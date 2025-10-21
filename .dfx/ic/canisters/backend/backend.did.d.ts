@@ -55,6 +55,18 @@ export interface GetTransactionsResponse {
   'transactions' : Array<Transaction>,
   'archived_transactions' : Array<ArchivedRange_1>,
 }
+export interface HttpRequest {
+  'url' : string,
+  'method' : string,
+  'body' : Uint8Array | number[],
+  'headers' : Array<[string, string]>,
+}
+export interface HttpResponse {
+  'body' : Uint8Array | number[],
+  'headers' : Array<[string, string]>,
+  'streaming_strategy' : [] | [StreamingStrategy],
+  'status_code' : number,
+}
 export interface ICRC2AllowanceResponse {
   'allowance' : bigint,
   'expires_at' : [] | [bigint],
@@ -104,29 +116,29 @@ export interface PriceData {
   'volume' : number,
   'price_diff' : number,
 }
-export type Result = { 'Ok' : WasmFile } |
+export type Result = { 'Ok' : null } |
   { 'Err' : string };
-export type Result_1 = { 'Ok' : string } |
+export type Result_1 = { 'Ok' : WasmFile } |
   { 'Err' : string };
-export type Result_10 = { 'Ok' : null } |
+export type Result_10 = { 'Ok' : PredictorView } |
   { 'Err' : string };
 export type Result_11 = { 'Ok' : User } |
   { 'Err' : string };
 export type Result_2 = { 'Ok' : GetBlocksResponse } |
   { 'Err' : string };
-export type Result_3 = { 'Ok' : Array<Predictor> } |
+export type Result_3 = { 'Ok' : string } |
   { 'Err' : string };
-export type Result_4 = { 'Ok' : GetTransactionsResponse } |
+export type Result_4 = { 'Ok' : Array<Predictor> } |
   { 'Err' : string };
-export type Result_5 = { 'Ok' : Array<WasmFile> } |
+export type Result_5 = { 'Ok' : GetTransactionsResponse } |
   { 'Err' : string };
-export type Result_6 = { 'Ok' : bigint } |
+export type Result_6 = { 'Ok' : Array<WasmFile> } |
   { 'Err' : string };
-export type Result_7 = { 'Ok' : ICRC2AllowanceResponse } |
+export type Result_7 = { 'Ok' : bigint } |
   { 'Err' : string };
-export type Result_8 = { 'Ok' : Predictor } |
+export type Result_8 = { 'Ok' : ICRC2AllowanceResponse } |
   { 'Err' : string };
-export type Result_9 = { 'Ok' : PredictorView } |
+export type Result_9 = { 'Ok' : Predictor } |
   { 'Err' : string };
 export interface State {
   'bias' : [] | [Array<number>],
@@ -135,6 +147,9 @@ export interface State {
   'prices' : Array<PriceData>,
   'min_values' : Array<number>,
 }
+export type StreamingStrategy = {
+    'Callback' : { 'token' : Uint8Array | number[], 'callback' : Principal }
+  };
 export interface Transaction {
   'burn' : [] | [Burn],
   'kind' : string,
@@ -186,43 +201,48 @@ export interface WasmFile {
 }
 export interface _SERVICE {
   'add_price' : ActorMethod<[PriceData], undefined>,
-  'delete_wasm' : ActorMethod<[string, string], Result>,
-  'dump_stable_memory' : ActorMethod<[], Result_1>,
+  'backup_stable_memory' : ActorMethod<[], Result>,
+  'delete_backup_data' : ActorMethod<[bigint], boolean>,
+  'delete_wasm' : ActorMethod<[string, string], Result_1>,
+  'dump_stable_memory' : ActorMethod<[[] | [bigint]], HttpResponse>,
+  'find_backup_data' : ActorMethod<[bigint], [] | [string]>,
+  'find_backup_lists' : ActorMethod<[], Array<[bigint, bigint]>>,
   'find_user_lists' : ActorMethod<[], Array<User>>,
   'get_blocks' : ActorMethod<[GetBlocksRequest], Result_2>,
-  'get_canister_info' : ActorMethod<[], Result_1>,
-  'get_latest_version' : ActorMethod<[UpdateType], Result>,
-  'get_predictor_vec' : ActorMethod<[], Result_3>,
+  'get_canister_info' : ActorMethod<[], Result_3>,
+  'get_latest_version' : ActorMethod<[UpdateType], Result_1>,
+  'get_predictor_vec' : ActorMethod<[], Result_4>,
   'get_principal' : ActorMethod<[], Principal>,
   'get_state' : ActorMethod<[], State>,
-  'get_transactions' : ActorMethod<[GetBlocksRequest], Result_4>,
-  'get_wasm_bin' : ActorMethod<[string, string], Result>,
-  'get_wasm_lists' : ActorMethod<[], Result_5>,
-  'icrc1_balance_of' : ActorMethod<[], Result_6>,
+  'get_transactions' : ActorMethod<[GetBlocksRequest], Result_5>,
+  'get_wasm_bin' : ActorMethod<[string, string], Result_1>,
+  'get_wasm_lists' : ActorMethod<[], Result_6>,
+  'http_request' : ActorMethod<[HttpRequest], HttpResponse>,
+  'icrc1_balance_of' : ActorMethod<[], Result_7>,
   'icrc1_transfer' : ActorMethod<
     [Account, bigint, [] | [Uint8Array | number[]]],
-    Result_6
+    Result_7
   >,
-  'icrc2_allowance' : ActorMethod<[Account], Result_7>,
-  'icrc2_approve' : ActorMethod<[bigint], Result_1>,
+  'icrc2_allowance' : ActorMethod<[Account], Result_8>,
+  'icrc2_approve' : ActorMethod<[bigint], Result_3>,
   'icrc2_transfer_from' : ActorMethod<
     [Account, bigint, [] | [Uint8Array | number[]]],
-    Result_6
+    Result_7
   >,
-  'minting_or_burn' : ActorMethod<[Account, bigint], Result_6>,
+  'minting_or_burn' : ActorMethod<[Account, bigint], Result_7>,
   'predict' : ActorMethod<[], number>,
-  'push_user_pred' : ActorMethod<[Predictor], Result_8>,
+  'push_user_pred' : ActorMethod<[Predictor], Result_9>,
   'refill_random_buffer' : ActorMethod<[number], undefined>,
-  'restore_from_file' : ActorMethod<[], Result_1>,
-  'show_predictions' : ActorMethod<[], Result_9>,
-  'stake' : ActorMethod<[bigint, bigint], Result_10>,
+  'restore_from_file' : ActorMethod<[string], Result>,
+  'show_predictions' : ActorMethod<[], Result_10>,
+  'stake' : ActorMethod<[bigint, bigint], Result>,
   'test_1' : ActorMethod<[DurationRange], [bigint, bigint]>,
   'train' : ActorMethod<[bigint], undefined>,
-  'unstake' : ActorMethod<[], Result_10>,
+  'unstake' : ActorMethod<[], Result>,
   'upload_json_file' : ActorMethod<[Uint8Array | number[]], undefined>,
   'upload_wasm' : ActorMethod<
     [string, string, Uint8Array | number[], UpdateType],
-    Result_1
+    Result_3
   >,
   'user_login' : ActorMethod<[], Result_11>,
   'user_register' : ActorMethod<[], Result_11>,
