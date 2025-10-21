@@ -142,19 +142,11 @@ pub fn periodic_task() -> () {
             let next_running_duration = duration - (now % duration);
             let next_running_time=now+next_running_duration;
             schedule_next_tick(duration,next_running_duration,next_running_time);
-            
-            // // 设置一次性定时器，到达下一个整点
-            // let timer=set_timer(Duration::from_secs(seconds_to_next_hour), move || {
-            //     task_list();
-            //     ic_cdk::println!("start set_timer");
-            //     // 先执行一次任务
-            //     set_timer_interval(Duration::from_secs(duration), task_list);
-            // });
         }
     })
 }
 fn schedule_next_tick(duration: u64,next_running_duration:u64,next_running_time:u64) {
-    // 设置一个10秒后触发的一次性定时器
+   
     let timer_id = set_timer(Duration::from_secs(next_running_duration), move|| {
         spawn(async move {
             // 这里是你的核心异步任务逻辑
