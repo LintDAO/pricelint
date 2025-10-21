@@ -12,11 +12,13 @@ import {
   chunk_hash,
 } from "@dfinity/ic-management";
 import { Principal } from "@dfinity/principal";
+import axios from "axios";
 import {
   createIIAgent,
   getBackend,
   getCurrentPrincipal,
 } from "./canister_pool";
+import { IC_API_URL_V3 } from "./constants/ic";
 import { CONTROLLER_CANISTERS_KEY } from "./icp";
 
 // 定义 Canister 数据接口
@@ -30,6 +32,19 @@ export interface CanisterData {
   predictionAccuracy?: number;
   tokenBalance?: bigint | number;
   profitEarned?: bigint;
+}
+
+export interface CanisterDetail {
+  canister_id: string;
+  controllers: string[];
+  enabled: boolean;
+  id: number;
+  language: string | null;
+  module_hash: string;
+  name: string;
+  subnet_id: string;
+  updated_at: string;
+  upgrades: any | null; // 根据实际结构调整为具体类型
 }
 
 // 初始化 管理罐子，可操作拥有控制权的罐子
@@ -128,17 +143,84 @@ export async function importCanisterList(canisterId: string): Promise<boolean> {
 }
 
 //获取用户的canister列表
-export async function getCanisterList(): Promise<string[]> {
+export async function getCanisterList(): Promise<CanisterDetail[]> {
+  const principalId = getCurrentPrincipal();
+  if (!principalId) {
+    showMessageError("No valid principal ID found");
+    return [];
+  }
+  const canisterList = await fetchUserCanisters();
+  setCanisterArrayByPrincipal(
+    principalId,
+    CONTROLLER_CANISTERS_KEY,
+    canisterList
+  );
+  console.log("canisterList", canisterList);
   const canisters = getCanisterArrayByPrincipal(
     CONTROLLER_CANISTERS_KEY,
     getCurrentPrincipal()
   );
   console.log("getCanisterList", getCurrentPrincipal(), canisters);
-  if (canisters) return canisters;
+  if (canisterList) return canisterList;
   //TODO 调用后端api，查询线上的canister list是否一致
 
   // 没有结果就返回空
   return [];
+}
+
+/**
+ * 获取 Internet Computer (IC) canister 列表数据。
+ * 支持分页获取所有数据（如果总数据超过 limit）。
+ * @param {number} limit - 每页数据量（默认 50）
+ * @param {string} sortBy - 排序字段（默认 'canister_id'）
+ * @returns {Promise<Array>} - 返回所有 canister 数据数组
+ */
+async function fetchUserCanisters(
+  limit = 50,
+  sortBy = "canister_id"
+): Promise<CanisterDetail[]> {
+  const IC_API_URL = `${IC_API_URL_V3}/canisters`; // 使用常量构建完整 URL
+  let allCanisters = [];
+  const controllerId = getCurrentPrincipal();
+  if (!controllerId) {
+    showMessageError("No valid principal ID found");
+    return [];
+  }
+  try {
+    const params = {
+      format: "json",
+      limit: 1,
+      sort_by: sortBy,
+      offset: 0,
+      controller_id: controllerId,
+    };
+    const countResponse = await axios.get(IC_API_URL, { params: params });
+    //获得total count来方便分页
+    const totalCount = countResponse.data.total_canisters || 1000;
+
+    // 分页循环获取
+    for (let offset = 0; offset < totalCount; offset += limit) {
+      const params = {
+        format: "json",
+        limit: limit,
+        sort_by: sortBy,
+        offset: offset,
+        controller_id: controllerId,
+      };
+
+      const response = await axios.get(IC_API_URL, { params });
+      const pageCanisters = response.data.data || [];
+      allCanisters = allCanisters.concat(pageCanisters);
+
+      // 可选：添加延时避免速率限制
+      // await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    return allCanisters;
+  } catch (error) {
+    console.error("Get user control canister failed:", error);
+    throw error; // 或返回空数组，根据需求
+  }
 }
 
 //删除指定canister
@@ -259,7 +341,6 @@ export async function installCode(
     console.log(
       `Retrieved WASM file for version ${version}, size: ${wasmModule.length} bytes`
     );
-
     const targetCanisterId = Principal.fromText(canisterId);
     // 确定安装代码的模式
     const installMode: canister_install_mode =

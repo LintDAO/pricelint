@@ -170,6 +170,7 @@
 <script setup lang="ts">
 import {
   CanisterData,
+  CanisterDetail,
   blockCanisterIdFromList,
   getCanisterList,
   importCanisterList,
@@ -251,7 +252,7 @@ const columns: TableColumn[] = [
 const canisterData = ref<CanisterData[]>([]);
 const loading = ref(false);
 const importLoading = ref(false);
-const userCanisterIds = ref<string[]>([]);
+const userCanisters = ref<CanisterDetail[]>([]);
 const importCanisterId = ref<string>("");
 const pagination = ref({
   sortBy: "canisterId",
@@ -282,11 +283,12 @@ const createNew = async () => {
 
 const getCanisterInfo = async () => {
   loading.value = true;
-  userCanisterIds.value = await getCanisterList();
+  userCanisters.value = await getCanisterList();
   canisterData.value = [];
 
-  for (const canisterId of userCanisterIds.value) {
+  for (const canister of userCanisters.value) {
     try {
+      const canisterId = canister.canister_id;
       const status = await queryCanisterStatus(canisterId);
       if (!status) {
         throw new Error(`Canister ${canisterId} status is undefined`);
@@ -307,10 +309,13 @@ const getCanisterInfo = async () => {
         profitEarned: BigInt(0), // 占位
       });
     } catch (error) {
-      console.error(`Error fetching status for canister ${canisterId}:`, error);
+      console.error(
+        `Error fetching status for canister ${canister.canister_id}:`,
+        error
+      );
       // 错误时仍添加占位数据
       canisterData.value.push({
-        canisterId,
+        canisterId: canister.canister_id,
         status: "unknown",
         module_hash: [],
         cycles: BigInt(0),
