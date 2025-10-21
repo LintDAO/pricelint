@@ -1,7 +1,5 @@
 use crate::common::utils::xrc;
-use crate::common::utils::xrc::{
-    Asset, AssetClass, ExchangeRate, GetExchangeRateRequest, GetExchangeRateResult,
-};
+use crate::common::utils::xrc::{Asset, AssetClass, ExchangeRate, GetExchangeRateRequest, GetExchangeRateResult};
 use crate::web::common::constants::{API_VERSION, BASE_BIANCE_API, BIANCE_KLINES_API, BIANCE_TICKER_API, XRC_CANISTER_ID};
 use crate::web::models::context::Context;
 use crate::web::models::predictor_model::Predictor;
@@ -17,6 +15,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::thread::LocalKey;
+use ic_cdk::api::time;
 use urlencoding::encode;
 
 generate_service_trait!(Predictor);
@@ -110,6 +109,7 @@ impl ExtendPredictorService for Predictor {
             total_stake
         })
     }
+    
     fn get_total_stake_24hours() -> f64 {
         0.0
     }
@@ -174,9 +174,11 @@ impl ExtendPredictorService for Predictor {
 
         //存储到稳定内存
         EXCHANGE_RATE.with(|rate| {
+            let now=time();
             let mut borrowed_rate = rate.borrow_mut();
-            borrowed_rate.insert("ICP_USD".to_string(), icp_to_usd);
-            borrowed_rate.insert("BTC_USD".to_string(), btc_to_usd);
+            // borrowed_rate.push();
+            // borrowed_rate.push(btc_to_usd);
+        
         });
 
         Ok(())

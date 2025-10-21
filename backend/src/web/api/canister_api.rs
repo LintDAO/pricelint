@@ -25,9 +25,7 @@ async fn get_canister_info() -> Result<String, String> {
     Ok(ret)
 }
 pub mod backup_api {
-    use crate::impl_storable::{
-        BackupData, ExchangeRate, StringVec, TempMapValue, TempVecValue, WasmFile,
-    };
+    use crate::impl_storable::{ BackupRecord, ExchangeRateRecord, StringVec, TempMapValue, TempVecValue, WasmFile};
     use crate::web::common::constants::memory_manager::EXPORT_MEMORY_IDS;
     use crate::web::common::errors::BtreeMapError;
     use crate::web::models::context::Context;
@@ -80,10 +78,34 @@ pub mod backup_api {
         predictor_context_data: Vec<(String, Context<Predictor>)>,
         role_user_tree_data: Vec<(String, StringVec)>,
         wasm_files_data: Vec<(String, WasmFile)>,
-        exchange_rate_data: Vec<(String, ExchangeRate)>,
+        exchange_rate_data: Vec<ExchangeRateRecord>,
         predictor_quantify_data: Vec<PredictorView>,
         stake_data: Vec<(String, Stake)>,
         canister_list_data: Vec<(String, StringVec)>,
+    }
+
+    #[derive(Debug, Clone, CandidType, Serialize, Deserialize)]
+    pub struct HttpRequest {
+        pub method: String,
+        pub url: String,
+        pub headers: Vec<(String, String)>,
+        pub body: Vec<u8>,
+    }
+
+    #[derive(Debug, Clone, CandidType, Serialize)]
+    pub struct HttpResponse {
+        pub status_code: u16,
+        pub headers: Vec<(String, String)>,
+        pub body: Vec<u8>,
+        pub streaming_strategy: Option<StreamingStrategy>,
+    }
+
+    #[derive(Debug, Clone, CandidType, Serialize)]
+    pub enum StreamingStrategy {
+        Callback {
+            callback: Principal,
+            token: Vec<u8>,
+        },
     }
 
     //查询所有备份数据概览
@@ -125,7 +147,7 @@ pub mod backup_api {
             canister_list_data,
         };
         let export_data_json = serde_json::to_string(&export_data).map_err(|e| e.to_string())?;
-        BACKUP_DATA.with(|rc| rc.borrow_mut().insert(time(), BackupData(export_data_json)));
+        BACKUP_DATA.with(|rc| rc.borrow_mut().insert(time(), BackupRecord(export_data_json)));
         Ok(())
     }
 
@@ -146,22 +168,8 @@ pub mod backup_api {
             }
         })
     }
-    // 定义 HTTP 请求和响应类型
-    pub type HeaderField = (String, String);
-    #[derive(CandidType, Deserialize)]
-    pub struct HttpRequest {
-        pub method: String,
-        pub url: String,
-        pub headers: Vec<HeaderField>,
-        pub body: Vec<u8>,
-    }
 
-    #[derive(CandidType, Deserialize)]
-    pub struct HttpResponse {
-        pub status_code: u16,
-        pub headers: Vec<HeaderField>,
-        pub body: Vec<u8>,
-    }
+
     //导出稳定内存的数据到json文件
     #[query]
     fn dump_stable_memory(key: Option<u64>) -> HttpResponse {
@@ -183,17 +191,11 @@ pub mod backup_api {
         };
         HttpResponse {
             status_code: 200,
-            body,
             headers: vec![
-                (
-                    "Content-Type".to_string(),
-                    "application/octet-stream".to_string(),
-                ),
-                (
-                    "Content-Disposition".to_string(),
-                    "attachment; filename=\"backup.json\"".to_string(),
-                ),
+                ("Content-Type".to_string(), "application/octet-stream".to_string()),
             ],
+            body: body,
+            streaming_strategy: None,
         }
     }
 
@@ -210,11 +212,35 @@ pub mod backup_api {
         restore_from_data!(PREDICTOR_CONTEXT,export_data.predictor_context_data,map);
         restore_from_data!(ROLE_USER_TREE,export_data.role_user_tree_data,map);
         restore_from_data!(WASM_FILES,export_data.wasm_files_data,map);
-        restore_from_data!(EXCHANGE_RATE,export_data.exchange_rate_data,map);
+        restore_from_data!(EXCHANGE_RATE,export_data.exchange_rate_data,vec);
         restore_from_data!(PREDICTOR_QUANTIFY,export_data.predictor_quantify_data,vec);
         restore_from_data!(STAKE,export_data.stake_data,map);
         restore_from_data!(CANISTER_LIST,export_data.canister_list_data,map);
         Ok(())
+    }
+
+
+
+    #[query]
+    fn http_request(request: HttpRequest) -> HttpResponse {
+        if request.url == "/download_backup" {
+            // let backup_data = BACKUP_DATA.with(|backup| backup.borrow().clone());
+            HttpResponse {
+                status_code: 200,
+                headers: vec![
+                    ("Content-Type".to_string(), "application/octet-stream".to_string()),
+                ],
+                body: vec![],
+                streaming_strategy: None,
+            }
+        } else {
+            HttpResponse {
+                status_code: 404,
+                headers: vec![],
+                body: b"Not Found".to_vec(),
+                streaming_strategy: None,
+            }
+        }
     }
 }
 

@@ -50,9 +50,16 @@ type GetTransactionsResponse = record {
   transactions : vec Transaction;
   archived_transactions : vec ArchivedRange_1;
 };
+type HttpRequest = record {
+  url : text;
+  method : text;
+  body : blob;
+  headers : vec record { text; text };
+};
 type HttpResponse = record {
   body : blob;
   headers : vec record { text; text };
+  streaming_strategy : opt StreamingStrategy;
   status_code : nat16;
 };
 type ICRC2AllowanceResponse = record {
@@ -123,6 +130,9 @@ type State = record {
   prices : vec PriceData;
   min_values : vec float32;
 };
+type StreamingStrategy = variant {
+  Callback : record { token : blob; callback : principal };
+};
 type Transaction = record {
   burn : opt Burn;
   kind : text;
@@ -191,6 +201,7 @@ service : () -> {
   get_transactions : (GetBlocksRequest) -> (Result_5);
   get_wasm_bin : (text, text) -> (Result_1) query;
   get_wasm_lists : () -> (Result_6) query;
+  http_request : (HttpRequest) -> (HttpResponse) query;
   icrc1_balance_of : () -> (Result_7);
   icrc1_transfer : (Account, nat, opt blob) -> (Result_7);
   icrc2_allowance : (Account) -> (Result_8);

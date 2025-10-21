@@ -98,3 +98,42 @@ async fn push_user_pred(predictor: Predictor) -> Result<Predictor, String> {
     });
     Ok(predictor)
 }
+
+pub mod exchange_rate_api {
+    use crate::impl_storable::ExchangeRateRecord;
+    use crate::EXCHANGE_RATE;
+    use candid::MotokoResult::ok;
+    
+
+    pub fn import_history_records(
+        symbol: String,
+        history_datas: Vec<(u64, f64)>,
+    ) -> Result<(), String> {
+        let history_vec: Vec<ExchangeRateRecord> = history_datas
+            .iter()
+            .map(|(t, x)| ExchangeRateRecord {
+                symbol: symbol.clone(),
+                time: *t,
+                exchange_rate: *x,
+                xrc_data: None,
+            })
+            .collect::<_>();
+
+        EXCHANGE_RATE.with(|rc| {
+            for record in history_vec.iter() {
+                let bm = rc.borrow_mut();
+                bm.push(record).unwrap();
+            }
+        });
+
+        Ok(())
+    }
+    pub fn find_exchange_rates(symbol:String,start_time:u64,end_time:u64) -> Result<Vec<ExchangeRateRecord>, String> {
+        let records = EXCHANGE_RATE.with(|rc| {
+            let bm = rc.borrow();
+            bm.iter().filter(|x| x.symbol == symbol && x.time >= start_time && x.time <= end_time)
+                .collect::<_>()
+        });
+        Ok(records)
+    }
+}

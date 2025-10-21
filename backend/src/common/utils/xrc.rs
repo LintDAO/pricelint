@@ -27,8 +27,7 @@ pub struct GetExchangeRateRequest {
     pub base_asset: Asset,
 }
 
-#[derive(CandidType, Serialize,Deserialize)]
-#[derive(Clone)]
+#[derive(CandidType, Serialize,Deserialize,Clone)]
 pub struct ExchangeRateMetadata {
     pub decimals: u32,
     pub forex_timestamp: Option<u64>,
@@ -39,6 +38,9 @@ pub struct ExchangeRateMetadata {
     pub quote_asset_num_queried_sources: u64,
 }
 
+
+
+//xrc查询用
 #[derive(CandidType, Serialize,Deserialize,Clone)]
 pub struct ExchangeRate {
     pub metadata: ExchangeRateMetadata,
