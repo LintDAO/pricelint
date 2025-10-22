@@ -187,15 +187,6 @@ export const burnICPcreateCanister = async (
       subnet_type: [], // Default subnet type
     });
     console.log("create new", notifyResult);
-    // 将 Canister ID 转换为字符串并存储到 localStorage
-    const canisterId = notifyResult.toString();
-    if (canisterId) {
-      setCanisterArrayByPrincipal(
-        principal,
-        CONTROLLER_CANISTERS_KEY,
-        canisterId
-      );
-    }
     return true;
   } catch (error) {
     console.error("Failed to burn ICP:", error);
