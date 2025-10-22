@@ -170,6 +170,13 @@ pub struct Stake{
     pub lock_period_days :u64, //质押周期 天
     pub unlock_time :u64,    //解除锁定的时间戳
     pub last_op_time:u64,   //最后操作时间
+    pub stake_detail:StakeDetail,
+}
+
+#[derive(CandidType, Deserialize, Serialize,Clone)]
+pub struct StakeDetail {
+    //质押比例
+    pub staking_percentage:f64,
 }
 
 

@@ -194,6 +194,7 @@ pub mod export_candid {
     use icrc_ledger_types::icrc3::transactions::{GetTransactionsResponse,GetTransactionsRequest};
     use crate::impl_storable::UpdateType;
     use crate::web::api::canister_api::backup_api::{HttpResponse,HttpRequest};
+    use crate::impl_storable::ExchangeRateRecord;
     export_candid!();
 }
 //TODO: lifecycles和api canid 导出先写到一起  后续需要分canisters再进行重构分离

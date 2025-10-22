@@ -220,7 +220,7 @@ pub mod stake {
     use crate::web::api::stake_api::transfer_log::get_transactions;
     use crate::web::common::constants::ICRC1_LEDGER_CANISTER_ID;
     use crate::web::common::errors::StakeError;
-    use crate::web::models::stake_model::Stake;
+    use crate::web::models::stake_model::{Stake, StakeDetail};
     use crate::STAKE;
     use candid::{Nat, Principal};
     use ic_cdk::api::time;
@@ -232,7 +232,7 @@ pub mod stake {
 
     ///质押token  累计计算
     #[update]
-    pub async fn stake(stake_amount: Nat, lock_days: u64) -> Result<(), String> {
+    pub async fn stake(stake_amount: Nat, lock_days: u64,) -> Result<(), String> {
         if stake_amount <= Nat::from(0u32) {
             return Err(StakeError::StakeAmountIsZero.to_string());
         }
@@ -290,6 +290,10 @@ pub mod stake {
                                         lock_period_days: 0,         //质押周期 待定
                                         unlock_time: now_time + lock_days * NANOS_PER_DAY,
                                         last_op_time: now_time,
+                                        stake_detail: StakeDetail {
+                                            //todo 后续修改
+                                            staking_percentage: 0.0,    
+                                        },
                                     };
                                     map.borrow_mut().insert(caller().to_string(), new_stake);
                                 }
@@ -364,5 +368,21 @@ pub mod stake {
     //icp交换PCL 后续实现
     pub fn swap() {
         todo!()
+    }
+}
+
+pub mod stake_api{
+    use crate::web::models::stake_model::Stake;
+
+    //批量结算token
+    fn settle_token(){
+        //1.获取预测结果
+        //2.根据预测结果 结算用户质押的token
+        //3.如果质押的PCL小于固定值则不结算
+    }
+    
+    //设置默认的质押配置
+    fn set_staking_config(staking_config: Stake){
+        
     }
 }

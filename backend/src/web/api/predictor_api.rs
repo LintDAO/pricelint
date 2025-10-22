@@ -103,8 +103,9 @@ pub mod exchange_rate_api {
     use crate::impl_storable::ExchangeRateRecord;
     use crate::EXCHANGE_RATE;
     use candid::MotokoResult::ok;
-    
+    use ic_cdk::{query, update};
 
+    #[update]
     pub fn import_history_records(
         symbol: String,
         history_datas: Vec<(u64, f64)>,
@@ -128,6 +129,7 @@ pub mod exchange_rate_api {
 
         Ok(())
     }
+    #[query]
     pub fn find_exchange_rates(symbol:String,start_time:u64,end_time:u64) -> Result<Vec<ExchangeRateRecord>, String> {
         let records = EXCHANGE_RATE.with(|rc| {
             let bm = rc.borrow();
