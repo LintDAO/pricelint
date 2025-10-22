@@ -26,6 +26,9 @@ export interface ArchivedRange_1 {
   'start' : bigint,
   'length' : bigint,
 }
+export interface Asset { 'class' : AssetClass, 'symbol' : string }
+export type AssetClass = { 'Cryptocurrency' : null } |
+  { 'FiatCurrency' : null };
 export interface BlockRange { 'blocks' : Array<Value> }
 export interface Burn {
   'from' : Account,
@@ -41,6 +44,28 @@ export type DurationRange = { 'Microseconds' : null } |
   { 'Milliseconds' : null } |
   { 'Hours' : null } |
   { 'Nanoseconds' : null };
+export interface ExchangeRate {
+  'metadata' : ExchangeRateMetadata,
+  'rate' : bigint,
+  'timestamp' : bigint,
+  'quote_asset' : Asset,
+  'base_asset' : Asset,
+}
+export interface ExchangeRateMetadata {
+  'decimals' : number,
+  'forex_timestamp' : [] | [bigint],
+  'quote_asset_num_received_rates' : bigint,
+  'base_asset_num_received_rates' : bigint,
+  'base_asset_num_queried_sources' : bigint,
+  'standard_deviation' : bigint,
+  'quote_asset_num_queried_sources' : bigint,
+}
+export interface ExchangeRateRecord {
+  'time' : bigint,
+  'xrc_data' : [] | [ExchangeRate],
+  'exchange_rate' : number,
+  'symbol' : string,
+}
 export interface GetBlocksRequest { 'start' : bigint, 'length' : bigint }
 export interface GetBlocksResponse {
   'certificate' : [] | [Uint8Array | number[]],
@@ -120,25 +145,27 @@ export type Result = { 'Ok' : null } |
   { 'Err' : string };
 export type Result_1 = { 'Ok' : WasmFile } |
   { 'Err' : string };
-export type Result_10 = { 'Ok' : PredictorView } |
+export type Result_10 = { 'Ok' : Predictor } |
   { 'Err' : string };
-export type Result_11 = { 'Ok' : User } |
+export type Result_11 = { 'Ok' : PredictorView } |
   { 'Err' : string };
-export type Result_2 = { 'Ok' : GetBlocksResponse } |
+export type Result_12 = { 'Ok' : User } |
   { 'Err' : string };
-export type Result_3 = { 'Ok' : string } |
+export type Result_2 = { 'Ok' : Array<ExchangeRateRecord> } |
   { 'Err' : string };
-export type Result_4 = { 'Ok' : Array<Predictor> } |
+export type Result_3 = { 'Ok' : GetBlocksResponse } |
   { 'Err' : string };
-export type Result_5 = { 'Ok' : GetTransactionsResponse } |
+export type Result_4 = { 'Ok' : string } |
   { 'Err' : string };
-export type Result_6 = { 'Ok' : Array<WasmFile> } |
+export type Result_5 = { 'Ok' : Array<Predictor> } |
   { 'Err' : string };
-export type Result_7 = { 'Ok' : bigint } |
+export type Result_6 = { 'Ok' : GetTransactionsResponse } |
   { 'Err' : string };
-export type Result_8 = { 'Ok' : ICRC2AllowanceResponse } |
+export type Result_7 = { 'Ok' : Array<WasmFile> } |
   { 'Err' : string };
-export type Result_9 = { 'Ok' : Predictor } |
+export type Result_8 = { 'Ok' : bigint } |
+  { 'Err' : string };
+export type Result_9 = { 'Ok' : ICRC2AllowanceResponse } |
   { 'Err' : string };
 export interface State {
   'bias' : [] | [Array<number>],
@@ -207,34 +234,39 @@ export interface _SERVICE {
   'dump_stable_memory' : ActorMethod<[[] | [bigint]], HttpResponse>,
   'find_backup_data' : ActorMethod<[bigint], [] | [string]>,
   'find_backup_lists' : ActorMethod<[], Array<[bigint, bigint]>>,
+  'find_exchange_rates' : ActorMethod<[string, bigint, bigint], Result_2>,
   'find_user_lists' : ActorMethod<[], Array<User>>,
-  'get_blocks' : ActorMethod<[GetBlocksRequest], Result_2>,
-  'get_canister_info' : ActorMethod<[], Result_3>,
+  'get_blocks' : ActorMethod<[GetBlocksRequest], Result_3>,
+  'get_canister_info' : ActorMethod<[], Result_4>,
   'get_latest_version' : ActorMethod<[UpdateType], Result_1>,
-  'get_predictor_vec' : ActorMethod<[], Result_4>,
+  'get_predictor_vec' : ActorMethod<[], Result_5>,
   'get_principal' : ActorMethod<[], Principal>,
   'get_state' : ActorMethod<[], State>,
-  'get_transactions' : ActorMethod<[GetBlocksRequest], Result_5>,
+  'get_transactions' : ActorMethod<[GetBlocksRequest], Result_6>,
   'get_wasm_bin' : ActorMethod<[string, string], Result_1>,
-  'get_wasm_lists' : ActorMethod<[], Result_6>,
+  'get_wasm_lists' : ActorMethod<[], Result_7>,
   'http_request' : ActorMethod<[HttpRequest], HttpResponse>,
-  'icrc1_balance_of' : ActorMethod<[], Result_7>,
+  'icrc1_balance_of' : ActorMethod<[], Result_8>,
   'icrc1_transfer' : ActorMethod<
     [Account, bigint, [] | [Uint8Array | number[]]],
-    Result_7
+    Result_8
   >,
-  'icrc2_allowance' : ActorMethod<[Account], Result_8>,
-  'icrc2_approve' : ActorMethod<[bigint], Result_3>,
+  'icrc2_allowance' : ActorMethod<[Account], Result_9>,
+  'icrc2_approve' : ActorMethod<[bigint], Result_4>,
   'icrc2_transfer_from' : ActorMethod<
     [Account, bigint, [] | [Uint8Array | number[]]],
-    Result_7
+    Result_8
   >,
-  'minting_or_burn' : ActorMethod<[Account, bigint], Result_7>,
+  'import_history_records' : ActorMethod<
+    [string, Array<[bigint, number]>],
+    Result
+  >,
+  'minting_or_burn' : ActorMethod<[Account, bigint], Result_8>,
   'predict' : ActorMethod<[], number>,
-  'push_user_pred' : ActorMethod<[Predictor], Result_9>,
+  'push_user_pred' : ActorMethod<[Predictor], Result_10>,
   'refill_random_buffer' : ActorMethod<[number], undefined>,
   'restore_from_file' : ActorMethod<[string], Result>,
-  'show_predictions' : ActorMethod<[], Result_10>,
+  'show_predictions' : ActorMethod<[], Result_11>,
   'stake' : ActorMethod<[bigint, bigint], Result>,
   'test_1' : ActorMethod<[DurationRange], [bigint, bigint]>,
   'train' : ActorMethod<[bigint], undefined>,
@@ -242,10 +274,10 @@ export interface _SERVICE {
   'upload_json_file' : ActorMethod<[Uint8Array | number[]], undefined>,
   'upload_wasm' : ActorMethod<
     [string, string, Uint8Array | number[], UpdateType],
-    Result_3
+    Result_4
   >,
-  'user_login' : ActorMethod<[], Result_11>,
-  'user_register' : ActorMethod<[], Result_11>,
+  'user_login' : ActorMethod<[], Result_12>,
+  'user_register' : ActorMethod<[], Result_12>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

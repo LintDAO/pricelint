@@ -34,6 +34,37 @@ export const idlFactory = ({ IDL }) => {
     'streaming_strategy' : IDL.Opt(StreamingStrategy),
     'status_code' : IDL.Nat16,
   });
+  const ExchangeRateMetadata = IDL.Record({
+    'decimals' : IDL.Nat32,
+    'forex_timestamp' : IDL.Opt(IDL.Nat64),
+    'quote_asset_num_received_rates' : IDL.Nat64,
+    'base_asset_num_received_rates' : IDL.Nat64,
+    'base_asset_num_queried_sources' : IDL.Nat64,
+    'standard_deviation' : IDL.Nat64,
+    'quote_asset_num_queried_sources' : IDL.Nat64,
+  });
+  const AssetClass = IDL.Variant({
+    'Cryptocurrency' : IDL.Null,
+    'FiatCurrency' : IDL.Null,
+  });
+  const Asset = IDL.Record({ 'class' : AssetClass, 'symbol' : IDL.Text });
+  const ExchangeRate = IDL.Record({
+    'metadata' : ExchangeRateMetadata,
+    'rate' : IDL.Nat64,
+    'timestamp' : IDL.Nat64,
+    'quote_asset' : Asset,
+    'base_asset' : Asset,
+  });
+  const ExchangeRateRecord = IDL.Record({
+    'time' : IDL.Nat64,
+    'xrc_data' : IDL.Opt(ExchangeRate),
+    'exchange_rate' : IDL.Float64,
+    'symbol' : IDL.Text,
+  });
+  const Result_2 = IDL.Variant({
+    'Ok' : IDL.Vec(ExchangeRateRecord),
+    'Err' : IDL.Text,
+  });
   const User = IDL.Record({
     'id' : IDL.Text,
     'owner' : IDL.Principal,
@@ -81,8 +112,8 @@ export const idlFactory = ({ IDL }) => {
     'chain_length' : IDL.Nat64,
     'archived_blocks' : IDL.Vec(ArchivedRange),
   });
-  const Result_2 = IDL.Variant({ 'Ok' : GetBlocksResponse, 'Err' : IDL.Text });
-  const Result_3 = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
+  const Result_3 = IDL.Variant({ 'Ok' : GetBlocksResponse, 'Err' : IDL.Text });
+  const Result_4 = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
   const Pred = IDL.Record({
     'up' : IDL.Float64,
     'staked' : IDL.Float64,
@@ -99,7 +130,7 @@ export const idlFactory = ({ IDL }) => {
     'create_time' : IDL.Nat64,
     'price' : IDL.Float64,
   });
-  const Result_4 = IDL.Variant({ 'Ok' : IDL.Vec(Predictor), 'Err' : IDL.Text });
+  const Result_5 = IDL.Variant({ 'Ok' : IDL.Vec(Predictor), 'Err' : IDL.Text });
   const State = IDL.Record({
     'bias' : IDL.Opt(IDL.Vec(IDL.Float32)),
     'max_values' : IDL.Vec(IDL.Float32),
@@ -165,27 +196,27 @@ export const idlFactory = ({ IDL }) => {
     'transactions' : IDL.Vec(Transaction),
     'archived_transactions' : IDL.Vec(ArchivedRange_1),
   });
-  const Result_5 = IDL.Variant({
+  const Result_6 = IDL.Variant({
     'Ok' : GetTransactionsResponse,
     'Err' : IDL.Text,
   });
-  const Result_6 = IDL.Variant({ 'Ok' : IDL.Vec(WasmFile), 'Err' : IDL.Text });
+  const Result_7 = IDL.Variant({ 'Ok' : IDL.Vec(WasmFile), 'Err' : IDL.Text });
   const HttpRequest = IDL.Record({
     'url' : IDL.Text,
     'method' : IDL.Text,
     'body' : IDL.Vec(IDL.Nat8),
     'headers' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
   });
-  const Result_7 = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : IDL.Text });
+  const Result_8 = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : IDL.Text });
   const ICRC2AllowanceResponse = IDL.Record({
     'allowance' : IDL.Nat,
     'expires_at' : IDL.Opt(IDL.Nat64),
   });
-  const Result_8 = IDL.Variant({
+  const Result_9 = IDL.Variant({
     'Ok' : ICRC2AllowanceResponse,
     'Err' : IDL.Text,
   });
-  const Result_9 = IDL.Variant({ 'Ok' : Predictor, 'Err' : IDL.Text });
+  const Result_10 = IDL.Variant({ 'Ok' : Predictor, 'Err' : IDL.Text });
   const PredictorResult = IDL.Record({
     'trend' : IDL.Opt(IDL.Text),
     'pred' : Pred,
@@ -201,7 +232,7 @@ export const idlFactory = ({ IDL }) => {
     'create_time' : IDL.Nat64,
     'accuracy' : IDL.Float64,
   });
-  const Result_10 = IDL.Variant({ 'Ok' : PredictorView, 'Err' : IDL.Text });
+  const Result_11 = IDL.Variant({ 'Ok' : PredictorView, 'Err' : IDL.Text });
   const DurationRange = IDL.Variant({
     'Microseconds' : IDL.Null,
     'Minutes' : IDL.Null,
@@ -211,7 +242,7 @@ export const idlFactory = ({ IDL }) => {
     'Hours' : IDL.Null,
     'Nanoseconds' : IDL.Null,
   });
-  const Result_11 = IDL.Variant({ 'Ok' : User, 'Err' : IDL.Text });
+  const Result_12 = IDL.Variant({ 'Ok' : User, 'Err' : IDL.Text });
   return IDL.Service({
     'add_price' : IDL.Func([PriceData], [], []),
     'backup_stable_memory' : IDL.Func([], [Result], []),
@@ -228,36 +259,46 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Tuple(IDL.Nat64, IDL.Nat64))],
         ['query'],
       ),
+    'find_exchange_rates' : IDL.Func(
+        [IDL.Text, IDL.Nat64, IDL.Nat64],
+        [Result_2],
+        ['query'],
+      ),
     'find_user_lists' : IDL.Func([], [IDL.Vec(User)], ['query']),
-    'get_blocks' : IDL.Func([GetBlocksRequest], [Result_2], []),
-    'get_canister_info' : IDL.Func([], [Result_3], []),
+    'get_blocks' : IDL.Func([GetBlocksRequest], [Result_3], []),
+    'get_canister_info' : IDL.Func([], [Result_4], []),
     'get_latest_version' : IDL.Func([UpdateType], [Result_1], ['query']),
-    'get_predictor_vec' : IDL.Func([], [Result_4], ['query']),
+    'get_predictor_vec' : IDL.Func([], [Result_5], ['query']),
     'get_principal' : IDL.Func([], [IDL.Principal], ['query']),
     'get_state' : IDL.Func([], [State], ['query']),
-    'get_transactions' : IDL.Func([GetBlocksRequest], [Result_5], []),
+    'get_transactions' : IDL.Func([GetBlocksRequest], [Result_6], []),
     'get_wasm_bin' : IDL.Func([IDL.Text, IDL.Text], [Result_1], ['query']),
-    'get_wasm_lists' : IDL.Func([], [Result_6], ['query']),
+    'get_wasm_lists' : IDL.Func([], [Result_7], ['query']),
     'http_request' : IDL.Func([HttpRequest], [HttpResponse], ['query']),
-    'icrc1_balance_of' : IDL.Func([], [Result_7], []),
+    'icrc1_balance_of' : IDL.Func([], [Result_8], []),
     'icrc1_transfer' : IDL.Func(
         [Account, IDL.Nat, IDL.Opt(IDL.Vec(IDL.Nat8))],
-        [Result_7],
+        [Result_8],
         [],
       ),
-    'icrc2_allowance' : IDL.Func([Account], [Result_8], []),
-    'icrc2_approve' : IDL.Func([IDL.Nat], [Result_3], []),
+    'icrc2_allowance' : IDL.Func([Account], [Result_9], []),
+    'icrc2_approve' : IDL.Func([IDL.Nat], [Result_4], []),
     'icrc2_transfer_from' : IDL.Func(
         [Account, IDL.Nat, IDL.Opt(IDL.Vec(IDL.Nat8))],
-        [Result_7],
+        [Result_8],
         [],
       ),
-    'minting_or_burn' : IDL.Func([Account, IDL.Nat], [Result_7], []),
+    'import_history_records' : IDL.Func(
+        [IDL.Text, IDL.Vec(IDL.Tuple(IDL.Nat64, IDL.Float64))],
+        [Result],
+        [],
+      ),
+    'minting_or_burn' : IDL.Func([Account, IDL.Nat], [Result_8], []),
     'predict' : IDL.Func([], [IDL.Float32], ['query']),
-    'push_user_pred' : IDL.Func([Predictor], [Result_9], []),
+    'push_user_pred' : IDL.Func([Predictor], [Result_10], []),
     'refill_random_buffer' : IDL.Func([IDL.Nat32], [], []),
     'restore_from_file' : IDL.Func([IDL.Text], [Result], []),
-    'show_predictions' : IDL.Func([], [Result_10], ['query']),
+    'show_predictions' : IDL.Func([], [Result_11], ['query']),
     'stake' : IDL.Func([IDL.Nat, IDL.Nat64], [Result], []),
     'test_1' : IDL.Func([DurationRange], [IDL.Nat64, IDL.Nat64], ['query']),
     'train' : IDL.Func([IDL.Nat64], [], []),
@@ -265,11 +306,11 @@ export const idlFactory = ({ IDL }) => {
     'upload_json_file' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
     'upload_wasm' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Vec(IDL.Nat8), UpdateType],
-        [Result_3],
+        [Result_4],
         [],
       ),
-    'user_login' : IDL.Func([], [Result_11], ['query']),
-    'user_register' : IDL.Func([], [Result_11], []),
+    'user_login' : IDL.Func([], [Result_12], ['query']),
+    'user_register' : IDL.Func([], [Result_12], []),
   });
 };
 export const init = ({ IDL }) => { return []; };
