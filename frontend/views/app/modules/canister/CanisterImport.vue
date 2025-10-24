@@ -10,13 +10,13 @@
       <q-btn
         label="Get History"
         :loading="isLoadingHistory"
-        @click="getTokenHistoryData"
+        @click="getTokenHistoryData()"
       />
       <q-btn
         label="Import Data"
         color="primary"
         :loading="isLoadingImport"
-        @click="importData"
+        @click="importData()"
       />
       <q-btn label="Export as JSON Data" color="primary" @click="exportJson" />
     </div>
@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { getTokenPriceHistory } from "@/api/token";
+import { getTokenPriceHistory, importHistoryRecords } from "@/api/token";
 import * as echarts from "echarts";
 import { ref } from "vue";
 
@@ -129,6 +129,11 @@ const importData = async () => {
     isLoadingImport.value = true;
     // Add your import data logic here
     // For example: await someImportFunction();
+    const res = await importHistoryRecords(
+      tokenSymbol.value.toUpperCase() + "USDT",
+      priceData.value
+    );
+    console.log("importData con", res);
   } finally {
     isLoadingImport.value = false;
   }
