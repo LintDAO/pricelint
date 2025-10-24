@@ -156,7 +156,6 @@ import { useRouter } from "vue-router";
 const $q = useQuasar();
 const router = useRouter();
 const topUpDialog = ref(false);
-const importDialogVisible = ref(false);
 const operation = ref<"createCanister" | "topUp">("createCanister");
 
 const columns: TableColumn[] = [

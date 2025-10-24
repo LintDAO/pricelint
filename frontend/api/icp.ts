@@ -106,7 +106,7 @@ export const getICPBalance = async (accountId: string): Promise<number> => {
   }
 };
 
-//获得当前principal id的cycles
+//获得当前principal id的cycles，单位为T，注意，只能获取principal的，不能获取canister id的
 export const getCyclesBalance = async (principal: string): Promise<number> => {
   try {
     const cyclesLedger = initIcrcLedger(CYCLES_LEDGER_CANISTER);

@@ -111,6 +111,7 @@ export async function getCanisterList(): Promise<CanisterDetail[]> {
       //   CONTROLLER_CANISTERS_KEY,
       //   onlineCanisterList
       // );
+      // console.log("onlineCanisterList", onlineCanisterList);
       return onlineCanisterList;
     }
   } catch (error) {
@@ -221,6 +222,27 @@ export async function queryCanisterStatus(
     }
     showMessageError(userMessage);
     return null; // 返回 null 表示查询失败
+  }
+}
+
+// 查询目标 Canister 的 cycles 余额，目标 canister 的 controller 必须是用户本人
+export async function getCanisterCycles(canisterId: string): Promise<number> {
+  try {
+    const status = await queryCanisterStatus(canisterId);
+    if (!status || !status.cycles) {
+      console.error(`No cycles data found for canister ${canisterId}`);
+      return 0; // 如果没有 cycles 数据，返回 0
+    }
+    // 假设 status.cycles 是 bigint 或 number 类型，转换为 T Cycles
+    return Number((Number(status.cycles) / 1_000_000_000_000).toFixed(2)); // Convert to T Cycles
+  } catch (error: any) {
+    console.error(`Failed to get cycles for canister ${canisterId}:`, error);
+    showMessageError(
+      `Failed to get cycles for canister ${canisterId}: ${
+        error.message || error
+      }`
+    );
+    return 0; // 失败时返回 0，防止中断累加
   }
 }
 
