@@ -19,8 +19,6 @@ type ArchivedRange_1 = record {
   start : nat;
   length : nat;
 };
-type Asset = record { class : AssetClass; symbol : text };
-type AssetClass = variant { Cryptocurrency; FiatCurrency };
 type BlockRange = record { blocks : vec Value };
 type Burn = record {
   from : Account;
@@ -37,28 +35,6 @@ type DurationRange = variant {
   Milliseconds;
   Hours;
   Nanoseconds;
-};
-type ExchangeRate = record {
-  metadata : ExchangeRateMetadata;
-  rate : nat64;
-  timestamp : nat64;
-  quote_asset : Asset;
-  base_asset : Asset;
-};
-type ExchangeRateMetadata = record {
-  decimals : nat32;
-  forex_timestamp : opt nat64;
-  quote_asset_num_received_rates : nat64;
-  base_asset_num_received_rates : nat64;
-  base_asset_num_queried_sources : nat64;
-  standard_deviation : nat64;
-  quote_asset_num_queried_sources : nat64;
-};
-type ExchangeRateRecord = record {
-  time : nat64;
-  xrc_data : opt ExchangeRate;
-  exchange_rate : float64;
-  symbol : text;
 };
 type GetBlocksRequest = record { start : nat; length : nat };
 type GetBlocksResponse = record {
@@ -137,17 +113,16 @@ type PriceData = record {
 };
 type Result = variant { Ok; Err : text };
 type Result_1 = variant { Ok : WasmFile; Err : text };
-type Result_10 = variant { Ok : Predictor; Err : text };
-type Result_11 = variant { Ok : PredictorView; Err : text };
-type Result_12 = variant { Ok : User; Err : text };
-type Result_2 = variant { Ok : vec ExchangeRateRecord; Err : text };
-type Result_3 = variant { Ok : GetBlocksResponse; Err : text };
-type Result_4 = variant { Ok : text; Err : text };
-type Result_5 = variant { Ok : vec Predictor; Err : text };
-type Result_6 = variant { Ok : GetTransactionsResponse; Err : text };
-type Result_7 = variant { Ok : vec WasmFile; Err : text };
-type Result_8 = variant { Ok : nat; Err : text };
-type Result_9 = variant { Ok : ICRC2AllowanceResponse; Err : text };
+type Result_10 = variant { Ok : PredictorView; Err : text };
+type Result_11 = variant { Ok : User; Err : text };
+type Result_2 = variant { Ok : GetBlocksResponse; Err : text };
+type Result_3 = variant { Ok : text; Err : text };
+type Result_4 = variant { Ok : vec Predictor; Err : text };
+type Result_5 = variant { Ok : GetTransactionsResponse; Err : text };
+type Result_6 = variant { Ok : vec WasmFile; Err : text };
+type Result_7 = variant { Ok : nat; Err : text };
+type Result_8 = variant { Ok : ICRC2AllowanceResponse; Err : text };
+type Result_9 = variant { Ok : Predictor; Err : text };
 type State = record {
   bias : opt vec float32;
   max_values : vec float32;
@@ -216,37 +191,36 @@ service : () -> {
   dump_stable_memory : (opt nat64) -> (HttpResponse) query;
   find_backup_data : (nat64) -> (opt text);
   find_backup_lists : () -> (vec record { nat64; nat64 }) query;
-  find_exchange_rates : (text, nat64, nat64) -> (Result_2) query;
   find_user_lists : () -> (vec User) query;
-  get_blocks : (GetBlocksRequest) -> (Result_3);
-  get_canister_info : () -> (Result_4);
+  get_blocks : (GetBlocksRequest) -> (Result_2);
+  get_canister_info : () -> (Result_3);
   get_latest_version : (UpdateType) -> (Result_1) query;
-  get_predictor_vec : () -> (Result_5) query;
+  get_predictor_vec : () -> (Result_4) query;
   get_principal : () -> (principal) query;
   get_state : () -> (State) query;
-  get_transactions : (GetBlocksRequest) -> (Result_6);
+  get_transactions : (GetBlocksRequest) -> (Result_5);
   get_wasm_bin : (text, text) -> (Result_1) query;
-  get_wasm_lists : () -> (Result_7) query;
+  get_wasm_lists : () -> (Result_6) query;
   http_request : (HttpRequest) -> (HttpResponse) query;
-  icrc1_balance_of : () -> (Result_8);
-  icrc1_transfer : (Account, nat, opt blob) -> (Result_8);
-  icrc2_allowance : (Account) -> (Result_9);
-  icrc2_approve : (nat) -> (Result_4);
-  icrc2_transfer_from : (Account, nat, opt blob) -> (Result_8);
-  import_history_records : (text, vec record { nat64; float64 }) -> (Result);
-  minting_or_burn : (Account, nat) -> (Result_8);
+  icrc1_balance_of : () -> (Result_7);
+  icrc1_transfer : (Account, nat, opt blob) -> (Result_7);
+  icrc2_allowance : (Account) -> (Result_8);
+  icrc2_approve : (nat) -> (Result_3);
+  icrc2_transfer_from : (Account, nat, opt blob) -> (Result_7);
+  import_history_records : (text, blob) -> (Result);
+  minting_or_burn : (Account, nat) -> (Result_7);
   predict : () -> (float32) query;
-  push_user_pred : (Predictor) -> (Result_10);
+  push_user_pred : (Predictor) -> (Result_9);
   refill_random_buffer : (nat32) -> ();
   restore_from_file : (text) -> (Result);
-  show_predictions : () -> (Result_11) query;
+  show_predictions : () -> (Result_10) query;
   // 质押token  累计计算
   stake : (nat, nat64) -> (Result);
   test_1 : (DurationRange) -> (nat64, nat64) query;
   train : (nat64) -> ();
   unstake : () -> (Result);
   upload_json_file : (blob) -> ();
-  upload_wasm : (text, text, blob, UpdateType) -> (Result_4);
-  user_login : () -> (Result_12) query;
-  user_register : () -> (Result_12);
+  upload_wasm : (text, text, blob, UpdateType) -> (Result_3);
+  user_login : () -> (Result_11) query;
+  user_register : () -> (Result_11);
 }

@@ -23,8 +23,8 @@ pub mod icrc_api {
     //
     // #[update(guard = "is_admin")]
     // 后续只能管理员操作 测试时不需要
-    //当前canisters是mint账户的时候 ,转账方法才是铸币 否则是普通转账
-    //如果当前canisters不是mint账户 那么则需要dfx或者前端agent直接访问记账罐进行转账也就是铸币
+    //1.当前canisters是mint账户的时候 ,转账方法才是铸币 否则是普通转账
+    //2.如果当前canisters不是mint账户 那么则需要dfx或者前端agent直接访问记账罐进行转账也就是铸币
     #[update]
     async fn minting_or_burn(account: Account, amount: Nat) -> Result<Nat, String> {
         let canister_id = Principal::from_text(ICRC1_LEDGER_CANISTER_ID)

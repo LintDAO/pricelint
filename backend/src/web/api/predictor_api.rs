@@ -101,41 +101,71 @@ async fn push_user_pred(predictor: Predictor) -> Result<Predictor, String> {
 
 pub mod exchange_rate_api {
     use crate::impl_storable::ExchangeRateRecord;
-    use crate::EXCHANGE_RATE;
+    use crate::{Memory, EXCHANGE_RATE};
+    use burn::tensor::cast::ToElement;
+    use candid::pretty::utils::str;
     use candid::MotokoResult::ok;
-    use ic_cdk::{query, update};
+    use ic_cdk::api::{canister_balance, time};
+    use ic_cdk::{call, caller, id, query, update};
+    use ic_stable_structures::{BTreeSet, DefaultMemoryImpl};
+    use serde_json::{Deserializer, Value};
+    use std::borrow::Cow;
+    use std::cell::{Ref, RefCell};
+    use std::f64::consts::E;
+    use std::fmt::format;
+    use std::io::Bytes;
+    use std::ops::Deref;
+    use std::ptr::dangling;
+    use std::rc::{Rc, Weak};
+    use std::sync::Arc;
+    use std::thread;
+    use std::time::Duration;
 
+    // 导入历史数据
+    // 导入大量数据的时候可能因为内存泄漏或者循环引用原因导致短期内增长大量的内存触发icp的机制导致panic
+    // 如果触发panic则修改 Freezing threshold ,默认 2_592_000 Seconds ,内存短期过高可以降低Freezing threshold数值
+    // dfx canister update-settings backend --freezing-threshold <seconds>
     #[update]
-    pub fn import_history_records(
-        symbol: String,
-        history_datas: Vec<(u64, f64)>,
-    ) -> Result<(), String> {
-        let history_vec: Vec<ExchangeRateRecord> = history_datas
-            .iter()
-            .map(|(t, x)| ExchangeRateRecord {
-                symbol: symbol.clone(),
-                time: *t,
-                exchange_rate: *x,
-                xrc_data: None,
-            })
-            .collect::<_>();
+    pub fn import_history_records(symbol: String, history_data: Vec<u8>) -> Result<(), String> {
+        ic_cdk::println!("cycles: {}", canister_balance());
 
-        EXCHANGE_RATE.with(|rc| {
-            for record in history_vec.iter() {
-                let bm = rc.borrow_mut();
-                bm.push(record).unwrap();
-            }
-        });
+        let mut data: Vec<(u64, f64)> =
+            serde_json::from_slice(&history_data).map_err(|e| e.to_string())?;
+        let mut vec_exchange_rate = data
+            .iter()
+            .map(|&(time, exchange_rate)| ExchangeRateRecord {
+                symbol: Cow::Borrowed(&symbol).into_owned(),
+                xrc_data: None,
+                exchange_rate,
+                time,
+            })
+            .collect::<Vec<_>>();
+        const CHUNK_SIZE: usize = 100;
+        let chunks: Vec<_> = vec_exchange_rate
+            .chunks(CHUNK_SIZE)
+            .map(|chunk| chunk.to_vec())
+            .collect();
+        let mut count = 0;
+        for chunk in chunks {
+            count += 1;
+            ic_cdk::println!("count size: {} {}", count, chunk.len());
+            batch_insert_exchange_rates(chunk).map_err(|j| j.to_string())?;
+        }
 
         Ok(())
     }
-    #[query]
-    pub fn find_exchange_rates(symbol:String,start_time:u64,end_time:u64) -> Result<Vec<ExchangeRateRecord>, String> {
-        let records = EXCHANGE_RATE.with(|rc| {
-            let bm = rc.borrow();
-            bm.iter().filter(|x| x.symbol == symbol && x.time >= start_time && x.time <= end_time)
-                .collect::<_>()
+    fn batch_insert_exchange_rates(records: Vec<ExchangeRateRecord>) -> Result<(), String> {
+        let strong = Rc::new(&EXCHANGE_RATE);
+        let weak = Rc::downgrade(&strong);
+        let x = weak.upgrade().unwrap();
+        x.with_borrow_mut(|rc| {
+            for data in records {
+                rc.insert(data);
+            }
+            drop(x);
         });
-        Ok(records)
+        drop(weak);
+        drop(strong);
+        Ok(())
     }
 }

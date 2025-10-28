@@ -67,8 +67,17 @@ pub mod backup_api {
                 }
             })
         };
-
+         ($name:ident,$data:expr,set) => {
+            $name.with(|rc| {
+                let mut bm = rc.borrow_mut();
+                for data in $data {
+                    bm.insert(data);
+                }
+            })
+        };
     }
+
+
     #[derive(Serialize, Deserialize)]
     struct ExportData {
         temp_vec_data: Vec<TempVecValue<String>>,
@@ -212,7 +221,7 @@ pub mod backup_api {
         restore_from_data!(PREDICTOR_CONTEXT,export_data.predictor_context_data,map);
         restore_from_data!(ROLE_USER_TREE,export_data.role_user_tree_data,map);
         restore_from_data!(WASM_FILES,export_data.wasm_files_data,map);
-        restore_from_data!(EXCHANGE_RATE,export_data.exchange_rate_data,vec);
+        restore_from_data!(EXCHANGE_RATE,export_data.exchange_rate_data,set);
         restore_from_data!(PREDICTOR_QUANTIFY,export_data.predictor_quantify_data,vec);
         restore_from_data!(STAKE,export_data.stake_data,map);
         restore_from_data!(CANISTER_LIST,export_data.canister_list_data,map);
