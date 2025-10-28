@@ -26,9 +26,6 @@ export interface ArchivedRange_1 {
   'start' : bigint,
   'length' : bigint,
 }
-export interface Asset { 'class' : AssetClass, 'symbol' : string }
-export type AssetClass = { 'Cryptocurrency' : null } |
-  { 'FiatCurrency' : null };
 export interface BlockRange { 'blocks' : Array<Value> }
 export interface Burn {
   'from' : Account,
@@ -44,28 +41,6 @@ export type DurationRange = { 'Microseconds' : null } |
   { 'Milliseconds' : null } |
   { 'Hours' : null } |
   { 'Nanoseconds' : null };
-export interface ExchangeRate {
-  'metadata' : ExchangeRateMetadata,
-  'rate' : bigint,
-  'timestamp' : bigint,
-  'quote_asset' : Asset,
-  'base_asset' : Asset,
-}
-export interface ExchangeRateMetadata {
-  'decimals' : number,
-  'forex_timestamp' : [] | [bigint],
-  'quote_asset_num_received_rates' : bigint,
-  'base_asset_num_received_rates' : bigint,
-  'base_asset_num_queried_sources' : bigint,
-  'standard_deviation' : bigint,
-  'quote_asset_num_queried_sources' : bigint,
-}
-export interface ExchangeRateRecord {
-  'time' : bigint,
-  'xrc_data' : [] | [ExchangeRate],
-  'exchange_rate' : number,
-  'symbol' : string,
-}
 export interface GetBlocksRequest { 'start' : bigint, 'length' : bigint }
 export interface GetBlocksResponse {
   'certificate' : [] | [Uint8Array | number[]],
@@ -227,10 +202,6 @@ export interface WasmFile {
 export interface _SERVICE {
   'add_price' : ActorMethod<[PriceData], undefined>,
   'backup_stable_memory' : ActorMethod<[], Result>,
-  'batch_insert_exchange_rates' : ActorMethod<
-    [Array<ExchangeRateRecord>],
-    Result
-  >,
   'delete_backup_data' : ActorMethod<[bigint], boolean>,
   'delete_wasm' : ActorMethod<[string, string], Result_1>,
   'dump_stable_memory' : ActorMethod<[[] | [bigint]], HttpResponse>,

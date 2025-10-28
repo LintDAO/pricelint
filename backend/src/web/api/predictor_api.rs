@@ -126,12 +126,11 @@ pub mod exchange_rate_api {
     // 如果触发panic则修改 Freezing threshold ,默认 2_592_000 Seconds ,内存短期过高可以降低Freezing threshold数值
     // dfx canister update-settings backend --freezing-threshold <seconds>
     #[update]
-    pub fn import_history_records(symbol: String, history_data: Vec<u8>) -> Result<(), String> {
+    pub fn import_history_records(symbol: String, history_data: Vec<(u64, f64)>) -> Result<(), String> {
         ic_cdk::println!("cycles: {}", canister_balance());
 
-        let mut data: Vec<(u64, f64)> =
-            serde_json::from_slice(&history_data).map_err(|e| e.to_string())?;
-        let mut vec_exchange_rate = data
+        // let mut data: Vec<(u64, f64)> =serde_json::from_slice(&history_data).map_err(|e| e.to_string())?;
+        let mut vec_exchange_rate = history_data
             .iter()
             .map(|&(time, exchange_rate)| ExchangeRateRecord {
                 symbol: Cow::Borrowed(&symbol).into_owned(),

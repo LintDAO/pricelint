@@ -10,33 +10,6 @@ export const idlFactory = ({ IDL }) => {
     'price_diff' : IDL.Float32,
   });
   const Result = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : IDL.Text });
-  const ExchangeRateMetadata = IDL.Record({
-    'decimals' : IDL.Nat32,
-    'forex_timestamp' : IDL.Opt(IDL.Nat64),
-    'quote_asset_num_received_rates' : IDL.Nat64,
-    'base_asset_num_received_rates' : IDL.Nat64,
-    'base_asset_num_queried_sources' : IDL.Nat64,
-    'standard_deviation' : IDL.Nat64,
-    'quote_asset_num_queried_sources' : IDL.Nat64,
-  });
-  const AssetClass = IDL.Variant({
-    'Cryptocurrency' : IDL.Null,
-    'FiatCurrency' : IDL.Null,
-  });
-  const Asset = IDL.Record({ 'class' : AssetClass, 'symbol' : IDL.Text });
-  const ExchangeRate = IDL.Record({
-    'metadata' : ExchangeRateMetadata,
-    'rate' : IDL.Nat64,
-    'timestamp' : IDL.Nat64,
-    'quote_asset' : Asset,
-    'base_asset' : Asset,
-  });
-  const ExchangeRateRecord = IDL.Record({
-    'time' : IDL.Nat64,
-    'xrc_data' : IDL.Opt(ExchangeRate),
-    'exchange_rate' : IDL.Float64,
-    'symbol' : IDL.Text,
-  });
   const UpdateType = IDL.Variant({
     'FunctionUpdate' : IDL.Null,
     'ModelUpdate' : IDL.Null,
@@ -242,11 +215,6 @@ export const idlFactory = ({ IDL }) => {
   return IDL.Service({
     'add_price' : IDL.Func([PriceData], [], []),
     'backup_stable_memory' : IDL.Func([], [Result], []),
-    'batch_insert_exchange_rates' : IDL.Func(
-        [IDL.Vec(ExchangeRateRecord)],
-        [Result],
-        [],
-      ),
     'delete_backup_data' : IDL.Func([IDL.Nat64], [IDL.Bool], []),
     'delete_wasm' : IDL.Func([IDL.Text, IDL.Text], [Result_1], []),
     'dump_stable_memory' : IDL.Func(

@@ -19,8 +19,6 @@ type ArchivedRange_1 = record {
   start : nat;
   length : nat;
 };
-type Asset = record { class : AssetClass; symbol : text };
-type AssetClass = variant { Cryptocurrency; FiatCurrency };
 type BlockRange = record { blocks : vec Value };
 type Burn = record {
   from : Account;
@@ -37,28 +35,6 @@ type DurationRange = variant {
   Milliseconds;
   Hours;
   Nanoseconds;
-};
-type ExchangeRate = record {
-  metadata : ExchangeRateMetadata;
-  rate : nat64;
-  timestamp : nat64;
-  quote_asset : Asset;
-  base_asset : Asset;
-};
-type ExchangeRateMetadata = record {
-  decimals : nat32;
-  forex_timestamp : opt nat64;
-  quote_asset_num_received_rates : nat64;
-  base_asset_num_received_rates : nat64;
-  base_asset_num_queried_sources : nat64;
-  standard_deviation : nat64;
-  quote_asset_num_queried_sources : nat64;
-};
-type ExchangeRateRecord = record {
-  time : nat64;
-  xrc_data : opt ExchangeRate;
-  exchange_rate : float64;
-  symbol : text;
 };
 type GetBlocksRequest = record { start : nat; length : nat };
 type GetBlocksResponse = record {
@@ -210,7 +186,6 @@ type WasmFile = record {
 service : {
   add_price : (PriceData) -> ();
   backup_stable_memory : () -> (Result);
-  batch_insert_exchange_rates : (vec ExchangeRateRecord) -> (Result);
   delete_backup_data : (nat64) -> (bool);
   delete_wasm : (text, text) -> (Result_1);
   dump_stable_memory : (opt nat64) -> (HttpResponse) query;
