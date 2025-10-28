@@ -1,10 +1,6 @@
 import type { ApiResult } from "@/types/types";
 import { showMessageError, showMessageSuccess } from "@/utils/message";
-import {
-  blockCanisterArrayByPrincipal,
-  getCanisterArrayByPrincipal,
-  setCanisterArrayByPrincipal,
-} from "@/utils/storage";
+import { blockCanisterArrayByPrincipal } from "@/utils/storage";
 import { Actor } from "@dfinity/agent";
 import {
   ICManagementCanister,
@@ -86,85 +82,48 @@ export async function checkSystemLatestVersion() {
   });
   return version;
 }
-
 /**
- * Set the canister list for the current principal
- * @param canisterId The canister ID to store
+ * 获取用户的 canister 列表
+ * @returns Promise<CanisterDetail[]> 返回 CanisterDetail 对象数组
  */
-export async function importCanisterList(canisterId: string): Promise<boolean> {
-  // Trim and validate input
-  const trimmedCanisterId = canisterId.trim();
-  if (!trimmedCanisterId) {
-    showMessageError("Canister ID cannot be empty");
-    return false;
-  }
-
-  // 检查容器控制人是否是用户
-  const status = await queryCanisterStatus(trimmedCanisterId);
-  if (!status) {
-    // 如果 status 为 null，说明查询失败或用户不是控制器
-    return false;
-  }
-
-  try {
-    Principal.fromText(trimmedCanisterId);
-  } catch {
-    showMessageError("Invalid Canister ID format");
-    return false;
-  }
-
-  // Get current principal
-  const principalId = getCurrentPrincipal();
-  if (!principalId) {
-    showMessageError("No valid principal ID found");
-    return false;
-  }
-
-  // Store canister ID
-  try {
-    const success = setCanisterArrayByPrincipal(
-      principalId,
-      CONTROLLER_CANISTERS_KEY,
-      trimmedCanisterId
-    );
-    if (success) {
-      showMessageSuccess(
-        `Canister ID ${trimmedCanisterId} stored successfully`
-      );
-    } else {
-      showMessageError(`Canister ID ${trimmedCanisterId} already exists`);
-    }
-    return true;
-  } catch (error) {
-    console.error("Failed to store canister ID:", error);
-    showMessageError("Failed to store Canister ID");
-    return false;
-  }
-}
-
-//获取用户的canister列表
 export async function getCanisterList(): Promise<CanisterDetail[]> {
   const principalId = getCurrentPrincipal();
   if (!principalId) {
     showMessageError("No valid principal ID found");
     return [];
   }
-  const canisterList = await fetchUserCanisters();
-  setCanisterArrayByPrincipal(
-    principalId,
-    CONTROLLER_CANISTERS_KEY,
-    canisterList
-  );
-  console.log("canisterList", canisterList);
-  const canisters = getCanisterArrayByPrincipal(
-    CONTROLLER_CANISTERS_KEY,
-    getCurrentPrincipal()
-  );
-  console.log("getCanisterList", getCurrentPrincipal(), canisters);
-  if (canisterList) return canisterList;
-  //TODO 调用后端api，查询线上的canister list是否一致
+  // 读取本地存储，优先使用线上数据，如果线上数据为空或报错，才使用本地存储。
+  // const localCanisters: CanisterDetail[] | null = getCanisterArrayByPrincipal(
+  //   CONTROLLER_CANISTERS_KEY,
+  //   principalId
+  // );
+  // console.log("Local canister list:", principalId, localCanisters);
+  try {
+    //TODO set存储有bug，json化之后值为空，无法正常运行，先搁置
+    // 优先调用 fetchUserCanisters（在线查询，返回 CanisterDetail[]）
+    const onlineCanisterList: CanisterDetail[] = await fetchUserCanisters();
 
-  // 没有结果就返回空
+    // // 如果在线查询成功且不为空，保存到本地并返回
+    if (onlineCanisterList && onlineCanisterList.length > 0) {
+      // 批量保存到本地存储，覆盖相同 canister_id 的数据
+      // setCanisterArrayByPrincipal(
+      //   principalId,
+      //   CONTROLLER_CANISTERS_KEY,
+      //   onlineCanisterList
+      // );
+      // console.log("onlineCanisterList", onlineCanisterList);
+      return onlineCanisterList;
+    }
+  } catch (error) {
+    // 在线查询出错，读取本地存储
+    console.error("Failed to fetch online canisters:", error);
+    console.log("Falling back to local storage...");
+  }
+  // // 如果本地有数据，返回本地数据
+  // if (localCanisters && localCanisters.length > 0) {
+  //   return localCanisters;
+  // }
+  // 都没有结果，返回空
   return [];
 }
 
@@ -263,6 +222,27 @@ export async function queryCanisterStatus(
     }
     showMessageError(userMessage);
     return null; // 返回 null 表示查询失败
+  }
+}
+
+// 查询目标 Canister 的 cycles 余额，目标 canister 的 controller 必须是用户本人
+export async function getCanisterCycles(canisterId: string): Promise<number> {
+  try {
+    const status = await queryCanisterStatus(canisterId);
+    if (!status || !status.cycles) {
+      console.error(`No cycles data found for canister ${canisterId}`);
+      return 0; // 如果没有 cycles 数据，返回 0
+    }
+    // 假设 status.cycles 是 bigint 或 number 类型，转换为 T Cycles
+    return Number((Number(status.cycles) / 1_000_000_000_000).toFixed(2)); // Convert to T Cycles
+  } catch (error: any) {
+    console.error(`Failed to get cycles for canister ${canisterId}:`, error);
+    showMessageError(
+      `Failed to get cycles for canister ${canisterId}: ${
+        error.message || error
+      }`
+    );
+    return 0; // 失败时返回 0，防止中断累加
   }
 }
 

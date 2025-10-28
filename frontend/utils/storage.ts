@@ -1,4 +1,5 @@
 import { getCurrentPrincipal } from "@/api/canister_pool";
+import type { CanisterDetail } from "@/api/canisters";
 import { isPrincipal } from "./common";
 import { showMessageError, showMessageSuccess } from "./message";
 
@@ -223,65 +224,76 @@ export const getStringByPrincipal = (key: string): string | null => {
     return null;
   }
 };
-
 /**
- * 按 principalId 向 localStorage 中的数组追加 Canister ID，并避免重复，默认不拉黑，也就是会显示
+ * 按 principalId 存储 CanisterDetail 数组到 localStorage，覆盖相同 canister_id 的数据
  * @param principalId 用户的 principalId
  * @param key 存储的键名
- * @param canisterId 要追加的 Canister ID（字符串类型）
- * @returns 是否成功追加并存储（如果项已存在，返回 false）
+ * @param canisters 单个或多个 CanisterDetail 对象
+ * @returns boolean 表示存储是否成功
  */
 export const setCanisterArrayByPrincipal = (
   principalId: string,
   key: string,
-  canisterId: any
+  canisters: CanisterDetail | CanisterDetail[]
 ): boolean => {
   try {
-    // 1. 从 localStorage 获取现有数据
-    const existingData = getCanisterArrayByPrincipal(key); // 使用内部 get 函数获取整个 map，但不过滤
-    // 2. 确保返回值为对象，如果不是或为空，返回空对象
+    // 从 localStorage 获取现有数据
+    const existingData = getCanisterArrayByPrincipal(key);
     const existingMap =
       typeof existingData === "object" && existingData !== null
         ? existingData
         : {};
+    console.log("Existing localStorage data before update:", existingMap);
 
-    // 3. 获取当前 principalId 对应的数组，如果不存在则初始化为空数组
+    // 获取当前 principalId 对应的数组
     const existingArray = Array.isArray(existingMap[principalId])
       ? existingMap[principalId]
       : [];
 
-    // 4. 检查是否已存在该项（无论是否屏蔽），避免重复添加
-    if (
-      existingArray.some(
-        (item: { canisterId: string; blocked: boolean }) =>
-          item.canisterId === canisterId
-      )
-    ) {
-      console.log(
-        `Canister ID ${canisterId} already exists for principal ${principalId} in ${key}, skipping storage`
-      );
-      return false; // 未添加新项
-    }
+    // 转换为数组统一处理
+    const canistersArray = Array.isArray(canisters) ? canisters : [canisters];
 
-    // 5. 追加新项到对应 principalId 的数组，初始为未屏蔽
-    const updatedArray = [...existingArray, { canisterId, blocked: false }];
+    // 覆盖相同 canister_id 的数据
+    const updatedArray = [
+      // 保留 existingArray 中不在新数据中的 canister
+      ...existingArray.filter(
+        (item: { canister: CanisterDetail; blocked: boolean }) =>
+          !canistersArray.some(
+            (newCanister) =>
+              newCanister.canister_id === item.canister.canister_id
+          )
+      ),
+      // 添加新数据，初始为未屏蔽
+      ...canistersArray.map((canister) => ({ canister, blocked: false })),
+    ];
 
-    // 6. 更新 principalId 对应的数组
+    // 更新 principalId 对应的数组
     existingMap[principalId] = updatedArray;
+    //TODO json化之前有值，json化之后值变为空，不知道如何解决，先不管吧
+    console.log("set", key, existingMap);
+    console.log("set", key, JSON.stringify(existingMap));
 
-    // 7. 存储更新后的对象
+    // 存储更新后的对象
     setStorage(key, existingMap);
     console.log(
-      `Successfully stored ${canisterId} for principal ${principalId} in ${key}, updated map:`,
+      `Successfully stored ${canistersArray.length} canisters for principal ${principalId} in ${key}, updated map:`,
       existingMap
     );
-    return true; // 成功添加新项
+
+    // 验证存储结果
+    const storedData = localStorage.getItem(key);
+    console.log(
+      `Verified stored data in ${key}:`,
+      storedData ? JSON.parse(storedData) : null
+    );
+
+    return true;
   } catch (error) {
     console.error(
-      `Failed to store canisterId for principal ${principalId} in ${key}:`,
+      `Failed to store canisters for principal ${principalId} in ${key}:`,
       error
     );
-    return false; // 存储失败
+    return false;
   }
 };
 
@@ -343,19 +355,19 @@ export function blockCanisterArrayByPrincipal(
 }
 
 /**
- * 按 principalId 从 localStorage 获取 Canister ID 数组（默认只返回未屏蔽的 ID）
+ * 按 principalId 从 localStorage 获取 Canister 数组（默认只返回未屏蔽的 Canister 对象）
  * @param key 存储的键名
  * @param principalId 用户的 principalId（可选，如果不提供则返回整个对象）
- * @param includeBlocked 是否包含屏蔽的 ID（默认 false，只返回活跃的）
- * @returns 指定 principalId 的 Canister ID 数组（字符串数组），或整个存储对象，或 null
+ * @param includeBlocked 是否包含屏蔽的 Canister（默认 false，只返回活跃的）
+ * @returns 指定 principalId 的 Canister 数组，或整个存储对象，或 null
  */
 export const getCanisterArrayByPrincipal = (
   key: string,
   principalId?: string,
   includeBlocked: boolean = false
-): any | null => {
+): CanisterDetail[] => {
   const value = localStorage.getItem(key);
-  if (value === null) return null;
+  if (value === null) return [];
 
   try {
     const parsed = JSON.parse(value);
@@ -367,19 +379,19 @@ export const getCanisterArrayByPrincipal = (
       const filteredArray = includeBlocked
         ? array
         : array.filter(
-            (item: { canisterId: string; blocked: boolean }) => !item.blocked
+            (item: { canister: CanisterDetail; blocked: boolean }) =>
+              !item.blocked
           );
       return filteredArray.map(
-        (item: { canisterId: string; blocked: boolean }) => item.canisterId
-      );
+        (item: { canister: CanisterDetail; blocked: boolean }) => item.canister
+      ); // 返回完整 Canister 对象数组
     }
     return parsed; // 返回整个对象时不过滤
   } catch (e) {
     console.error(`Failed to read ${key} info:`, e);
-    return null;
+    return [];
   }
 };
-
 /**
  * 从 localStorage 获取 当前 principal ID 和 canister ID 存储的字符串
  * @param key 存储的键名

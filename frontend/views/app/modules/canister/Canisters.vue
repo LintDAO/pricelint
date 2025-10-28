@@ -14,9 +14,9 @@
       </template>
       <template v-slot:top-right>
         <div class="q-gutter-md">
-          <q-btn color="primary" @click="importDialogVisible = true" no-caps>
-            Import Canister
-          </q-btn>
+          <!-- <q-btn color="primary" no-caps>
+            Refresh Canister
+          </q-btn> -->
           <q-btn color="primary" @click="createNew()" no-caps>
             New Canister</q-btn
           >
@@ -129,41 +129,6 @@
       :operation="operation"
       :targetCanisterId="selectedCanisterId"
     />
-    <q-dialog v-model="importDialogVisible">
-      <q-card style="min-width: 400px">
-        <q-card-section>
-          <div class="text-h6">Import Canister ID</div>
-        </q-card-section>
-        <q-card-section class="q-py-none">
-          Import a canister currently controlled by the principal. Only canister
-          controller can import the canister id.
-        </q-card-section>
-        <q-card-section>
-          <q-input
-            v-model="importCanisterId"
-            label="Enter Canister ID"
-            filled
-            :rules="[
-              (val) => !!val || 'Canister ID is required',
-              (val) => isPrincipal(val) || 'Invalid Canister ID format',
-            ]"
-            @keyup.enter="importConfirm"
-          />
-        </q-card-section>
-
-        <q-card-actions align="right">
-          <q-btn flat label="Cancel" color="negative" v-close-popup />
-          <q-btn
-            :loading="importLoading"
-            flat
-            label="Import"
-            color="primary"
-            :disable="!importCanisterId || !isPrincipal(importCanisterId)"
-            @click="importConfirm"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
   </div>
 </template>
 
@@ -173,7 +138,6 @@ import {
   CanisterDetail,
   blockCanisterIdFromList,
   getCanisterList,
-  importCanisterList,
   installCode,
   queryCanisterStatus,
   startCanister,
@@ -192,7 +156,6 @@ import { useRouter } from "vue-router";
 const $q = useQuasar();
 const router = useRouter();
 const topUpDialog = ref(false);
-const importDialogVisible = ref(false);
 const operation = ref<"createCanister" | "topUp">("createCanister");
 
 const columns: TableColumn[] = [
@@ -251,9 +214,7 @@ const columns: TableColumn[] = [
 // 表格数据和状态
 const canisterData = ref<CanisterData[]>([]);
 const loading = ref(false);
-const importLoading = ref(false);
 const userCanisters = ref<CanisterDetail[]>([]);
-const importCanisterId = ref<string>("");
 const pagination = ref({
   sortBy: "canisterId",
   descending: false,
@@ -419,18 +380,6 @@ const useRecommendParam = async () => {
     ...loadingActions.value[selectedCanisterId.value],
     use: false,
   };
-};
-
-const importConfirm = async () => {
-  importLoading.value = true;
-  if (!isPrincipal(importCanisterId.value)) return;
-  const success = await importCanisterList(importCanisterId.value);
-  importLoading.value = false;
-  if (success) {
-    console.log("success");
-    importDialogVisible.value = false;
-    getCanisterInfo(); // Refresh data
-  }
 };
 
 const showBlockDialog = (canisterId: string) => {

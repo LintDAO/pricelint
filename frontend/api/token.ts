@@ -1,5 +1,6 @@
 import { showMessageError } from "@/utils/message";
 import axios from "axios";
+import { getBackend } from "./canister_pool";
 import { BINANCE_URL } from "./constants/ic";
 
 export interface YearTimestamp {
@@ -79,3 +80,13 @@ export const getYearTimestamps = (): YearTimestamp[] => {
 
   return timestamps;
 };
+// symbol举例应为：ICPUSDT 或者 BTCUSDT
+export async function importHistoryRecords(
+  symbol: string,
+  history: [number, number][]
+): Promise<any> {
+  return getBackend().import_history_records(
+    symbol,
+    history.map(([time, price]) => [BigInt(time), price])
+  );
+}

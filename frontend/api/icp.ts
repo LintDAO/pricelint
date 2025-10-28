@@ -106,7 +106,7 @@ export const getICPBalance = async (accountId: string): Promise<number> => {
   }
 };
 
-//获得当前principal id的cycles
+//获得当前principal id的cycles，单位为T，注意，只能获取principal的，不能获取canister id的
 export const getCyclesBalance = async (principal: string): Promise<number> => {
   try {
     const cyclesLedger = initIcrcLedger(CYCLES_LEDGER_CANISTER);
@@ -187,15 +187,6 @@ export const burnICPcreateCanister = async (
       subnet_type: [], // Default subnet type
     });
     console.log("create new", notifyResult);
-    // 将 Canister ID 转换为字符串并存储到 localStorage
-    const canisterId = notifyResult.toString();
-    if (canisterId) {
-      setCanisterArrayByPrincipal(
-        principal,
-        CONTROLLER_CANISTERS_KEY,
-        canisterId
-      );
-    }
     return true;
   } catch (error) {
     console.error("Failed to burn ICP:", error);

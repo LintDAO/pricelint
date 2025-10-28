@@ -13,10 +13,23 @@
               <q-separator class="q-mb-lg" />
               <div class="text-subtitle2">{{ item.title }}</div>
               <div class="text-h5 text-weight-bold q-my-sm">
-                {{ item.value }}
+                <q-skeleton
+                  v-if="isDataLoading"
+                  type="text"
+                  width="80px"
+                  height="30px"
+                />
+                <span v-else>{{ item.value }}</span>
               </div>
-              <div class="change-text">
+              <div class="change-text flex-y-center">
+                <q-skeleton
+                  v-if="isDataLoading"
+                  type="text"
+                  width="60px"
+                  height="24px"
+                />
                 <span
+                  v-else
                   class="change-value"
                   :class="
                     item.change >= 0
@@ -163,20 +176,28 @@
               </div>
             </q-card-section>
             <q-card-section class="q-pt-none">
-              <div class="text-body1">{{ userData.cycles.amount }} Cycles</div>
-              <div class="text-body1">0.00000T / Day</div>
+              <q-skeleton
+                v-if="isDataLoading"
+                type="text"
+                width="100px"
+                height="40px"
+              />
+
+              <div v-else class="text-body1">
+                Cycles: {{ userData.cycles.amount }} T
+              </div>
+              <!-- <div class="text-body1">0.00000T / Day</div>
               <q-linear-progress
                 stripe
                 :value="cyclesPercentage / 100"
                 style="height: 10px"
                 color="positive"
-              />
+              /> -->
             </q-card-section>
           </q-card>
         </div>
       </div>
-      <div class="card-row row q-col-gutter-sm">
-        <!-- 预测收益 -->
+      <!-- <div class="card-row row q-col-gutter-sm">
         <div class="col-12 col-md-4">
           <q-card class="dashboard-card">
             <q-card-section>
@@ -199,7 +220,6 @@
           </q-card>
         </div>
 
-        <!-- 活跃预测池 -->
         <div class="col-12 col-md-4">
           <q-card class="dashboard-card">
             <q-card-section>
@@ -228,7 +248,6 @@
           </q-card>
         </div>
 
-        <!-- 排行榜排名 -->
         <div class="col-12 col-md-4">
           <q-card class="dashboard-card">
             <q-card-section>
@@ -251,7 +270,7 @@
             </q-card-section>
           </q-card>
         </div>
-      </div>
+      </div> -->
 
       <div class="text-h6 text-grey-8 q-pt-md">Quick Start</div>
       <q-separator />
@@ -282,8 +301,9 @@
 </template>
 
 <script lang="ts" setup>
+import { getCanisterCycles, getCanisterList } from "@/api/canisters";
 import { ICP_LOGO } from "@/api/constants/tokens";
-import { getCyclesBalance, getICPBalance, transferICP } from "@/api/icp";
+import { getICPBalance, transferICP } from "@/api/icp";
 import { useUserStore } from "@/stores/user";
 import { isPrincipal, p2a } from "@/utils/common";
 import { useQuasar } from "quasar";
@@ -293,6 +313,7 @@ import { computed, onMounted, ref } from "vue";
 const $q = useQuasar();
 const userStore = useUserStore();
 const loading = ref(true);
+const isDataLoading = ref(true);
 const loadingSend = ref(false);
 const showSendDialog = ref(false);
 const selectedToken = ref<{
@@ -320,28 +341,28 @@ onMounted(async () => {
   loading.value = false;
 });
 
-const overviewData = [
+const overviewData = ref([
   {
-    title: "Running Canisters",
-    value: "12",
-    change: 4.5,
+    title: "Canisters",
+    value: "0",
+    change: 0,
   },
   {
     title: "Profit",
-    value: "$455",
-    change: -0.5,
+    value: "$0",
+    change: 0,
   },
   {
     title: "Prediction Accuracy",
-    value: "51%",
-    change: 4.5,
+    value: "0%",
+    change: 0,
   },
   {
     title: "Cycles Burn",
-    value: "20 T",
-    change: 21.2,
+    value: "0 T",
+    change: 0,
   },
-];
+]);
 
 // 模拟 Quick Start 数据
 const quickStartItems = ref([
@@ -420,8 +441,34 @@ const getUserInfo = () => {
   getICPBalance(userData.value.accountId).then((res) => {
     userData.value.balances.icp.amount = res;
   });
-  getCyclesBalance(userData.value.principal).then((res) => {
-    userData.value.cycles.amount = Number(res);
+
+  getCanisterList().then((res) => {
+    overviewData.value[0].value = res.length.toString();
+    // 使用 Promise.all 遍历所有 canister，获取 cycles 并累加
+    Promise.all(
+      res.map((canister) =>
+        getCanisterCycles(canister.canister_id).catch((error) => {
+          console.error(
+            `Failed to get cycles for canister ${canister.canister_id}:`,
+            error
+          );
+          return 0; // 失败时返回 0，防止中断
+        })
+      )
+    )
+      .then((balances) => {
+        const totalCycles = balances.reduce(
+          (sum, balance) => sum + Number(balance),
+          0
+        );
+        userData.value.cycles.amount = totalCycles;
+      })
+      .catch((error) => {
+        console.error("Error processing cycles balances:", error);
+      })
+      .finally(() => {
+        isDataLoading.value = false;
+      });
   });
 };
 
@@ -476,15 +523,6 @@ const handleItemClick = (item) => {
   $q.notify({
     message: `Coming Soon: ${item.title}`,
     color: "positive",
-    position: "top",
-  });
-};
-
-// 查看收益趋势（示例占位函数）
-const showEarningsTrend = () => {
-  $q.notify({
-    message: "Earnings trend display not implemented yet",
-    color: "warning",
     position: "top",
   });
 };
