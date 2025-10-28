@@ -26,7 +26,7 @@
 <script setup lang="ts">
 import { getTokenPriceHistory, importHistoryRecords } from "@/api/token";
 import * as echarts from "echarts";
-import { ref } from "vue";
+import { ref, toRaw } from "vue";
 
 // Loading states
 const isLoadingHistory = ref(false);
@@ -131,7 +131,7 @@ const importData = async () => {
     // For example: await someImportFunction();
     const res = await importHistoryRecords(
       tokenSymbol.value.toUpperCase() + "USDT",
-      priceData.value
+      toRaw(priceData.value)
     );
     console.log("importData con", res);
   } finally {
