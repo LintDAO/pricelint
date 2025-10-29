@@ -253,7 +253,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'import_history_records' : IDL.Func(
-        [IDL.Text, IDL.Vec(IDL.Nat8)],
+        [IDL.Text, IDL.Vec(IDL.Tuple(IDL.Nat64, IDL.Float64))],
         [Result],
         [],
       ),

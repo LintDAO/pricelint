@@ -230,7 +230,7 @@ export interface _SERVICE {
     Result_7
   >,
   'import_history_records' : ActorMethod<
-    [string, Uint8Array | number[]],
+    [string, Array<[bigint, number]>],
     Result
   >,
   'minting_or_burn' : ActorMethod<[Account, bigint], Result_7>,

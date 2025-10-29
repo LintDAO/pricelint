@@ -207,7 +207,7 @@ service : {
   icrc2_allowance : (Account) -> (Result_8);
   icrc2_approve : (nat) -> (Result_3);
   icrc2_transfer_from : (Account, nat, opt blob) -> (Result_7);
-  import_history_records : (text, blob) -> (Result);
+  import_history_records : (text, vec record { nat64; float64 }) -> (Result);
   minting_or_burn : (Account, nat) -> (Result_7);
   predict : () -> (float32) query;
   push_user_pred : (Predictor) -> (Result_9);
