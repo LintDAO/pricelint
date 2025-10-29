@@ -17,11 +17,10 @@ pub fn band_role(principal: String, role_name: String) {
             map_insert!(ROLE_USER_TREE, role_name, StringVec(vec![principal]));
         }
         Some(StringVec(mut vec)) => {
-            if  !vec.contains(&principal) {
+            if !vec.contains(&principal) {
                 vec.push(principal);
-                map_insert!(ROLE_USER_TREE, role_name, StringVec(vec));    
+                map_insert!(ROLE_USER_TREE, role_name, StringVec(vec));
             }
-      
         }
     }
 }
@@ -56,9 +55,20 @@ pub fn is_named_user<'user>() -> Result<(), String> {
 
     Err(GuardError::IsAnonymousUser.to_string())
 }
+
+//  安装pred的canister代码后 记录canister id 只允许这些canister id调用
 pub fn is_canister() -> Result<(), String> {
-    //TODO:安装pred的canister代码后 记录canister id 只允许这些canister id调用
-    Ok(())
+    let caller =caller();
+    let bytes = caller.as_slice();
+    let error=match bytes.last() {
+        Some(0x01) =>  return Ok(()),
+        Some(0x02) => "error:self-authenticating (user)",
+        Some(0x04) => "error:anonymous",
+        Some(0x7f) => "error:reserved",
+        _ => "error:unknown authenticating",
+    };
+    Err(error.to_string())
+
 }
 
 pub fn init_admin() {

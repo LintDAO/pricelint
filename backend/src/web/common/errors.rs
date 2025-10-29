@@ -46,6 +46,7 @@ pub enum GuardError {
     IsAnonymousUser,
     UnknownEmptyAdminLists,
     UnknownEmptyUserLists,
+    IsNotCanister,
 }
 impl_error!(GuardError);
 

@@ -145,7 +145,7 @@ pub mod impl_storable {
     pub struct ExchangeRateRecord {
         pub symbol: String,
         pub xrc_data: Option<ExchangeRate>,
-        pub exchange_rate: f64,
+        pub exchange_rate: u64,
         pub time: u64,
     }
 
@@ -233,6 +233,7 @@ pub mod export_candid {
     };
     use icrc_ledger_types::icrc3::blocks::{GetBlocksRequest, GetBlocksResponse};
     use icrc_ledger_types::icrc3::transactions::{GetTransactionsRequest, GetTransactionsResponse};
+    use std::collections::BTreeSet;
     export_candid!();
 }
 //TODO: lifecycles和api canid 导出先写到一起  后续需要分canisters再进行重构分离

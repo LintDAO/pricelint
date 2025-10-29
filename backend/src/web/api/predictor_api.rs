@@ -13,6 +13,7 @@ use crate::web::models::context::Context;
 use crate::web::models::predictor_model::{Pred, Predictor, PredictorResult, PredictorView};
 use crate::web::services::predictor_service::{ExtendPredictorService, PredictorService};
 use crate::{map_get, PREDICTOR_CONTEXT, PREDICTOR_QUANTIFY};
+use burn::tensor::cast::ToElement;
 use candid::{CandidType, Deserialize, Principal};
 use ic_cdk::api::call::CallResult;
 use ic_cdk::api::management_canister::http_request::{
@@ -21,6 +22,7 @@ use ic_cdk::api::management_canister::http_request::{
 use ic_cdk::api::time;
 use ic_cdk::{api, call, caller, export_candid, query, update};
 use std::fmt::Error;
+use std::ops::Div;
 
 #[query]
 fn get_predictor_vec() -> Result<Vec<Predictor>, String> {
@@ -42,7 +44,7 @@ fn show_predictions() -> Result<PredictorView, String> {
         next: None,
         accuracy: Predictor::get_accuracy(),
         stake: (
-            Predictor::get_total_stake(),
+            Predictor::get_total_stake().to_f64().div(10f64.powf(8f64)),
             Predictor::get_stake_growth_rate(),
         ),
         create_time: time(),
@@ -107,10 +109,10 @@ pub mod exchange_rate_api {
     use candid::MotokoResult::ok;
     use ic_cdk::api::{canister_balance, time};
     use ic_cdk::{call, caller, id, query, update};
-    use ic_stable_structures::{BTreeSet, DefaultMemoryImpl};
     use serde_json::{Deserializer, Value};
     use std::borrow::Cow;
     use std::cell::{Ref, RefCell};
+    use std::collections::BTreeSet;
     use std::f64::consts::E;
     use std::fmt::format;
     use std::io::Bytes;
@@ -126,7 +128,10 @@ pub mod exchange_rate_api {
     // 如果触发panic则修改 Freezing threshold ,默认 2_592_000 Seconds ,内存短期过高可以降低Freezing threshold数值
     // dfx canister update-settings backend --freezing-threshold <seconds>
     #[update]
-    pub fn import_history_records(symbol: String, history_data: Vec<(u64, f64)>) -> Result<(), String> {
+    pub fn import_history_records(
+        symbol: String,
+        history_data: Vec<(u64, f64)>,
+    ) -> Result<(), String> {
         ic_cdk::println!("cycles: {}", canister_balance());
 
         // let mut data: Vec<(u64, f64)> =serde_json::from_slice(&history_data).map_err(|e| e.to_string())?;
@@ -135,7 +140,7 @@ pub mod exchange_rate_api {
             .map(|&(time, exchange_rate)| ExchangeRateRecord {
                 symbol: Cow::Borrowed(&symbol).into_owned(),
                 xrc_data: None,
-                exchange_rate,
+                exchange_rate: (exchange_rate * 10_f64.powf(8f64)) as u64,
                 time,
             })
             .collect::<Vec<_>>();
@@ -166,5 +171,40 @@ pub mod exchange_rate_api {
         drop(weak);
         drop(strong);
         Ok(())
+    }
+    //查询所有的数据 统计条数
+    #[query]
+    fn count_all_symbols() -> usize {
+        EXCHANGE_RATE.with_borrow_mut(|rc| rc.iter().count())
+    }
+    //查询指定symbol的数据 统计条数
+    #[query]
+    fn count_by_symbol(symbol: String) -> usize {
+        EXCHANGE_RATE.with_borrow_mut(|rc| rc.iter().filter(|x| x.symbol == symbol).count())
+    }
+    //查询所有的symbols
+    #[query]
+    fn find_all_symbols() -> std::collections::BTreeMap<String,ExchangeRateRecord>{
+        EXCHANGE_RATE.with_borrow_mut(|rc| {
+            rc.iter()
+                .map(|x| (x.symbol.clone(),x))
+                .collect::<std::collections::BTreeMap<_, _>>()
+        })
+    }
+
+    //查询指定symbol的数据
+    #[query]
+    fn find_by_symbol(symbol: String) -> Vec<ExchangeRateRecord> {
+        EXCHANGE_RATE
+            .with_borrow_mut(|rc| rc.iter().filter(|x| x.symbol == symbol).collect::<Vec<_>>())
+    }
+    //查询所有的symbol种类
+    #[query]
+    fn list_symbol_kind() -> std::collections::BTreeSet<String> {
+        EXCHANGE_RATE.with_borrow_mut(|rc| {
+            rc.iter()
+                .map(|x| x.symbol.clone())
+                .collect::<std::collections::BTreeSet<_>>()
+        })
     }
 }
