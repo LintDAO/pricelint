@@ -34,6 +34,33 @@ export const idlFactory = ({ IDL }) => {
     'streaming_strategy' : IDL.Opt(StreamingStrategy),
     'status_code' : IDL.Nat16,
   });
+  const ExchangeRateMetadata = IDL.Record({
+    'decimals' : IDL.Nat32,
+    'forex_timestamp' : IDL.Opt(IDL.Nat64),
+    'quote_asset_num_received_rates' : IDL.Nat64,
+    'base_asset_num_received_rates' : IDL.Nat64,
+    'base_asset_num_queried_sources' : IDL.Nat64,
+    'standard_deviation' : IDL.Nat64,
+    'quote_asset_num_queried_sources' : IDL.Nat64,
+  });
+  const AssetClass = IDL.Variant({
+    'Cryptocurrency' : IDL.Null,
+    'FiatCurrency' : IDL.Null,
+  });
+  const Asset = IDL.Record({ 'class' : AssetClass, 'symbol' : IDL.Text });
+  const ExchangeRate = IDL.Record({
+    'metadata' : ExchangeRateMetadata,
+    'rate' : IDL.Nat64,
+    'timestamp' : IDL.Nat64,
+    'quote_asset' : Asset,
+    'base_asset' : Asset,
+  });
+  const ExchangeRateRecord = IDL.Record({
+    'time' : IDL.Nat64,
+    'xrc_data' : IDL.Opt(ExchangeRate),
+    'exchange_rate' : IDL.Nat64,
+    'symbol' : IDL.Text,
+  });
   const User = IDL.Record({
     'id' : IDL.Text,
     'owner' : IDL.Principal,
@@ -215,6 +242,8 @@ export const idlFactory = ({ IDL }) => {
   return IDL.Service({
     'add_price' : IDL.Func([PriceData], [], []),
     'backup_stable_memory' : IDL.Func([], [Result], []),
+    'count_all_symbols' : IDL.Func([], [IDL.Nat64], ['query']),
+    'count_by_symbol' : IDL.Func([IDL.Text], [IDL.Nat64], ['query']),
     'delete_backup_data' : IDL.Func([IDL.Nat64], [IDL.Bool], []),
     'delete_wasm' : IDL.Func([IDL.Text, IDL.Text], [Result_1], []),
     'dump_stable_memory' : IDL.Func(
@@ -222,10 +251,20 @@ export const idlFactory = ({ IDL }) => {
         [HttpResponse],
         ['query'],
       ),
+    'find_all_symbols' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Text, ExchangeRateRecord))],
+        ['query'],
+      ),
     'find_backup_data' : IDL.Func([IDL.Nat64], [IDL.Opt(IDL.Text)], []),
     'find_backup_lists' : IDL.Func(
         [],
         [IDL.Vec(IDL.Tuple(IDL.Nat64, IDL.Nat64))],
+        ['query'],
+      ),
+    'find_by_symbol' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(ExchangeRateRecord)],
         ['query'],
       ),
     'find_user_lists' : IDL.Func([], [IDL.Vec(User)], ['query']),
@@ -257,6 +296,7 @@ export const idlFactory = ({ IDL }) => {
         [Result],
         [],
       ),
+    'list_symbol_kind' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
     'minting_or_burn' : IDL.Func([Account, IDL.Nat], [Result_7], []),
     'predict' : IDL.Func([], [IDL.Float32], ['query']),
     'push_user_pred' : IDL.Func([Predictor], [Result_9], []),

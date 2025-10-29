@@ -184,11 +184,15 @@ pub mod exchange_rate_api {
     }
     //查询所有的symbols
     #[query]
-    fn find_all_symbols() -> std::collections::BTreeMap<String,ExchangeRateRecord>{
+    fn find_all_symbols() -> std::collections::BTreeMap<String, Vec<ExchangeRateRecord>> {
         EXCHANGE_RATE.with_borrow_mut(|rc| {
-            rc.iter()
-                .map(|x| (x.symbol.clone(),x))
-                .collect::<std::collections::BTreeMap<_, _>>()
+            let mut map = std::collections::BTreeMap::new();
+            for x in rc.iter() {
+                map.entry(x.symbol.clone())
+                    .or_insert_with(Vec::new)
+                    .push(x.clone());
+            }
+            map
         })
     }
 

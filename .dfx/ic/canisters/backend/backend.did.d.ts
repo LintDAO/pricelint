@@ -26,6 +26,9 @@ export interface ArchivedRange_1 {
   'start' : bigint,
   'length' : bigint,
 }
+export interface Asset { 'class' : AssetClass, 'symbol' : string }
+export type AssetClass = { 'Cryptocurrency' : null } |
+  { 'FiatCurrency' : null };
 export interface BlockRange { 'blocks' : Array<Value> }
 export interface Burn {
   'from' : Account,
@@ -41,6 +44,28 @@ export type DurationRange = { 'Microseconds' : null } |
   { 'Milliseconds' : null } |
   { 'Hours' : null } |
   { 'Nanoseconds' : null };
+export interface ExchangeRate {
+  'metadata' : ExchangeRateMetadata,
+  'rate' : bigint,
+  'timestamp' : bigint,
+  'quote_asset' : Asset,
+  'base_asset' : Asset,
+}
+export interface ExchangeRateMetadata {
+  'decimals' : number,
+  'forex_timestamp' : [] | [bigint],
+  'quote_asset_num_received_rates' : bigint,
+  'base_asset_num_received_rates' : bigint,
+  'base_asset_num_queried_sources' : bigint,
+  'standard_deviation' : bigint,
+  'quote_asset_num_queried_sources' : bigint,
+}
+export interface ExchangeRateRecord {
+  'time' : bigint,
+  'xrc_data' : [] | [ExchangeRate],
+  'exchange_rate' : bigint,
+  'symbol' : string,
+}
 export interface GetBlocksRequest { 'start' : bigint, 'length' : bigint }
 export interface GetBlocksResponse {
   'certificate' : [] | [Uint8Array | number[]],
@@ -202,11 +227,15 @@ export interface WasmFile {
 export interface _SERVICE {
   'add_price' : ActorMethod<[PriceData], undefined>,
   'backup_stable_memory' : ActorMethod<[], Result>,
+  'count_all_symbols' : ActorMethod<[], bigint>,
+  'count_by_symbol' : ActorMethod<[string], bigint>,
   'delete_backup_data' : ActorMethod<[bigint], boolean>,
   'delete_wasm' : ActorMethod<[string, string], Result_1>,
   'dump_stable_memory' : ActorMethod<[[] | [bigint]], HttpResponse>,
+  'find_all_symbols' : ActorMethod<[], Array<[string, ExchangeRateRecord]>>,
   'find_backup_data' : ActorMethod<[bigint], [] | [string]>,
   'find_backup_lists' : ActorMethod<[], Array<[bigint, bigint]>>,
+  'find_by_symbol' : ActorMethod<[string], Array<ExchangeRateRecord>>,
   'find_user_lists' : ActorMethod<[], Array<User>>,
   'get_blocks' : ActorMethod<[GetBlocksRequest], Result_2>,
   'get_canister_info' : ActorMethod<[], Result_3>,
@@ -233,6 +262,7 @@ export interface _SERVICE {
     [string, Array<[bigint, number]>],
     Result
   >,
+  'list_symbol_kind' : ActorMethod<[], Array<string>>,
   'minting_or_burn' : ActorMethod<[Account, bigint], Result_7>,
   'predict' : ActorMethod<[], number>,
   'push_user_pred' : ActorMethod<[Predictor], Result_9>,

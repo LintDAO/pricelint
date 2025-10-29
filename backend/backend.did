@@ -215,7 +215,7 @@ service : () -> {
   delete_backup_data : (nat64) -> (bool);
   delete_wasm : (text, text) -> (Result_1);
   dump_stable_memory : (opt nat64) -> (HttpResponse) query;
-  find_all_symbols : () -> (vec record { text; ExchangeRateRecord }) query;
+  find_all_symbols : () -> (vec record { text; vec ExchangeRateRecord }) query;
   find_backup_data : (nat64) -> (opt text);
   find_backup_lists : () -> (vec record { nat64; nat64 }) query;
   find_by_symbol : (text) -> (vec ExchangeRateRecord) query;
