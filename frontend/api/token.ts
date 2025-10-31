@@ -1,5 +1,4 @@
 import { showMessageError } from "@/utils/message";
-import { IDL } from "@dfinity/candid";
 import axios from "axios";
 import { getBackend } from "./canister_pool";
 import { BINANCE_URL } from "./constants/ic";
@@ -82,11 +81,36 @@ export const getYearTimestamps = (): YearTimestamp[] => {
   return timestamps;
 };
 
-// 定义 record 和 vec
-const HistoryRecord = IDL.Record({
-  time: IDL.Nat64,
-  price: IDL.Float64,
-});
+/**
+ * 获取指定币种的当前平均价格（5分钟平均价）
+ * @param tokenSymbol 币种符号，如 "ICP"、"BTC"
+ * @returns Promise<number>
+ */
+export const getTokenPrice = async (tokenSymbol: string): Promise<number> => {
+  try {
+    const url = `${BINANCE_URL}/api/v3/avgPrice`;
+    const params = {
+      symbol: `${tokenSymbol.toUpperCase()}USDT`,
+    };
+
+    const response = await axios.get(url, { params });
+
+    if (response.status === 200) {
+      const { mins, price, closeTime } = response.data;
+      console.log("getTokenPrice", mins, price, closeTime);
+      return Number(price);
+    } else {
+      throw new Error(`Unexpected status code: ${response.status}`);
+    }
+  } catch (error: any) {
+    const msg =
+      error?.response?.data?.msg ||
+      `Can not connect Binance api to get ${tokenSymbol} avg price, please check network or try later`;
+    showMessageError(msg);
+    console.error(`Error fetching ${tokenSymbol} avg price:`, error);
+    throw error;
+  }
+};
 
 /**
  * 按顺序分批导入历史记录（每批 200 条）
@@ -97,35 +121,19 @@ export async function importHistoryRecords(
   symbol: string,
   history: [number, number][]
 ): Promise<void> {
-  const BATCH_SIZE = 200;
+  const BATCH_SIZE = 20;
   const results: any[] = [];
-  for (let i = 0; i < history.length; i += BATCH_SIZE) {
+  for (let i = 0; i < 40; i += BATCH_SIZE) {
     const batch = history.slice(i, i + BATCH_SIZE);
-    console.log("batch", batch);
-    const blob = encodeHistoryToCandidBlob(batch); // 转为 blob
-    console.log(blob);
     // 转换 time 为 BigInt，保持 price 不变
     // 串行调用：等待当前批次完成后再进行下一批
-    const result = await getBackend().import_history_records(symbol, blob);
+    const result = await getBackend().import_history_records(
+      symbol,
+      batch.map(([time, price]) => [BigInt(time), price])
+    );
     console.log("res", i, result);
     results.push(result);
   }
   console.log("importReocrd", results);
   // 无返回值，或返回 void
-}
-
-/**
- * 把 [[number, number], ...] 序列化为 Candid blob
- */
-function encodeHistoryToCandidBlob(history: [number, number][]): Uint8Array {
-  // 转为 Candid 需要的格式: [{ time: bigint, price: number }, ...]
-  const candidData = history.map(([time, price]) => ({
-    time: BigInt(time),
-    price: price,
-  }));
-  const HistoryVec = IDL.Vec(HistoryRecord);
-  // 正确方式：使用 IDL.encode([type], [value])
-  const buffer = IDL.encode([HistoryVec], [candidData]);
-
-  return new Uint8Array(buffer);
 }
