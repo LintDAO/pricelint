@@ -121,9 +121,9 @@ export async function importHistoryRecords(
   symbol: string,
   history: [number, number][]
 ): Promise<void> {
-  const BATCH_SIZE = 20;
+  const BATCH_SIZE = 200;
   const results: any[] = [];
-  for (let i = 0; i < 40; i += BATCH_SIZE) {
+  for (let i = 0; i < history.length; i += BATCH_SIZE) {
     const batch = history.slice(i, i + BATCH_SIZE);
     // 转换 time 为 BigInt，保持 price 不变
     // 串行调用：等待当前批次完成后再进行下一批
