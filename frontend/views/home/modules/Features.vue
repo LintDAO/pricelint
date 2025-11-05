@@ -1,179 +1,40 @@
 <template>
-  <section
-    class="q-pa-xl"
-    style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)"
-  >
-    <div class="row justify-center container">
-      <!-- Header -->
-      <div class="text-center header">
-        <h2 class="text-h3 text-weight-bold q-mb-xl text-primary">
-          Revolutionary
-          <span class="text-secondary">AI Infrastructure</span>
-        </h2>
-        <p class="text-h6 text-grey-7 q-mb-none">
-          Experience the future of decentralized AI with our cutting-edge
-          platform that combines blockchain technology with advanced machine
-          learning capabilities.
-        </p>
-      </div>
+  <section class="features-section">
+    <!-- Section Header -->
+    <div class="section-header">
+      <h2 class="section-title">Core Features</h2>
+      <p class="section-subtitle">
+        Powerful capabilities designed for the future
+      </p>
+    </div>
 
-      <!-- Features Grid -->
-      <div class="row q-col-gutter-lg features">
-        <!-- On-Chain AI Feature -->
-        <div class="col-12 col-md-6">
-          <q-card
-            class="feature-card q-pa-lg"
-            flat
-            bordered
-            @mouseenter="onHover(0)"
-            @mouseleave="onLeave(0)"
-            :class="{ 'feature-card-hover': hoveredCard === 0 }"
-          >
-            <div class="row items-center q-mb-md">
-              <q-avatar
-                size="48px"
-                class="q-mr-md"
-                style="background: linear-gradient(45deg, #1976d2, #42a5f5)"
-              >
-                <q-icon name="memory" color="white" size="24px" />
-              </q-avatar>
-              <div class="text-h5 text-weight-bold text-grey-9">
-                On-Chain AI
-              </div>
+    <!-- Features Grid -->
+    <div class="features-grid">
+      <q-card
+        v-for="feature in features"
+        :key="feature.id"
+        flat
+        bordered
+        class="feature-card"
+        :style="{ '--gradient': feature.gradient }"
+      >
+        <q-card-section class="card-content">
+          <!-- Icon with gradient background -->
+          <div class="icon-wrapper">
+            <div class="icon-bg">
+              <q-icon :name="feature.icon" size="2rem" class="feature-icon" />
             </div>
-            <p class="text-body1 text-grey-7 q-mb-md">
-              LSTM models run directly in Canisters using the ic-burn framework,
-              enabling true chain-native inference without external
-              dependencies.
-            </p>
-            <!-- <q-btn
-              flat
-              no-caps
-              color="primary"
-              icon-right="arrow_forward"
-              class="q-pa-none"
-            >
-              Learn more
-            </q-btn> -->
-          </q-card>
-        </div>
+          </div>
 
-        <!-- One-Click Deployment Feature -->
-        <div class="col-12 col-md-6">
-          <q-card
-            class="feature-card q-pa-lg"
-            flat
-            bordered
-            @mouseenter="onHover(1)"
-            @mouseleave="onLeave(1)"
-            :class="{ 'feature-card-hover': hoveredCard === 1 }"
-          >
-            <div class="row items-center q-mb-md">
-              <q-avatar
-                size="48px"
-                class="q-mr-md"
-                style="background: linear-gradient(45deg, #388e3c, #66bb6a)"
-              >
-                <q-icon name="rocket_launch" color="white" size="24px" />
-              </q-avatar>
-              <div class="text-h5 text-weight-bold text-grey-9">
-                One-Click Deployment
-              </div>
-            </div>
-            <p class="text-body1 text-grey-7 q-mb-md">
-              Deploy multiple Canisters effortlessly with pre-configured models
-              or customize your own. Get up and running in minutes, not hours.
-            </p>
-            <!-- <q-btn
-              flat
-              no-caps
-              color="positive"
-              icon-right="arrow_forward"
-              class="q-pa-none"
-            >
-              Start deploying
-            </q-btn> -->
-          </q-card>
-        </div>
+          <!-- Title -->
+          <h3 class="feature-title q-mt-md q-mb-sm">{{ feature.title }}</h3>
 
-        <!-- Real-Time Data Streams Feature -->
-        <div class="col-12 col-md-6">
-          <q-card
-            class="feature-card q-pa-lg"
-            flat
-            bordered
-            @mouseenter="onHover(2)"
-            @mouseleave="onLeave(2)"
-            :class="{ 'feature-card-hover': hoveredCard === 2 }"
-          >
-            <div class="row items-center q-mb-md">
-              <q-avatar
-                size="48px"
-                class="q-mr-md"
-                style="background: linear-gradient(45deg, #7b1fa2, #ba68c8)"
-              >
-                <q-icon name="timeline" color="white" size="24px" />
-              </q-avatar>
-              <div class="text-h5 text-weight-bold text-grey-9">
-                Real-Time Data Streams
-              </div>
-            </div>
-            <p class="text-body1 text-grey-7 q-mb-md">
-              Data Farmer streams deliver predictive insights directly to
-              traders, enabling informed decision-making with live market
-              intelligence.
-            </p>
-            <!-- <q-btn
-              flat
-              no-caps
-              color="secondary"
-              icon-right="arrow_forward"
-              class="q-pa-none"
-            >
-              View streams
-            </q-btn> -->
-          </q-card>
-        </div>
-
-        <!-- Community-Driven Feature -->
-        <div class="col-12 col-md-6">
-          <q-card
-            class="feature-card q-pa-lg"
-            flat
-            bordered
-            @mouseenter="onHover(3)"
-            @mouseleave="onLeave(3)"
-            :class="{ 'feature-card-hover': hoveredCard === 3 }"
-          >
-            <div class="row items-center q-mb-md">
-              <q-avatar
-                size="48px"
-                class="q-mr-md"
-                style="background: linear-gradient(45deg, #f57c00, #ffb74d)"
-              >
-                <q-icon name="groups" color="white" size="24px" />
-              </q-avatar>
-              <div class="text-h5 text-weight-bold text-grey-9">
-                Community-Driven
-              </div>
-            </div>
-            <p class="text-body1 text-grey-7 q-mb-md">
-              Harness the power of crowdsourced intelligence. Our community
-              continuously improves model accuracy through collaborative
-              contributions.
-            </p>
-            <!-- <q-btn
-              flat
-              no-caps
-              color="orange"
-              icon-right="arrow_forward"
-              class="q-pa-none"
-            >
-              Join community
-            </q-btn> -->
-          </q-card>
-        </div>
-      </div>
+          <!-- Description -->
+          <p class="feature-description q-ma-none">
+            {{ feature.description }}
+          </p>
+        </q-card-section>
+      </q-card>
     </div>
   </section>
 </template>
@@ -181,39 +42,171 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-const hoveredCard = ref<number | null>(null);
+interface Feature {
+  id: number;
+  icon: string;
+  title: string;
+  description: string;
+  gradient: string;
+}
 
-const onHover = (index: number) => {
-  hoveredCard.value = index;
-};
-
-const onLeave = (index: number) => {
-  hoveredCard.value = null;
-};
+const features = ref<Feature[]>([
+  {
+    id: 0,
+    icon: "memory",
+    title: "On-Chain AI",
+    description:
+      "LSTM models run directly in Canisters using the ic-burn framework, enabling true chain-native inference without external dependencies.",
+    gradient: "linear-gradient(135deg, #1976d2, #42a5f5)",
+  },
+  {
+    id: 1,
+    icon: "rocket_launch",
+    title: "One-Click Deployment",
+    description:
+      "Deploy multiple Canisters effortlessly with pre-configured models or customize your own. Get up and running in minutes, not hours.",
+    gradient: "linear-gradient(135deg, #388e3c, #66bb6a)",
+  },
+  {
+    id: 2,
+    icon: "timeline",
+    title: "Real-Time Data Streams",
+    description:
+      "Data Farmer streams deliver predictive insights directly to traders, enabling informed decision-making with live market intelligence.",
+    gradient: "linear-gradient(135deg, #7b1fa2, #ba68c8)",
+  },
+  {
+    id: 3,
+    icon: "groups",
+    title: "Community-Driven",
+    description:
+      "Harness the power of crowdsourced intelligence. Our community continuously improves model accuracy through collaborative contributions.",
+    gradient: "linear-gradient(135deg, #f57c00, #ffb74d)",
+  },
+]);
 </script>
 
-<style scoped>
-.header {
-  margin-bottom: 88px;
+<style scoped lang="scss">
+.features-section {
+  position: relative;
+  padding: 4rem 2rem;
+  background: #f8f9fa; // Light neutral background instead of dark
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: auto;
 }
-.features {
-  margin-bottom: 100px;
+
+.section-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  max-width: 600px;
 }
+
+.section-title {
+  font-size: clamp(2rem, 5vw, 2.5rem);
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.5px;
+}
+
+.section-subtitle {
+  font-size: 1.1rem;
+  color: #666666;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 1200px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  @media (min-width: 769px) and (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1025px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 .feature-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid #e8e8e8;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  height: 100%;
+
+  &:hover {
+    border-color: var(--gradient);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    transform: translateY(-4px);
+  }
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.icon-wrapper {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.icon-bg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  background: var(--gradient);
+  opacity: 0.15;
   transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  min-height: 230px;
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    background: var(--gradient);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .feature-card:hover & {
+    opacity: 0.2;
+  }
 }
 
-.feature-card-hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+.feature-icon {
+  color: #1a1a1a;
 }
 
-.feature-card:hover {
-  background: rgba(255, 255, 255, 0.95);
+.feature-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1.3;
+}
+
+.feature-description {
+  font-size: 0.9rem;
+  color: #666666;
+  line-height: 1.6;
 }
 </style>
