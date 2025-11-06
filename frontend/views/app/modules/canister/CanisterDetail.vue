@@ -281,26 +281,26 @@
                 <span>{{ item.description }}</span>
               </div>
 
-              <div class="q-mt-md">
+              <div class="q-mt-md q-gutter-sm">
                 <q-btn
                   v-if="item.id > 1"
                   flat
                   color="grey-7"
                   label="Back"
-                  @click="activeStep--"
+                  @click.stop="activeStep--"
                 />
                 <q-btn
                   v-if="item.id < quickStartItems.length"
                   color="primary"
                   label="Next"
-                  @click="activeStep++"
+                  @click.stop="activeStep++"
                 />
                 <!-- TODO 点击完成任务以后应该隐藏整个页面-->
                 <q-btn
                   v-if="item.id === quickStartItems.length"
                   color="positive"
                   label="Complete"
-                  @click="completeQuickStart"
+                  @click.stop="completeQuickStart"
                 />
               </div>
             </q-step>

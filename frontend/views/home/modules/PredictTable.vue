@@ -173,6 +173,7 @@
 </template>
 
 <script lang="ts" setup>
+import { showPredictions } from "@/api/canisters";
 import { MARKETS } from "@/api/constants/markets";
 import { TOKENS } from "@/api/constants/tokens";
 import { getTokenPrice } from "@/api/token";
@@ -226,6 +227,9 @@ const updateTable = debounce(async () => {
   loading.value = true;
   const now = new Date(); // 当前时间
   const times = getTimeLabels(now); // 获取时间标签
+  showPredictions().then((res) => {
+    console.log("showPredictions", res);
+  });
 
   // 设置 columns
   columns.value = [

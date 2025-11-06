@@ -88,6 +88,7 @@ const features = ref<Feature[]>([
 
 <style scoped lang="scss">
 .features-section {
+  min-height: 100vh;
   position: relative;
   padding: 4rem 2rem;
   background: #f8f9fa; // Light neutral background instead of dark
@@ -95,7 +96,6 @@ const features = ref<Feature[]>([
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: auto;
 }
 
 .section-header {
@@ -174,7 +174,7 @@ const features = ref<Feature[]>([
   height: 56px;
   border-radius: 8px;
   background: var(--gradient);
-  opacity: 0.15;
+  opacity: 0.85;
   transition: all 0.3s ease;
   position: relative;
 
@@ -187,14 +187,11 @@ const features = ref<Feature[]>([
     opacity: 0;
     transition: opacity 0.3s ease;
   }
-
-  .feature-card:hover & {
-    opacity: 0.2;
-  }
 }
 
 .feature-icon {
-  color: #1a1a1a;
+  color: #000000; // 纯黑，最高对比
+  font-weight: 500;
 }
 
 .feature-title {
