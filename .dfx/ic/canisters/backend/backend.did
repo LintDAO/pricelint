@@ -125,6 +125,7 @@ type PredictorView = record {
   last_2 : opt PredictorResult;
   stake : record { float64; float64 };
   create_time : nat64;
+  token_name : text;
   accuracy : float64;
 };
 type PriceData = record {
@@ -137,7 +138,7 @@ type PriceData = record {
 };
 type Result = variant { Ok; Err : text };
 type Result_1 = variant { Ok : WasmFile; Err : text };
-type Result_10 = variant { Ok : PredictorView; Err : text };
+type Result_10 = variant { Ok : vec PredictorView; Err : text };
 type Result_11 = variant { Ok : User; Err : text };
 type Result_2 = variant { Ok : GetBlocksResponse; Err : text };
 type Result_3 = variant { Ok : text; Err : text };

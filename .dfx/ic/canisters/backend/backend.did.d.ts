@@ -131,6 +131,7 @@ export interface PredictorView {
   'last_2' : [] | [PredictorResult],
   'stake' : [number, number],
   'create_time' : bigint,
+  'token_name' : string,
   'accuracy' : number,
 }
 export interface PriceData {
@@ -145,7 +146,7 @@ export type Result = { 'Ok' : null } |
   { 'Err' : string };
 export type Result_1 = { 'Ok' : WasmFile } |
   { 'Err' : string };
-export type Result_10 = { 'Ok' : PredictorView } |
+export type Result_10 = { 'Ok' : Array<PredictorView> } |
   { 'Err' : string };
 export type Result_11 = { 'Ok' : User } |
   { 'Err' : string };

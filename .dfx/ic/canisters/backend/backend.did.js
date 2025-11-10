@@ -226,9 +226,13 @@ export const idlFactory = ({ IDL }) => {
     'last_2' : IDL.Opt(PredictorResult),
     'stake' : IDL.Tuple(IDL.Float64, IDL.Float64),
     'create_time' : IDL.Nat64,
+    'token_name' : IDL.Text,
     'accuracy' : IDL.Float64,
   });
-  const Result_10 = IDL.Variant({ 'Ok' : PredictorView, 'Err' : IDL.Text });
+  const Result_10 = IDL.Variant({
+    'Ok' : IDL.Vec(PredictorView),
+    'Err' : IDL.Text,
+  });
   const DurationRange = IDL.Variant({
     'Microseconds' : IDL.Null,
     'Minutes' : IDL.Null,
