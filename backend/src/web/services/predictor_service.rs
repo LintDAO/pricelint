@@ -2,14 +2,15 @@ use crate::common::utils::xrc;
 use crate::common::utils::xrc::{
     Asset, AssetClass, ExchangeRate, GetExchangeRateRequest, GetExchangeRateResult,
 };
-use crate::impl_storable::ExchangeRateRecord;
+use crate::impl_storable::{ExchangeRateRecord, ExchangeRateRecordKey};
 use crate::web::common::constants::{
     API_VERSION, BASE_BIANCE_API, BIANCE_KLINES_API, BIANCE_TICKER_API, XRC_CANISTER_ID,
 };
 use crate::web::models::context::Context;
 use crate::web::models::predictor_model::Predictor;
 use crate::{
-    map_get, map_insert, Memory, EXCHANGE_RATE, PREDICTOR_CONTEXT, STAKE, STATE_MAP, USER_CONTEXT,
+    map_get, map_insert, Memory, EXCHANGE_RATE, PREDICTOR_CONTEXT, STAKE, STAKING_RECORD,
+    STATE_MAP, USER_CONTEXT,
 };
 use candid::{Nat, Principal};
 use ic_cdk::api::management_canister::http_request::{
@@ -17,10 +18,11 @@ use ic_cdk::api::management_canister::http_request::{
 };
 use ic_cdk::api::time;
 use ic_cdk::caller;
+use ic_stable_structures::StableBTreeSet;
 use lazy_static::lazy_static;
 use proc_macro::{generate_service_impl, generate_service_trait};
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::iter::Sum;
 use std::ops::Deref;
 use std::thread::LocalKey;
@@ -34,12 +36,10 @@ pub trait ExtendPredictorService: PredictorService {
 
     fn predictor_config();
 
-    // call predictor results
-    fn get_predictor_results() -> f32;
-    fn get_last_pred(principal: Principal) -> Vec<Predictor>;
-    fn get_accuracy() -> f64;
+    fn get_accuracy() -> BTreeMap<String, f64>;
 
-    fn get_total_stake() -> u64;
+    fn get_total_stake() -> std::collections::BTreeMap<String, u64>;
+
     async fn get_exchange_rate(
         base_asset: Asset,
         quote_asset: Asset,
@@ -47,85 +47,103 @@ pub trait ExtendPredictorService: PredictorService {
 
     //每隔一段时间存储一条预测数据 并且调用的是用户的canisters
     async fn autosave_predictor() -> Result<(), String>;
+
     async fn autosave_exchange_rate() -> Result<(), String>;
-    fn get_total_stake_24hours() -> f64;
-    fn get_stake_growth_rate() -> f64;
+
+    fn get_real_stake_24hours() -> BTreeMap<String, u64>;
+
+    fn get_real_stake_util_yesterday() -> BTreeMap<String, u64>;
+
+    fn get_stake_growth_rate() -> BTreeMap<String, f64>;
+
+    fn get_total_stake_util_yesterday() -> BTreeMap<String, u64>;
 }
 impl ExtendPredictorService for Predictor {
     fn predictor_config() {
         todo!()
     }
 
-    fn get_predictor_results() -> f32 {
-        //todo 暂定如此  后续逻辑需修改 或者重写预测的具体过程和数据存储
-        // predict()
-        1.0
+
+
+    fn get_accuracy() -> BTreeMap<String, f64> {
+        let x:BTreeMap<String,f64>=BTreeMap::new();
+        return x;
     }
 
-    //获取最后两次数据 数据不足则获取一次
-    fn get_last_pred(principal: Principal) -> Vec<Predictor> {
-        let mut predictors: Vec<Predictor> = MAP.with(|map| {
-            map.borrow()
-                .iter()
-                .filter(|(_, p)| p.owner.unwrap() == principal)
-                .map(|(_, p)| p.context.unwrap())
-                .collect()
-        });
-
-        predictors.sort_by(|a, b| b.create_time.cmp(&a.create_time));
-        predictors.into_iter().take(2).collect() // 取最新的两个
-    }
-
-    fn get_accuracy() -> f64 {
-        MAP.with(|map| {
-            let mut borrowed_map = map.borrow_mut();
-            //预测所有人的,总人数是所有已经预测了的,也就是 predictor.trend!="none"的
-            let mut current_user_predictors = borrowed_map
-                .iter()
-                .filter(|(_, p)| p.clone().context.unwrap().trend.is_some());
-            //预测正确的
-            let true_count = current_user_predictors
-                .by_ref()
-                .filter(|(_, v)| {
-                    let predictor = v.clone().context.unwrap();
-                    //匹配已有实际结果的predictor历史 不匹配尚未预测的和正在预测的
-                    if let Some(_) = predictor.trend {
-                        //预测结果与实际结果相等
-                        if predictor.trend.unwrap() == predictor.pred.trend {
-                            return true;
-                        }
-                    }
-                    return false;
-                })
-                .count();
-
-            let total_count = current_user_predictors.count().clone();
-            (true_count as f64 / total_count as f64)
-        })
-    }
-
-    //获取当前所有用户质押的总金额
-    //OK
-    fn get_total_stake() -> u64 {
+    //获取当前所有用户质押的总金额(OK)
+    fn get_total_stake() -> BTreeMap<String, u64> {
         STAKE.with_borrow_mut(|r| {
-            let total_stake = r.iter().map(|(_, v)| {
-                u64::try_from(&v.token_balance.0).unwrap()
-            }).sum::<u64>();
-           total_stake
+            r.iter()
+                .fold(BTreeMap::new(), |mut acc, (_k, v)| {
+                    if let Ok(stake) = u64::try_from(&v.token_balance.0) {
+                        *acc.entry(v.stake_detail.token_name.clone()).or_insert(0) += stake;
+                    }
+                    acc
+                })
+                .into_iter()
+                .collect()
         })
     }
-
-    fn get_total_stake_24hours() -> f64 {
-        0.0
+    //获取到昨天24：00的质押实际金额(OK)
+    fn get_real_stake_util_yesterday() -> BTreeMap<String, u64> {
+        let yesterday_staking_token = STAKING_RECORD.with_borrow_mut(|rc| {
+            let now = time();
+            let seconds_per_day = 24 * 60 * 60;
+            let yesterday_start = (now / seconds_per_day - 1) * seconds_per_day;
+            let yesterday_end = yesterday_start + seconds_per_day - 1;
+            let until_yesterday_end = rc.iter().filter(|(_, v)| {
+                v.cost.is_none()
+                    && v.reward.is_none()
+                    && yesterday_start <= v.stake_time
+                    && v.stake_time <= yesterday_end
+            }).fold(BTreeMap::new(), |mut acc, (_k, v)| {
+                *acc.entry(v.token_name).or_insert(0) +=v.amount;
+                acc
+            });
+            until_yesterday_end
+        });
+        yesterday_staking_token
     }
-    fn get_stake_growth_rate() -> f64 {
-        let growth_rate =
-            (Self::get_total_stake() - Self::get_total_stake()) / Self::get_total_stake();
-        0.0 * 100.0
+
+    //24小时内质押的实际金额  ,从昨天24：00开始到现在的时间 (OK)
+    fn get_real_stake_24hours() -> BTreeMap<String, u64> {
+        STAKING_RECORD.with_borrow_mut(|rc| {
+            let now = time();
+            let seconds_per_day = 24 * 60 * 60;
+            let yesterday_start = (now / seconds_per_day - 1) * seconds_per_day;
+            let yesterday_end = yesterday_start + seconds_per_day - 1;
+            let total_stake_24hours = rc.iter().filter(|(_, v)| {
+                v.cost.is_none()
+                    && v.reward.is_none()
+                    && yesterday_end <= v.stake_time
+                    && v.stake_time <= now
+            }).fold(BTreeMap::new(), |mut acc, (_k, v)| {
+                *acc.entry(v.token_name).or_insert(0) +=v.amount;
+                acc
+            });
+            total_stake_24hours
+        })
     }
     
+    fn get_total_stake_util_yesterday() -> BTreeMap<String, u64> {
+        Self::get_real_stake_util_yesterday()
+    }
+    //质押增长率 24小时计（OK)
+    fn get_stake_growth_rate() -> BTreeMap<String, f64> {
+        let yesterday_staking_token = Self::get_total_stake_util_yesterday();
+        let now_staking_token = Self::get_total_stake();
+        let mut stake_growth_rate = BTreeMap::new();
+        for (token_name, now_stake) in now_staking_token.iter() {
+            let yesterday_stake = yesterday_staking_token.get(token_name).unwrap_or(&0);
+            let growth_rate = (*now_stake  - *yesterday_stake ) as f64
+                / (*yesterday_stake as f64);
+            stake_growth_rate.insert(token_name.clone(), growth_rate);
+        }
+        stake_growth_rate
+    }
+
     //获取当前的汇率 从xrc canister获取
-    //OK    
+    //OK
     async fn get_exchange_rate(
         base_asset: Asset,
         quote_asset: Asset,
@@ -189,18 +207,30 @@ impl ExtendPredictorService for Predictor {
         EXCHANGE_RATE.with(|rate| {
             let now = time();
             let mut borrowed_rate = rate.borrow_mut();
-            borrowed_rate.insert(ExchangeRateRecord {
-                symbol: ICP_SYMBOL.to_string() + TARGET_SYMBOL,
-                xrc_data: Some(icp_to_usdt.clone()),
-                exchange_rate: icp_to_usdt.clone().rate,
-                time: icp_to_usdt.clone().timestamp,
-            });
-            borrowed_rate.insert(ExchangeRateRecord {
-                symbol: BTC_SYMBOL.to_string() + TARGET_SYMBOL,
-                xrc_data: Some(btc_to_usdt.clone()),
-                exchange_rate: btc_to_usdt.clone().rate,
-                time: btc_to_usdt.clone().timestamp,
-            });
+            borrowed_rate.insert(
+                ExchangeRateRecordKey(
+                    ICP_SYMBOL.to_string() + TARGET_SYMBOL,
+                    icp_to_usdt.clone().timestamp,
+                ),
+                ExchangeRateRecord {
+                    symbol: ICP_SYMBOL.to_string() + TARGET_SYMBOL,
+                    xrc_data: Some(icp_to_usdt.clone()),
+                    exchange_rate: icp_to_usdt.clone().rate,
+                    time: icp_to_usdt.clone().timestamp,
+                },
+            );
+            borrowed_rate.insert(
+                ExchangeRateRecordKey(
+                    BTC_SYMBOL.to_string() + TARGET_SYMBOL,
+                    btc_to_usdt.clone().timestamp,
+                ),
+                ExchangeRateRecord {
+                    symbol: BTC_SYMBOL.to_string() + TARGET_SYMBOL,
+                    xrc_data: Some(btc_to_usdt.clone()),
+                    exchange_rate: btc_to_usdt.clone().rate,
+                    time: btc_to_usdt.clone().timestamp,
+                },
+            );
         });
 
         Ok(())

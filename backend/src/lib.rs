@@ -1,20 +1,13 @@
 #[macro_use]
 extern crate candid;
 
-use crate::impl_storable::{
-    BackupRecord, ExchangeRateRecord, StringVec, TempMapValue, TempVecValue, WasmFile,
-};
+use crate::impl_storable::{BackupRecord, ExchangeRateRecord, ExchangeRateRecordKey, Record, RecordKey, StakeRecordKey, StringVec, TempMapValue, TempVecValue, WasmFile};
 use crate::ml::api::default_api::State;
 use crate::ml::model::{default_model, record};
-use crate::web::common::constants::memory_manager::{
-    BACKUP_DATA_MEMORY_ID, CANISTER_LIST_MEMORY_ID, EXCHANGE_RATE_MEMORY_ID,
-    PREDICTOR_CONTEXT_MEMORY_ID, PREDICTOR_QUANTIFY_MEMORY_ID, ROLE_USER_TREE_MEMORY_ID,
-    STAKE_MEMORY_ID, TEMP_MAP_MEMORY_ID, TEMP_VEC_MEMORY_ID, USER_CONTEXT_MEMORY_ID,
-    WALLET_CONTEXT_MEMORY_ID, WASM_FILES_MEMORY_ID,
-};
+use crate::web::common::constants::memory_manager::{BACKUP_DATA_MEMORY_ID, CANISTER_LIST_MEMORY_ID, EXCHANGE_RATE_MEMORY_ID, PREDICTOR_CONTEXT_MEMORY_ID, PREDICTOR_QUANTIFY_MEMORY_ID, RECORD_MEMORY_ID, ROLE_USER_TREE_MEMORY_ID, STAKE_MEMORY_ID, STAKING_RECORD_MEMORY_ID, TEMP_MAP_MEMORY_ID, TEMP_VEC_MEMORY_ID, USER_CONTEXT_MEMORY_ID, WALLET_CONTEXT_MEMORY_ID, WASM_FILES_MEMORY_ID};
 use crate::web::models::context::Context;
-use crate::web::models::predictor_model::{Predictor, PredictorView};
-use crate::web::models::stake_model::Stake;
+use crate::web::models::predictor_model::{Prediction, Predictor, PredictorView};
+use crate::web::models::stake_model::{Stake, StakeRecord};
 use crate::web::models::user_model::User;
 use crate::web::models::wallet_model::Wallet;
 use candid::{CandidType, Principal};
@@ -82,26 +75,24 @@ init_stable_memory!(TEMP_MAP,TEMP_MAP_MEMORY_ID,map<String,TempMapValue<String>>
 
 init_stable_memory!(USER_CONTEXT,USER_CONTEXT_MEMORY_ID,map<String, Context<User>>);
 init_stable_memory!(WALLET_CONTEXT,WALLET_CONTEXT_MEMORY_ID,map<String, Context<Wallet>>);
+//存储单个预测结果
 init_stable_memory!(PREDICTOR_CONTEXT,PREDICTOR_CONTEXT_MEMORY_ID,map<String, Context<Predictor>>);
 init_stable_memory!(ROLE_USER_TREE,ROLE_USER_TREE_MEMORY_ID,map<String, StringVec>);
 init_stable_memory!(WASM_FILES,WASM_FILES_MEMORY_ID,map<String, WasmFile>);
-init_stable_memory!(EXCHANGE_RATE,EXCHANGE_RATE_MEMORY_ID,set<ExchangeRateRecord>);
-init_stable_memory!(
-    PREDICTOR_QUANTIFY,
-    PREDICTOR_QUANTIFY_MEMORY_ID,
-    vec<PredictorView>
-);
+init_stable_memory!(EXCHANGE_RATE,EXCHANGE_RATE_MEMORY_ID,map<ExchangeRateRecordKey,ExchangeRateRecord>);
+init_stable_memory!(PREDICTOR_QUANTIFY,PREDICTOR_QUANTIFY_MEMORY_ID,vec<PredictorView>);
 init_stable_memory!(STAKE,STAKE_MEMORY_ID,map<String,Stake>);
 init_stable_memory!(CANISTER_LIST,CANISTER_LIST_MEMORY_ID,map<String,StringVec>);
-// init_stable_memory!(XRC,XRC_MEMORY_ID,map<String,Vec<ExchangeRate>>);
+//存储预测各种结果数据
+//1.预测的聚合数据 PredictorView 2.历史预测数据 Prediction 3.总的质押金额（不是实际参与质押的金额）
+init_stable_memory!(RECORD,RECORD_MEMORY_ID,map<RecordKey,Record>);
+//质押staking具体的操作记录
+init_stable_memory!(STAKING_RECORD,STAKING_RECORD_MEMORY_ID,map<StakeRecordKey,StakeRecord>);
 
-//存储于内存的context上下文
-thread_local! {
-    //todo 备份
-}
 thread_local! {
     static RANDOM_BUFFER: RefCell<Vec<u8>> = RefCell::new(Vec::new());
 }
+
 
 mod common;
 mod ml;
@@ -109,8 +100,8 @@ mod web;
 
 pub mod impl_storable {
     use crate::common::utils::xrc::ExchangeRate;
-    use crate::web::models::predictor_model::PredictorView;
-    use crate::web::models::stake_model::Stake;
+    use crate::web::models::predictor_model::{Prediction, PredictorView};
+    use crate::web::models::stake_model::{Stake, StakeRecord};
     use crate::{impl_storable, Memory};
     use candid::{CandidType, Principal};
     use candid::{Decode, Encode};
@@ -120,6 +111,7 @@ pub mod impl_storable {
     use std::borrow::Cow;
     use std::cmp::Ordering;
     use std::collections::{BTreeMap, BTreeSet};
+    use icrc_ledger_types::icrc1::account::Account;
 
     #[derive(Deserialize, Serialize, Clone, CandidType)]
     pub struct StringVec(pub Vec<String>);
@@ -140,6 +132,10 @@ pub mod impl_storable {
     }
     impl_storable!(WasmFile);
 
+    //代币 时间 共同作为唯一键
+    #[derive(Serialize, Deserialize, Debug, Clone, CandidType)]
+    #[derive(Ord, PartialOrd, Eq, PartialEq)]
+    pub  struct ExchangeRateRecordKey(pub String,pub u64);
     //历史导入和xrc查询汇总
     #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
     pub struct ExchangeRateRecord {
@@ -148,28 +144,9 @@ pub mod impl_storable {
         pub exchange_rate: u64,
         pub time: u64,
     }
-
     impl_storable!(ExchangeRateRecord);
+    impl_storable!(ExchangeRateRecordKey);
 
-    impl PartialEq<Self> for ExchangeRateRecord {
-        fn eq(&self, other: &Self) -> bool {
-            self.time == other.time
-                && self.symbol == other.symbol
-                && self.exchange_rate == other.exchange_rate
-        }
-    }
-    impl Eq for ExchangeRateRecord {}
-
-    impl PartialOrd<Self> for ExchangeRateRecord {
-        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-            Some(self.cmp(other)) // 直接委托给 cmp
-        }
-    }
-    impl Ord for ExchangeRateRecord {
-        fn cmp(&self, other: &Self) -> Ordering {
-            self.time.cmp(&other.time)
-        }
-    }
 
     impl_storable!(PredictorView);
     impl_storable!(Stake);
@@ -204,6 +181,30 @@ pub mod impl_storable {
             is_fixed_size: false,
         };
     }
+    impl_storable!(StakeRecord);
+    impl_storable!(StakeRecordKey);
+    //通过token代币 用户  质押数据首次产生时间 唯一确认
+    #[derive(Serialize, Deserialize, Debug, Clone, CandidType)]
+    #[derive(Ord, PartialOrd, Eq, PartialEq)]
+    pub struct StakeRecordKey(String, Account, u64);
+
+    #[derive(Serialize, Deserialize, Debug, Clone, CandidType)]
+    #[derive(Ord, PartialOrd, Eq, PartialEq)]
+    pub enum RecordKey{
+        PredictorView(String,String),
+        Prediction(),
+        StakingJE(),
+    }
+
+    #[derive(Serialize, Deserialize, Debug, Clone, CandidType)]
+    #[derive(Ord, PartialOrd, Eq, PartialEq)]
+    pub enum Record{
+        PredictorView(String),
+        Prediction(String),
+        StakingJE(),
+    }
+    impl_storable!(Record);
+    impl_storable!(RecordKey);
 }
 
 pub mod export_candid {

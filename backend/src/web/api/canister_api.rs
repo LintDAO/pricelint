@@ -25,7 +25,7 @@ async fn get_canister_info() -> Result<String, String> {
     Ok(ret)
 }
 pub mod backup_api {
-    use crate::impl_storable::{ BackupRecord, ExchangeRateRecord, StringVec, TempMapValue, TempVecValue, WasmFile};
+    use crate::impl_storable::{BackupRecord, ExchangeRateRecord, ExchangeRateRecordKey, StringVec, TempMapValue, TempVecValue, WasmFile};
     use crate::web::common::constants::memory_manager::EXPORT_MEMORY_IDS;
     use crate::web::common::errors::BtreeMapError;
     use crate::web::models::context::Context;
@@ -87,7 +87,7 @@ pub mod backup_api {
         predictor_context_data: Vec<(String, Context<Predictor>)>,
         role_user_tree_data: Vec<(String, StringVec)>,
         wasm_files_data: Vec<(String, WasmFile)>,
-        exchange_rate_data: Vec<ExchangeRateRecord>,
+        exchange_rate_data: Vec<(ExchangeRateRecordKey,ExchangeRateRecord)>,
         predictor_quantify_data: Vec<PredictorView>,
         stake_data: Vec<(String, Stake)>,
         canister_list_data: Vec<(String, StringVec)>,
@@ -221,7 +221,7 @@ pub mod backup_api {
         restore_from_data!(PREDICTOR_CONTEXT,export_data.predictor_context_data,map);
         restore_from_data!(ROLE_USER_TREE,export_data.role_user_tree_data,map);
         restore_from_data!(WASM_FILES,export_data.wasm_files_data,map);
-        restore_from_data!(EXCHANGE_RATE,export_data.exchange_rate_data,set);
+        restore_from_data!(EXCHANGE_RATE,export_data.exchange_rate_data,map);
         restore_from_data!(PREDICTOR_QUANTIFY,export_data.predictor_quantify_data,vec);
         restore_from_data!(STAKE,export_data.stake_data,map);
         restore_from_data!(CANISTER_LIST,export_data.canister_list_data,map);

@@ -166,7 +166,7 @@ pub struct WithdrawArgs {
 pub struct Stake{
     pub id:String,
     pub account:Account,
-    pub token_balance:Nat, //质押金额
+    pub token_balance:Nat, //PCL质押金额
     pub lock_period_days :u64, //质押周期 天
     pub unlock_time :u64,    //解除锁定的时间戳
     pub last_op_time:u64,   //最后操作时间
@@ -177,6 +177,8 @@ pub struct Stake{
 pub struct StakeDetail {
     //质押比例
     pub staking_percentage:f64,
+    //质押的token的名字
+    pub token_name:String,
 }
 
 
@@ -196,4 +198,40 @@ pub struct StakeInfo{
 
     //操作时间
     pub time:u64,
+}
+
+//具体质押操作记录
+//解质押只能解除没有参与质押的,记录这部分是参与了质押的只能被消耗回收
+#[derive(CandidType, Deserialize, Serialize,Clone)]
+pub struct StakeRecord{
+    //操作账户
+    pub account: Account,
+    //质押时间
+    pub stake_time:u64,
+    //质押代币被回收或者消耗
+    pub cost:Option<Recycle>,
+    //质押的奖励发放
+    pub reward:Option<Reward>,
+    //操作金额
+    pub amount:u64,
+    //是否质押状态 
+    //不在质押状态就是被回收或者奖励了
+    pub is_staking:bool,
+    //质押目标token的名字也，就是你使用了我们的代币对什么token进行质押
+    pub token_name:String,
+}
+//回收
+#[derive(CandidType, Deserialize, Serialize,Clone)]
+pub  struct Recycle{
+    //回收代币的时间
+    pub time:u64,
+}
+//奖励
+#[derive(CandidType, Deserialize, Serialize,Clone)]
+pub struct Reward{
+    //奖励发放的时间
+    pub time:u64,
+    //额外奖励金额=其他未质押中的金额的加权平均，根据质押的金额加权
+    //总奖励金额=质押金额+额外奖励金额
+    pub reward_amount:u64
 }

@@ -292,7 +292,8 @@ pub mod stake {
                                         last_op_time: now_time,
                                         stake_detail: StakeDetail {
                                             //todo 后续修改
-                                            staking_percentage: 0.0,    
+                                            staking_percentage: 0.0,
+                                            token_name: "".to_string(),
                                         },
                                     };
                                     map.borrow_mut().insert(caller().to_string(), new_stake);

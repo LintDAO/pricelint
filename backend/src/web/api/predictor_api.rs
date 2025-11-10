@@ -33,59 +33,45 @@ fn get_predictor_vec() -> Result<Vec<Predictor>, String> {
     }
 }
 
-// 查询自己的数据+公共数据
-#[query(guard = "is_named_user")]
-fn show_predictions() -> Result<PredictorView, String> {
-    let mut view = PredictorView {
-        id: format!("{}{}", caller(), time()),
-        last_2: None,
-        last_1: None,
-        now: None, // TODO:前端
-        next: None,
-        accuracy: Predictor::get_accuracy(),
-        stake: (
-            Predictor::get_total_stake().to_f64().div(10f64.powf(8f64)),
-            Predictor::get_stake_growth_rate(),
-        ),
-        create_time: time(),
+// 查询聚合数据
+//目前是请求一次查询一次 以后可能修改成从记录里定时查询数据
+#[query]
+fn show_predictions() -> Result<Vec<PredictorView>, String> {
+    let accuracy = Predictor::get_accuracy();
+    let total_stake = Predictor::get_total_stake();
+    let t1=PredictorResult{
+        price: Some(12.1),
+        trend: Some("up".to_string()),
+        pred: Pred{
+            staked: 22.0,
+            up: 12.0,
+            down: 10.0,
+            trend: "up".to_string(),
+        },
+};
+    let mut view1=PredictorView{
+        id: "".to_string(),
+        token_name: "ICPUSDT".to_string(),
+        last_2: Some(t1.clone()),
+        last_1: Some(t1.clone()),
+        now: None,
+        next: Some(t1.clone()),
+        accuracy: 0.0,
+        stake: (12.0, 13.0),
+        create_time: 0,
     };
-
-    //todo 完成质押代币
-
-    let view_vec = PREDICTOR_QUANTIFY.with(|map| {
-        map.borrow()
-            .iter()
-            .map(|p| p.clone())
-            .collect::<Vec<PredictorView>>()
-    });
-    if view_vec.len() <= 0 {
-        return Err(NotExistedPredictions.to_string());
-    } else if view_vec.len() == 1 {
-        view.last_1 = Some(view_vec.get(0).unwrap().last_1.clone().unwrap());
-        view.last_2 = None;
-    } else if view_vec.len() >= 2 {
-        if let [.., last3, last2, last1] = view_vec.as_slice() {
-            if last1.next.is_none() {
-                //如果最后一个数据next为空 则说明尚未开始预测 则历史数据最新两条为last_2和last_3 , last_1为正在预测或者尚未预测的数据
-                view.last_1 = Some(last2.last_1.clone().unwrap());
-                view.last_2 = Some(last3.last_2.clone().unwrap());
-                view.next = Some(PredictorResult {
-                    price: Some(1.0),
-                    trend: Some("up".to_string()),
-                    pred: Pred {
-                        staked: 1.0,
-                        up: 1.0,
-                        down: 1.0,
-                        trend: "up".to_string(),
-                    },
-                })
-            } else {
-                //next 不为空  查看
-            }
-            //TODO: pop旧的 push新的
-        }
-    }
-    Ok(view)
+    let mut view2=PredictorView{
+        id: "".to_string(),
+        token_name: "ICPUSDT".to_string(),
+        last_2: Some(t1.clone()),
+        last_1: Some(t1.clone()),
+        now: None,
+        next: Some(t1.clone()),
+        accuracy: 0.0,
+        stake: (11.0, 15.0),
+        create_time: 0,
+    };
+    Ok(vec![view1,view2])
 }
 
 //用户推送预测结果到我们的canisters ,只允许安装了pred的功能的canisters调用此api
@@ -102,7 +88,7 @@ async fn push_user_pred(predictor: Predictor) -> Result<Predictor, String> {
 }
 
 pub mod exchange_rate_api {
-    use crate::impl_storable::ExchangeRateRecord;
+    use crate::impl_storable::{ExchangeRateRecord, ExchangeRateRecordKey};
     use crate::{Memory, EXCHANGE_RATE};
     use burn::tensor::cast::ToElement;
     use candid::pretty::utils::str;
@@ -122,6 +108,7 @@ pub mod exchange_rate_api {
     use std::sync::Arc;
     use std::thread;
     use std::time::Duration;
+    use crate::impl_storable::TempMapValue::BtreeMap;
 
     // 导入历史数据
     // 导入大量数据的时候可能因为内存泄漏或者循环引用原因导致短期内增长大量的内存触发icp的机制导致panic
@@ -137,41 +124,27 @@ pub mod exchange_rate_api {
         // let mut data: Vec<(u64, f64)> =serde_json::from_slice(&history_data).map_err(|e| e.to_string())?;
         let mut vec_exchange_rate = history_data
             .iter()
-            .map(|&(time, exchange_rate)| ExchangeRateRecord {
-                symbol: Cow::Borrowed(&symbol).into_owned(),
-                xrc_data: None,
-                exchange_rate: (exchange_rate * 10_f64.powf(8f64)) as u64,
-                time,
+            .map(|&(time, exchange_rate)| {
+                let k= ExchangeRateRecordKey(symbol.clone(), time);
+                let v=ExchangeRateRecord {
+                    symbol: Cow::Borrowed(&symbol).into_owned(),
+                    xrc_data: None,
+                    exchange_rate: (exchange_rate * 10_f64.powf(8f64)) as u64,
+                    time,
+                };
+                (k,v)
             })
             .collect::<Vec<_>>();
-        const CHUNK_SIZE: usize = 100;
-        let chunks: Vec<_> = vec_exchange_rate
-            .chunks(CHUNK_SIZE)
-            .map(|chunk| chunk.to_vec())
-            .collect();
-        let mut count = 0;
-        for chunk in chunks {
-            count += 1;
-            ic_cdk::println!("count size: {} {}", count, chunk.len());
-            batch_insert_exchange_rates(chunk).map_err(|j| j.to_string())?;
-        }
 
+            EXCHANGE_RATE.with(|rc|{
+                let mut map = rc.borrow_mut();
+                for (k,v) in vec_exchange_rate.into_iter() {
+                    map.insert(k,v);
+                }
+            });
         Ok(())
     }
-    fn batch_insert_exchange_rates(records: Vec<ExchangeRateRecord>) -> Result<(), String> {
-        let strong = Rc::new(&EXCHANGE_RATE);
-        let weak = Rc::downgrade(&strong);
-        let x = weak.upgrade().unwrap();
-        x.with_borrow_mut(|rc| {
-            for data in records {
-                rc.insert(data);
-            }
-            drop(x);
-        });
-        drop(weak);
-        drop(strong);
-        Ok(())
-    }
+
     //查询所有的数据 统计条数
     #[query]
     fn count_all_symbols() -> usize {
@@ -180,17 +153,17 @@ pub mod exchange_rate_api {
     //查询指定symbol的数据 统计条数
     #[query]
     fn count_by_symbol(symbol: String) -> usize {
-        EXCHANGE_RATE.with_borrow_mut(|rc| rc.iter().filter(|x| x.symbol == symbol).count())
+        EXCHANGE_RATE.with_borrow_mut(|rc| rc.iter().filter(|(k,v)| v.symbol == symbol).count())
     }
     //查询所有的symbols
     #[query]
     fn find_all_symbols() -> std::collections::BTreeMap<String, Vec<ExchangeRateRecord>> {
         EXCHANGE_RATE.with_borrow_mut(|rc| {
             let mut map = std::collections::BTreeMap::new();
-            for x in rc.iter() {
-                map.entry(x.symbol.clone())
+            for (k,v) in rc.iter() {
+                map.entry(v.symbol.clone())
                     .or_insert_with(Vec::new)
-                    .push(x.clone());
+                    .push(v.clone());
             }
             map
         })
@@ -199,15 +172,19 @@ pub mod exchange_rate_api {
     //查询指定symbol的数据
     #[query]
     fn find_by_symbol(symbol: String) -> Vec<ExchangeRateRecord> {
-        EXCHANGE_RATE
-            .with_borrow_mut(|rc| rc.iter().filter(|x| x.symbol == symbol).collect::<Vec<_>>())
+        EXCHANGE_RATE.with_borrow(|rc| {
+            rc.iter()
+                .filter(|(_, v)| v.symbol == symbol)
+                .map(|(_, v)| v.clone())
+                .collect()
+        })
     }
     //查询所有的symbol种类
     #[query]
     fn list_symbol_kind() -> std::collections::BTreeSet<String> {
         EXCHANGE_RATE.with_borrow_mut(|rc| {
             rc.iter()
-                .map(|x| x.symbol.clone())
+                .map(|(k,v)| v.symbol.clone())
                 .collect::<std::collections::BTreeSet<_>>()
         })
     }

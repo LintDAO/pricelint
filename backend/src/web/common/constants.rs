@@ -25,6 +25,8 @@ pub mod memory_manager {
     pub const PREDICTOR_QUANTIFY_MEMORY_ID: u8 = 8;
     pub const STAKE_MEMORY_ID: u8 = 9;
     pub const CANISTER_LIST_MEMORY_ID: u8 = 10;
+    pub const RECORD_MEMORY_ID: u8 = 11;
+    pub const STAKING_RECORD_MEMORY_ID: u8 = 12;
     
     pub const EXPORT_MEMORY_IDS: &[u8] = [
         TEMP_VEC_MEMORY_ID,
@@ -38,6 +40,8 @@ pub mod memory_manager {
         PREDICTOR_QUANTIFY_MEMORY_ID,
         STAKE_MEMORY_ID,
         CANISTER_LIST_MEMORY_ID,
+        RECORD_MEMORY_ID,
+        STAKING_RECORD_MEMORY_ID
     ]
     .as_slice();
 }
