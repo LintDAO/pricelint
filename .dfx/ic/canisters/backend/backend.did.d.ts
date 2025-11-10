@@ -232,7 +232,10 @@ export interface _SERVICE {
   'delete_backup_data' : ActorMethod<[bigint], boolean>,
   'delete_wasm' : ActorMethod<[string, string], Result_1>,
   'dump_stable_memory' : ActorMethod<[[] | [bigint]], HttpResponse>,
-  'find_all_symbols' : ActorMethod<[], Array<[string, ExchangeRateRecord]>>,
+  'find_all_symbols' : ActorMethod<
+    [],
+    Array<[string, Array<ExchangeRateRecord>]>
+  >,
   'find_backup_data' : ActorMethod<[bigint], [] | [string]>,
   'find_backup_lists' : ActorMethod<[], Array<[bigint, bigint]>>,
   'find_by_symbol' : ActorMethod<[string], Array<ExchangeRateRecord>>,

@@ -253,7 +253,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'find_all_symbols' : IDL.Func(
         [],
-        [IDL.Vec(IDL.Tuple(IDL.Text, ExchangeRateRecord))],
+        [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Vec(ExchangeRateRecord)))],
         ['query'],
       ),
     'find_backup_data' : IDL.Func([IDL.Nat64], [IDL.Opt(IDL.Text)], []),
