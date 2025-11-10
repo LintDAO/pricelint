@@ -272,6 +272,7 @@
               :caption="item.description"
               :icon="item.icon"
               :done="item.id < activeStep"
+              @click="handleItemClick(item)"
             >
               <div class="step-content">
                 <q-chip :color="item.statusColor" text-color="white" size="sm">
@@ -280,26 +281,26 @@
                 <span>{{ item.description }}</span>
               </div>
 
-              <div class="q-mt-md">
+              <div class="q-mt-md q-gutter-sm">
                 <q-btn
                   v-if="item.id > 1"
                   flat
                   color="grey-7"
                   label="Back"
-                  @click="activeStep--"
+                  @click.stop="activeStep--"
                 />
                 <q-btn
                   v-if="item.id < quickStartItems.length"
                   color="primary"
                   label="Next"
-                  @click="activeStep++"
+                  @click.stop="activeStep++"
                 />
                 <!-- TODO 点击完成任务以后应该隐藏整个页面-->
                 <q-btn
                   v-if="item.id === quickStartItems.length"
                   color="positive"
                   label="Complete"
-                  @click="completeQuickStart"
+                  @click.stop="completeQuickStart"
                 />
               </div>
             </q-step>
@@ -318,6 +319,7 @@ import {
   onPredict,
   queryCanisterStatus,
 } from "@/api/canisters";
+import { DOCS_URL } from "@/api/constants/docs";
 import {
   DONT_SHOW_AGAIN_STORAGE_KEY,
   IC_DASHBOARD_URL,
@@ -367,33 +369,36 @@ const chartData = ref({
     "Jan 14",
     "Jan 15",
   ],
-  accuracyRate: [82, 85, 83, 87, 84, 86, 88, 87, 89, 87],
+  accuracyRate: [51, 49, 51, 52, 54, 55, 57, 56, 55, 57],
 });
 
 const quickStartItems = [
   {
     id: 1,
-    title: "Recharge cycles",
-    description: "Top up cycles to power your application",
-    icon: "account_balance_wallet",
-    status: "Required",
-    statusColor: "primary",
-  },
-  {
-    id: 2,
     title: "Create your own canister",
     description: "Set up a new canister for your project",
     icon: "create_new_folder",
     status: "Required",
     statusColor: "primary",
+    path: "/getting-started/quickstart",
   },
   {
-    id: 3,
+    id: 2,
     title: "Configure model",
     description: "Customize and deploy your model settings",
     icon: "settings",
     status: "Optional",
     statusColor: "positive",
+    path: "",
+  },
+  {
+    id: 3,
+    title: "Top up cycles",
+    description: "Top up cycles to power your application",
+    icon: "account_balance_wallet",
+    status: "Optional",
+    statusColor: "positive",
+    path: "/getting-started/quickstart#topup-cycles",
   },
 ];
 
@@ -402,11 +407,11 @@ const canisterData = ref({
   status: "Standby",
   module_hash: "",
   cyclesBalance: "0",
-  cyclesChange: -2.1,
-  totalStake: "0 ICP",
-  stakeChange: 8.3,
+  cyclesChange: 0,
+  totalStake: "0 TPCL",
+  stakeChange: 0,
   accuracy: 0,
-  accuracyChange: 1.2,
+  accuracyChange: 0,
   tradingPair: "ICP/USDT",
   modelVersion: "v0.0.1",
   nextPrediction: "None",
@@ -732,6 +737,16 @@ const handleDontShowAgain = () => {
     console.log(
       `Failed to dismiss string ${latestVersion.value} for canister ${canisterId}`
     );
+  }
+};
+
+// 处理列表项点击事件
+const handleItemClick = (item) => {
+  if (item.path) {
+    const fullUrl = `${DOCS_URL}${item.path}`;
+    window.open(fullUrl, "_blank", "noopener,noreferrer");
+  } else {
+    showMessageError(`Coming Soon: ${item.title}`);
   }
 };
 </script>

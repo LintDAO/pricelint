@@ -302,10 +302,12 @@
 
 <script lang="ts" setup>
 import { getCanisterCycles, getCanisterList } from "@/api/canisters";
+import { DOCS_URL } from "@/api/constants/docs";
 import { ICP_LOGO } from "@/api/constants/tokens";
 import { getICPBalance, transferICP } from "@/api/icp";
 import { useUserStore } from "@/stores/user";
 import { isPrincipal, p2a } from "@/utils/common";
+import { showMessageError } from "@/utils/message";
 import { useQuasar } from "quasar";
 import { computed, onMounted, ref } from "vue";
 
@@ -368,27 +370,30 @@ const overviewData = ref([
 const quickStartItems = ref([
   {
     id: 1,
-    title: "Recharge cycles",
-    description: "Top up cycles to power your application",
-    icon: "account_balance_wallet",
-    status: "Required",
-    statusColor: "primary",
-  },
-  {
-    id: 2,
     title: "Create your own canister",
     description: "Set up a new canister for your project",
     icon: "create_new_folder",
     status: "Required",
     statusColor: "primary",
+    path: "/getting-started/quickstart",
   },
   {
-    id: 3,
+    id: 2,
     title: "Configure model",
     description: "Customize and deploy your model settings",
     icon: "settings",
     status: "Optional",
     statusColor: "positive",
+    path: "",
+  },
+  {
+    id: 3,
+    title: "Top up cycles",
+    description: "Top up cycles to power your application",
+    icon: "account_balance_wallet",
+    status: "Required",
+    statusColor: "primary",
+    path: "/getting-started/quickstart#topup-cycles",
   },
 ]);
 
@@ -520,11 +525,12 @@ const closeSendDialog = () => {
 
 // 处理列表项点击事件
 const handleItemClick = (item) => {
-  $q.notify({
-    message: `Coming Soon: ${item.title}`,
-    color: "positive",
-    position: "top",
-  });
+  if (item.path) {
+    const fullUrl = `${DOCS_URL}${item.path}`;
+    window.open(fullUrl, "_blank", "noopener,noreferrer");
+  } else {
+    showMessageError(`Coming Soon: ${item.title}`);
+  }
 };
 </script>
 

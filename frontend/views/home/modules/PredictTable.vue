@@ -173,9 +173,10 @@
 </template>
 
 <script lang="ts" setup>
+import { showPredictions } from "@/api/canisters";
 import { MARKETS } from "@/api/constants/markets";
 import { TOKENS } from "@/api/constants/tokens";
-import { getTokenNowPrice } from "@/api/icp";
+import { getTokenPrice } from "@/api/token";
 import ArrowIcon from "@/components/ArrowIcon.vue";
 import { useUserStore } from "@/stores/user";
 import type { TableColumn } from "@/types/model";
@@ -226,6 +227,9 @@ const updateTable = debounce(async () => {
   loading.value = true;
   const now = new Date(); // 当前时间
   const times = getTimeLabels(now); // 获取时间标签
+  showPredictions().then((res) => {
+    console.log("showPredictions", res);
+  });
 
   // 设置 columns
   columns.value = [
@@ -323,12 +327,19 @@ const updateTable = debounce(async () => {
       stake: { amount: 16000, change: 5.2 },
     },
   ];
-
+  // ==== 批量获取当前价格 ====
+  const symbols = rawData.map((item) => getTokenSymbol(item.token.name)); // ["BTC", "ICP"]
+  const pricePromises = symbols.map((symbol) =>
+    getTokenPrice(symbol).catch((err) => {
+      return 0; // 失败 fallback
+    })
+  );
+  const priceResults = await Promise.all(pricePromises);
   // 将获取的数据填入模板
   rows.value = await Promise.all(
-    rawData.map(async (item) => {
-      const symbol = getTokenSymbol(item.token.name);
-      const now_price = await getTokenNowPrice(symbol);
+    rawData.map(async (item, index) => {
+      const symbol = symbols[index];
+      const currentPrice = priceResults[index];
       return {
         ...item,
         token: {
@@ -341,7 +352,7 @@ const updateTable = debounce(async () => {
         },
         now: {
           ...item.now, // 保留原始的 now.trend 和 now.pred
-          price: now_price,
+          price: currentPrice,
         },
       };
     })

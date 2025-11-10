@@ -450,3 +450,7 @@ export async function checkIsPredictRunning(
     throw error;
   }
 }
+
+export async function showPredictions(): Promise<ApiResult<any>> {
+  return getBackend().show_predictions();
+}
