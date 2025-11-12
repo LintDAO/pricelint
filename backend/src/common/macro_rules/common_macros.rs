@@ -2,7 +2,7 @@
 macro_rules! map_get {
     ($map:expr ,$key: expr) => {
         $map.with(|map| {
-            let mut value = map.borrow_mut().get($key);
+            let value = map.borrow_mut().get($key);
             value
         })
     };
@@ -33,7 +33,7 @@ macro_rules! map_remove {
 
 #[macro_export]
 macro_rules! impl_storable {
-    ($type:ident <$genric:ident >) => {
+    ($type:ident <$genric:ident> $(,[$max_size:expr,$is_fixed_size:expr])?) => {
         impl<$genric> Storable for $type<$genric>
         where
             $genric: Serialize + for<'de> Deserialize<'de>, $genric: candid::CandidType
@@ -47,13 +47,16 @@ macro_rules! impl_storable {
             }
 
             const BOUND: Bound = Bound::Bounded {
-                max_size: 10_000_000, // 调整为类型的最大预期大小（字节）
-                is_fixed_size: false,
+                max_size: impl_storable!(@get max_size, $($max_size)?),
+                is_fixed_size: impl_storable!(@get is_fixed_size, $($is_fixed_size)?),
             };
+
+
         }
     };
-    
-    ($type:ident <$genric1:ident,$genric2:ident>) => {
+
+
+    ($type:ident <$genric1:ident,$genric2:ident> $(, [$max_size:expr, $is_fixed_size:expr])?) => {
         impl<$genric1,$genric2> Storable for $type<$genric1,$genric2>
         where
             $genric1: Serialize + for<'de> Deserialize<'de>,
@@ -68,13 +71,15 @@ macro_rules! impl_storable {
             }
 
             const BOUND: Bound = Bound::Bounded {
-                max_size: 10_000_000, // 调整为类型的最大预期大小（字节）
-                is_fixed_size: false,
+                 max_size: impl_storable!(@get max_size, $($max_size)?),
+                 is_fixed_size: impl_storable!(@get is_fixed_size, $($is_fixed_size)?),
             };
         }
     };
 
-    ($type:ident) => {
+
+   
+    ($type:ident$(,[$max_size:expr,$is_fixed_size:expr])?) => {
         impl Storable for $type {
             fn to_bytes(&self) -> Cow<[u8]> {
                 Cow::Owned(Encode!(self).unwrap())
@@ -85,11 +90,17 @@ macro_rules! impl_storable {
             }
 
             const BOUND: Bound = Bound::Bounded {
-                max_size: 10_000_000, // 调整为类型的最大预期大小（字节）
-                is_fixed_size: false,
+                 max_size: impl_storable!(@get max_size, $($max_size)?),
+                 is_fixed_size: impl_storable!(@get is_fixed_size, $($is_fixed_size)?),
             };
         }
     };
+
+
+    (@get max_size, $value:expr) => { $value };
+    (@get max_size,) => { 10_000_000 };
+    (@get is_fixed_size, $value:expr) => { $value };
+    (@get is_fixed_size,) => { false };
 }
 
 #[macro_export]

@@ -10,9 +10,9 @@ use crate::web::common::errors::PredictorError::{NotExistedPredictions, UnknownE
 use crate::web::common::guard::is_admin;
 use crate::web::common::guard::{is_canister, is_named_user};
 use crate::web::models::context::Context;
-use crate::web::models::predictor_model::{Pred, Predictor, PredictorResult, PredictorView};
-use crate::web::services::predictor_service::{ExtendPredictorService, PredictorService};
-use crate::{map_get, PREDICTOR_CONTEXT, PREDICTOR_QUANTIFY};
+use crate::web::models::predictor_model::{Pred, Prediction, PredictorResult, PredictorView};
+use crate::web::services::predictor_service::{ExtendPredictorService, PredictionService};
+use crate::{map_get, PREDICTOR_CONTEXT, PREDICTION};
 use burn::tensor::cast::ToElement;
 use candid::{CandidType, Deserialize, Principal};
 use ic_cdk::api::call::CallResult;
@@ -25,8 +25,8 @@ use std::fmt::Error;
 use std::ops::Div;
 
 #[query]
-fn get_predictor_vec() -> Result<Vec<Predictor>, String> {
-    let vec = Predictor::find_all();
+fn get_predictor_vec() -> Result<Vec<Prediction>, String> {
+    let vec = Prediction::find_all();
     match vec {
         None => Err(NotExistedPredictions.to_string()),
         Some(value) => Ok(value),
@@ -37,8 +37,8 @@ fn get_predictor_vec() -> Result<Vec<Predictor>, String> {
 //目前是请求一次查询一次 以后可能修改成从记录里定时查询数据
 #[query]
 fn show_predictions() -> Result<Vec<PredictorView>, String> {
-    let accuracy = Predictor::get_accuracy();
-    let total_stake = Predictor::get_total_stake();
+    let accuracy = Prediction::get_accuracy();
+    let total_stake = Prediction::get_total_stake();
     let t1=PredictorResult{
         price: Some(12.1),
         trend: Some("up".to_string()),
@@ -62,7 +62,7 @@ fn show_predictions() -> Result<Vec<PredictorView>, String> {
     };
     let mut view2=PredictorView{
         id: "".to_string(),
-        token_name: "ICPUSDT".to_string(),
+        token_name: "BTCUSDT".to_string(),
         last_2: Some(t1.clone()),
         last_1: Some(t1.clone()),
         now: None,
@@ -76,7 +76,7 @@ fn show_predictions() -> Result<Vec<PredictorView>, String> {
 
 //用户推送预测结果到我们的canisters ,只允许安装了pred的功能的canisters调用此api
 #[update(guard = "is_canister")]
-async fn push_user_pred(predictor: Predictor) -> Result<Predictor, String> {
+async fn push_user_pred(predictor: Prediction) -> Result<Prediction, String> {
     ic_cdk::println!("caller:{}", caller().to_text());
     PREDICTOR_CONTEXT.with(|map| {
         let mut borrowed_map = map.borrow_mut();
@@ -88,7 +88,6 @@ async fn push_user_pred(predictor: Predictor) -> Result<Predictor, String> {
 }
 
 pub mod exchange_rate_api {
-    use crate::impl_storable::{ExchangeRateRecord, ExchangeRateRecordKey};
     use crate::{Memory, EXCHANGE_RATE};
     use burn::tensor::cast::ToElement;
     use candid::pretty::utils::str;
@@ -108,7 +107,7 @@ pub mod exchange_rate_api {
     use std::sync::Arc;
     use std::thread;
     use std::time::Duration;
-    use crate::impl_storable::TempMapValue::BtreeMap;
+    use crate::web::models::exchange_rate::{ExchangeRateRecord, ExchangeRateRecordKey};
 
     // 导入历史数据
     // 导入大量数据的时候可能因为内存泄漏或者循环引用原因导致短期内增长大量的内存触发icp的机制导致panic

@@ -5,18 +5,7 @@ use ic_stable_structures::Storable;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
-//个人预测数据
-#[derive(Serialize, Deserialize, CandidType, Clone, Default)]
-pub struct Predictor {
-    pub id: String,
-    pub user_id: String,
-    pub canister_id: String,
-    pub price: f64,
-    pub trend: Option<String>, //实际结果 涨跌      // up down none  ,none表示尚未预测
-    pub pred: Pred,
-    pub stake: (f64, f64), //amount:个人的质押   //change:24小时内变化
-    pub create_time: u64,
-}
+
 
 #[derive(Serialize, Deserialize, CandidType, Clone, Default)]
 pub struct PredictorResult {
@@ -47,20 +36,34 @@ pub struct Pred {
     pub trend: String
 }
 
-impl_storable!(Predictor);
+
+
 
 #[derive(Serialize, Deserialize, CandidType, Clone, Default)]
+#[derive(Ord, PartialOrd, Eq, PartialEq)]
 //历史预测结果
-pub struct Prediction{
+pub struct PredictionHistory{
     //代币
     token_name:String,
     //实际价格
     price:u64,
-    //预测趋势
+    //这一次和上一次的实际家给对比 涨跌
     trend:String,
-    //质押和预测结果
-    pred:Pred,
+    //质押和预测结果 --> 质押金额  预测up金额  预测down金额  预测趋势
+    pred:(u64,u64,u64,String),
     //记录时间
     time:u64
 }
-impl_storable!(Prediction);
+
+//个人预测数据
+#[derive(Serialize, Deserialize, CandidType, Clone, Default)]
+pub struct Prediction {
+    pub id: String,
+    pub user_id: String,
+    pub canister_id: String,
+    pub price: f64,
+    pub trend: Option<String>, //实际结果 涨跌      // up down none  ,none表示尚未预测
+    pub pred: Pred,
+    pub stake: (f64, f64), //amount:个人的质押   //change:24小时内变化
+    pub create_time: u64,
+}

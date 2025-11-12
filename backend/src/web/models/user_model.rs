@@ -48,4 +48,10 @@ impl Default for User{
 }
 
 
- impl_storable!(User);
+
+#[derive(Deserialize, Serialize, Clone, CandidType, Ord, PartialOrd, Eq, PartialEq)]
+pub enum UserAffiliation  {
+    Administrator(String),
+    NormalNamedUser(String),
+    Anonymous(String),
+}

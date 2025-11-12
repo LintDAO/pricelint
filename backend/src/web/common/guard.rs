@@ -1,74 +1,61 @@
-use crate::impl_storable::StringVec;
-use crate::web::common::constants::{ADMIN_ROLE_TAG, OWNER_ROLE_TAG};
+use crate::impl_storable::{StringVec, UserAffiliation};
 use crate::web::common::errors::GuardError;
-use crate::{impl_storable, map_get, map_insert, Memory, ROLE_USER_TREE};
-use candid::types::principal::PrincipalError;
-use candid::Principal;
+use crate::ROLE_USER_TREE;
 use ic_cdk::caller;
-use lazy_static::lazy_static;
 use std::string::ToString;
 
-pub fn band_role(principal: String, role_name: String) {
-    //获取该角色tag的vec
-    let user_lists = map_get!(ROLE_USER_TREE, &role_name);
-
-    match user_lists {
-        None => {
-            map_insert!(ROLE_USER_TREE, role_name, StringVec(vec![principal]));
+pub fn band_role(user: UserAffiliation) {
+    ROLE_USER_TREE.with_borrow_mut(|rc| match user {
+        UserAffiliation::Administrator(principal) => {
+            rc.insert(UserAffiliation::Administrator(principal));
         }
-        Some(StringVec(mut vec)) => {
-            if !vec.contains(&principal) {
-                vec.push(principal);
-                map_insert!(ROLE_USER_TREE, role_name, StringVec(vec));
-            }
+        UserAffiliation::NormalNamedUser(principal) => {
+            rc.insert(UserAffiliation::NormalNamedUser(principal));
         }
-    }
+        UserAffiliation::Anonymous(_) => {}
+    })
 }
 
-pub fn is_admin<'admin>() -> Result<(), String> {
-    let current_user = caller().to_string();
-    let admin_lists = map_get!(ROLE_USER_TREE,&ADMIN_ROLE_TAG.to_string(),'admin);
-    match admin_lists {
-        None => return Err(GuardError::UnknownEmptyAdminLists.to_string()),
-        Some(StringVec(users)) => {
-            if users.contains(&current_user) {
-                return Ok(());
-            }
+pub fn is_admin() -> Result<(), String> {
+    ROLE_USER_TREE.with_borrow_mut(|rc| {
+        let current_user = caller().to_string();
+        let is_admin = rc
+            .iter()
+            .filter(|k| matches!(k, UserAffiliation::Administrator(_)))
+            .any(|k| matches!(k, UserAffiliation::Administrator(principal) if principal == current_user));
+        if is_admin {
+            return Ok(());
         }
-    }
-
-    Err(GuardError::IsNotAdministrator.to_string())
+        Err(GuardError::IsNotAdministrator.to_string())
+    })
 }
 
-pub fn is_named_user<'user>() -> Result<(), String> {
-    let current_user = caller().to_string();
-    let named_users = map_get!(ROLE_USER_TREE,&OWNER_ROLE_TAG.to_string(),'user);
-    //查询user tag的vec
-    match named_users {
-        None => return Err(GuardError::UnknownEmptyUserLists.to_string()),
-        Some(StringVec(users)) => {
-            if users.contains(&current_user) {
-                return Ok(());
-            }
+pub fn is_named_user() -> Result<(), String> {
+    ROLE_USER_TREE.with_borrow_mut(|rc| {
+        let current_user = caller().to_string();
+        let is_admin = rc
+            .iter()
+            .filter(|k| matches!(k, UserAffiliation::NormalNamedUser(_)))
+            .any(|k| matches!(k, UserAffiliation::NormalNamedUser(principal) if principal == current_user));
+        if is_admin {
+            return Ok(());
         }
-    }
-
-    Err(GuardError::IsAnonymousUser.to_string())
+        Err(GuardError::IsAnonymousUser.to_string())
+    })
 }
 
 //  安装pred的canister代码后 记录canister id 只允许这些canister id调用
 pub fn is_canister() -> Result<(), String> {
-    let caller =caller();
+    let caller = caller();
     let bytes = caller.as_slice();
-    let error=match bytes.last() {
-        Some(0x01) =>  return Ok(()),
+    let error = match bytes.last() {
+        Some(0x01) => return Ok(()),
         Some(0x02) => "error:self-authenticating (user)",
         Some(0x04) => "error:anonymous",
         Some(0x7f) => "error:reserved",
         _ => "error:unknown authenticating",
     };
     Err(error.to_string())
-
 }
 
 pub fn init_admin() {
@@ -83,8 +70,7 @@ pub fn init_admin() {
     // 启动时候初始化管理员还有 用户列表  还有 bind role
     for admin in init_admin {
         //只是绑定了角色和初始化列表  具体的用户注册需要手动user_login api去手动注册 ，避免流程过于复杂
-        band_role(admin.to_string(), ADMIN_ROLE_TAG.to_string());
-        band_role(admin.to_string(), OWNER_ROLE_TAG.to_string());
+        band_role(UserAffiliation::Administrator(admin.to_string()));
     }
     //todo 将管理员添加在canisters的control人员里面里面 包括nns/ii/dfx身份
 }

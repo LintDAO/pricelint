@@ -2,6 +2,7 @@ use candid::{CandidType, Nat, Principal};
 use icrc_ledger_types::icrc1::account::Account;
 use icrc_ledger_types::icrc1::transfer::{BlockIndex, NumTokens};
 use serde::{Deserialize, Serialize};
+use crate::common::utils::xrc::ExchangeRate;
 use crate::impl_storable;
 
 #[derive(CandidType, Deserialize, Serialize)]
@@ -235,3 +236,10 @@ pub struct Reward{
     //总奖励金额=质押金额+额外奖励金额
     pub reward_amount:u64
 }
+
+
+//通过token代币 用户  质押数据首次产生时间 唯一确认
+#[derive(Serialize, Deserialize, Debug, Clone, CandidType, Ord, PartialOrd, Eq, PartialEq)]
+pub struct StakeRecordKey(String, Account, u64);
+
+

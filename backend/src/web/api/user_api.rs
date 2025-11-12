@@ -5,6 +5,7 @@ use crate::web::models::user_model::User;
 use crate::{impl_storable, map_get, map_insert, USER_CONTEXT};
 use candid::{export_service, CandidType, Error, Principal};
 use ic_cdk::{call, caller, query, update};
+use crate::impl_storable::UserAffiliation;
 use crate::web::common::constants::OWNER_ROLE_TAG;
 use crate::web::services::user_service::{ExtendUserService, UserService};
 use crate::web::common::guard::{is_named_user, is_admin, band_role};
@@ -36,7 +37,7 @@ fn user_register()-> Result<User, String> {
 fn create_user()->Option<User> {
     let user=User::create_deafult_user();
     let user= user.map(|u| {
-        band_role( u.owner.to_string(),OWNER_ROLE_TAG.to_string());
+        band_role(UserAffiliation::NormalNamedUser(u.owner.to_text()));
         return  u
     });
     user

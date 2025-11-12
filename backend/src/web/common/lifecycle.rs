@@ -4,11 +4,10 @@ use crate::common::utils::xrc::{
 };
 use crate::web::common::constants::XRC_CANISTER_ID;
 use crate::web::common::guard::init_admin;
-use crate::web::models::predictor_model::Predictor;
 use crate::web::services::predictor_service::ExtendPredictorService;
 use candid::Principal;
 use ic_cdk::api::time;
-use ic_cdk::{block_on, init, post_upgrade, pre_upgrade, spawn};
+use ic_cdk::{ init, post_upgrade, pre_upgrade, spawn};
 use ic_cdk_timers::{set_timer, set_timer_interval};
 use std::fmt;
 use std::fmt::Debug;
@@ -50,8 +49,8 @@ fn init_timer() {
 fn schedule_tasklists() {
     ic_cdk::println!("schedule_tasklists:{}", time());
     spawn(async move {
-        let x=Predictor::autosave_predictor().await;       
-        let x=Predictor::autosave_exchange_rate().await;
+        // let x=Predictor::autosave_predictor().await;       
+        // let x=Predictor::autosave_exchange_rate().await;
     })
 }
 // 计划下一个任务执行时间

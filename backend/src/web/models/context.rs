@@ -4,7 +4,7 @@ use ic_cdk::caller;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use serde::{Deserialize, Serialize};
 use crate::impl_storable;
-use crate::web::models::predictor_model::Predictor;
+use crate::web::models::predictor_model::Prediction;
 use crate::web::models::user_model::User;
 use crate::web::models::wallet_model::Wallet;
 use ic_stable_structures::storable::Bound;
@@ -37,9 +37,8 @@ impl<T> Context<T> {
             create_time: Some(time()),
         }
     }
-    fn get_context<'a>(&'a self) -> &'a Option<T> {
+    fn get_context(&self) -> &Option<T> {
         &self.context
     }
 }
 
-impl_storable!(Context<T>);

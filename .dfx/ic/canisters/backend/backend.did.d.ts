@@ -108,7 +108,7 @@ export interface Pred {
   'trend' : string,
   'down' : number,
 }
-export interface Predictor {
+export interface Prediction {
   'id' : string,
   'trend' : [] | [string],
   'pred' : Pred,
@@ -154,7 +154,7 @@ export type Result_2 = { 'Ok' : GetBlocksResponse } |
   { 'Err' : string };
 export type Result_3 = { 'Ok' : string } |
   { 'Err' : string };
-export type Result_4 = { 'Ok' : Array<Predictor> } |
+export type Result_4 = { 'Ok' : Array<Prediction> } |
   { 'Err' : string };
 export type Result_5 = { 'Ok' : GetTransactionsResponse } |
   { 'Err' : string };
@@ -164,7 +164,7 @@ export type Result_7 = { 'Ok' : bigint } |
   { 'Err' : string };
 export type Result_8 = { 'Ok' : ICRC2AllowanceResponse } |
   { 'Err' : string };
-export type Result_9 = { 'Ok' : Predictor } |
+export type Result_9 = { 'Ok' : Prediction } |
   { 'Err' : string };
 export interface State {
   'bias' : [] | [Array<number>],
@@ -269,7 +269,7 @@ export interface _SERVICE {
   'list_symbol_kind' : ActorMethod<[], Array<string>>,
   'minting_or_burn' : ActorMethod<[Account, bigint], Result_7>,
   'predict' : ActorMethod<[], number>,
-  'push_user_pred' : ActorMethod<[Predictor], Result_9>,
+  'push_user_pred' : ActorMethod<[Prediction], Result_9>,
   'refill_random_buffer' : ActorMethod<[number], undefined>,
   'restore_from_file' : ActorMethod<[string], Result>,
   'show_predictions' : ActorMethod<[], Result_10>,

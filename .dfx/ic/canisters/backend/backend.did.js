@@ -116,7 +116,7 @@ export const idlFactory = ({ IDL }) => {
     'trend' : IDL.Text,
     'down' : IDL.Float64,
   });
-  const Predictor = IDL.Record({
+  const Prediction = IDL.Record({
     'id' : IDL.Text,
     'trend' : IDL.Opt(IDL.Text),
     'pred' : Pred,
@@ -126,7 +126,10 @@ export const idlFactory = ({ IDL }) => {
     'create_time' : IDL.Nat64,
     'price' : IDL.Float64,
   });
-  const Result_4 = IDL.Variant({ 'Ok' : IDL.Vec(Predictor), 'Err' : IDL.Text });
+  const Result_4 = IDL.Variant({
+    'Ok' : IDL.Vec(Prediction),
+    'Err' : IDL.Text,
+  });
   const State = IDL.Record({
     'bias' : IDL.Opt(IDL.Vec(IDL.Float32)),
     'max_values' : IDL.Vec(IDL.Float32),
@@ -212,7 +215,7 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : ICRC2AllowanceResponse,
     'Err' : IDL.Text,
   });
-  const Result_9 = IDL.Variant({ 'Ok' : Predictor, 'Err' : IDL.Text });
+  const Result_9 = IDL.Variant({ 'Ok' : Prediction, 'Err' : IDL.Text });
   const PredictorResult = IDL.Record({
     'trend' : IDL.Opt(IDL.Text),
     'pred' : Pred,
@@ -303,7 +306,7 @@ export const idlFactory = ({ IDL }) => {
     'list_symbol_kind' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
     'minting_or_burn' : IDL.Func([Account, IDL.Nat], [Result_7], []),
     'predict' : IDL.Func([], [IDL.Float32], ['query']),
-    'push_user_pred' : IDL.Func([Predictor], [Result_9], []),
+    'push_user_pred' : IDL.Func([Prediction], [Result_9], []),
     'refill_random_buffer' : IDL.Func([IDL.Nat32], [], []),
     'restore_from_file' : IDL.Func([IDL.Text], [Result], []),
     'show_predictions' : IDL.Func([], [Result_10], ['query']),

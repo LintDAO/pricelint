@@ -25,17 +25,15 @@ async fn get_canister_info() -> Result<String, String> {
     Ok(ret)
 }
 pub mod backup_api {
-    use crate::impl_storable::{BackupRecord, ExchangeRateRecord, ExchangeRateRecordKey, StringVec, TempMapValue, TempVecValue, WasmFile};
-    use crate::web::common::constants::memory_manager::EXPORT_MEMORY_IDS;
-    use crate::web::common::errors::BtreeMapError;
+    use crate::impl_storable::{BackupRecord, StringVec, UserAffiliation, WasmFile};
     use crate::web::models::context::Context;
-    use crate::web::models::predictor_model::{Predictor, PredictorView};
+    use crate::web::models::predictor_model::{PredictionHistory, Prediction, PredictorView};
     use crate::web::models::stake_model::Stake;
     use crate::web::models::user_model::User;
     use crate::web::models::wallet_model::Wallet;
     use crate::{
         BACKUP_DATA, CANISTER_LIST, EXCHANGE_RATE, MEMORY_MANAGER, PREDICTOR_CONTEXT,
-        PREDICTOR_QUANTIFY, ROLE_USER_TREE, STAKE, TEMP_MAP, TEMP_VEC, USER_CONTEXT,
+            PREDICTION, ROLE_USER_TREE, STAKE, TEMP_MAP, TEMP_VEC, USER_CONTEXT,
         WALLET_CONTEXT, WASM_FILES,
     };
     use candid::{Nat, Principal};
@@ -44,6 +42,8 @@ pub mod backup_api {
     use ic_stable_structures::memory_manager::MemoryId;
     use ic_stable_structures::Storable;
     use serde::Serialize;
+    use crate::web::models::exchange_rate::{ExchangeRateRecord, ExchangeRateRecordKey};
+    use crate::web::models::temp_stable::{TempMapValue, TempVecValue};
 
     macro_rules! collect_memory_data {
         ($name:ident) => {
@@ -84,11 +84,11 @@ pub mod backup_api {
         temp_map_data: Vec<(String, TempMapValue<String>)>,
         user_context_data: Vec<(String, Context<User>)>,
         wallet_context_data: Vec<(String, Context<Wallet>)>,
-        predictor_context_data: Vec<(String, Context<Predictor>)>,
-        role_user_tree_data: Vec<(String, StringVec)>,
+        predictor_context_data: Vec<(String, Context<Prediction>)>,
+        role_user_tree_data: Vec<UserAffiliation>,
         wasm_files_data: Vec<(String, WasmFile)>,
         exchange_rate_data: Vec<(ExchangeRateRecordKey,ExchangeRateRecord)>,
-        predictor_quantify_data: Vec<PredictorView>,
+        predictor_quantify_data: Vec<(String,PredictionHistory)>,
         stake_data: Vec<(String, Stake)>,
         canister_list_data: Vec<(String, StringVec)>,
     }
@@ -139,7 +139,7 @@ pub mod backup_api {
         let role_user_tree_data = collect_memory_data!(ROLE_USER_TREE);
         let wasm_files_data = collect_memory_data!(WASM_FILES);
         let exchange_rate_data = collect_memory_data!(EXCHANGE_RATE);
-        let predictor_quantify_data = collect_memory_data!(PREDICTOR_QUANTIFY);
+        let predictor_quantify_data = collect_memory_data!(PREDICTION);
         let stake_data = collect_memory_data!(STAKE);
         let canister_list_data = collect_memory_data!(CANISTER_LIST);
         let export_data = ExportData {
@@ -219,10 +219,10 @@ pub mod backup_api {
         restore_from_data!(USER_CONTEXT,export_data.user_context_data,map);
         restore_from_data!(WALLET_CONTEXT,export_data.wallet_context_data,map);
         restore_from_data!(PREDICTOR_CONTEXT,export_data.predictor_context_data,map);
-        restore_from_data!(ROLE_USER_TREE,export_data.role_user_tree_data,map);
+        restore_from_data!(ROLE_USER_TREE,export_data.role_user_tree_data,set);
         restore_from_data!(WASM_FILES,export_data.wasm_files_data,map);
         restore_from_data!(EXCHANGE_RATE,export_data.exchange_rate_data,map);
-        restore_from_data!(PREDICTOR_QUANTIFY,export_data.predictor_quantify_data,vec);
+        restore_from_data!(PREDICTION,export_data.predictor_quantify_data,map);
         restore_from_data!(STAKE,export_data.stake_data,map);
         restore_from_data!(CANISTER_LIST,export_data.canister_list_data,map);
         Ok(())
@@ -254,7 +254,6 @@ pub mod backup_api {
 }
 
 pub mod wasm_api {
-    use crate::impl_storable::{UpdateType, WasmFile};
     use crate::web::common::errors::BtreeMapError;
     use crate::web::common::guard::is_admin;
     use crate::web::common::guard::is_named_user;
@@ -262,6 +261,8 @@ pub mod wasm_api {
     use candid::MotokoResult::ok;
     use ic_cdk::api::time;
     use ic_cdk::{query, update};
+    use crate::impl_storable::WasmFile;
+    use crate::web::models::wasm_file::UpdateType;
 
     #[update(guard = "is_admin")]
     fn upload_wasm(
