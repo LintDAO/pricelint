@@ -1,7 +1,9 @@
 #[macro_use]
 extern crate candid;
 
-use crate::impl_storable::{BackupRecord, Record, RecordKey, StakeRecordKey, StringVec, UserAffiliation, WasmFile};
+use crate::impl_storable::{
+    BackupRecord, Record, RecordKey, StakeRecordKey, StringVec, UserAffiliation, WasmFile,
+};
 use crate::ml::api::default_api::State;
 use crate::ml::model::{default_model, record};
 use crate::web::common::constants::memory_manager::{
@@ -11,8 +13,12 @@ use crate::web::common::constants::memory_manager::{
     WALLET_CONTEXT_MEMORY_ID, WASM_FILES_MEMORY_ID,
 };
 use crate::web::models::context::Context;
-use crate::web::models::predictor_model::{Prediction, PredictionHistory, PredictorView};
+use crate::web::models::exchange_rate::{ExchangeRateRecord, ExchangeRateRecordKey};
+use crate::web::models::prediction_model::{
+    Prediction, PredictionHistory, PredictionKey, PredictorView,
+};
 use crate::web::models::stake_model::{Stake, StakeRecord};
+use crate::web::models::temp_stable::{TempMapValue, TempVecValue};
 use crate::web::models::user_model::User;
 use crate::web::models::wallet_model::Wallet;
 use candid::{CandidType, Principal};
@@ -30,8 +36,6 @@ use std::cell::RefCell;
 use std::clone::Clone;
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
-use crate::web::models::exchange_rate::{ExchangeRateRecord, ExchangeRateRecordKey};
-use crate::web::models::temp_stable::{TempMapValue, TempVecValue};
 
 type Memory = VirtualMemory<DefaultMemoryImpl>;
 // 全局内存管理器
@@ -88,10 +92,14 @@ init_stable_memory!(WALLET_CONTEXT,WALLET_CONTEXT_MEMORY_ID,map<String, Context<
 init_stable_memory!(PREDICTOR_CONTEXT,PREDICTOR_CONTEXT_MEMORY_ID,map<String, Context<Prediction>>);
 
 //实际使用的
-init_stable_memory!(ROLE_USER_TREE,ROLE_USER_TREE_MEMORY_ID,set<UserAffiliation>);
+init_stable_memory!(
+    ROLE_USER_TREE,
+    ROLE_USER_TREE_MEMORY_ID,
+    set<UserAffiliation>
+);
 init_stable_memory!(WASM_FILES,WASM_FILES_MEMORY_ID,map<String, WasmFile>);
 init_stable_memory!(EXCHANGE_RATE,EXCHANGE_RATE_MEMORY_ID,map<ExchangeRateRecordKey,ExchangeRateRecord>);
-init_stable_memory!(PREDICTION,PREDICTION_MEMORY_ID,map<String,PredictionHistory>);
+init_stable_memory!(PREDICTION,PREDICTION_MEMORY_ID,map<PredictionKey,Prediction>);
 init_stable_memory!(STAKE,STAKE_MEMORY_ID,map<String,Stake>);
 init_stable_memory!(CANISTER_LIST,CANISTER_LIST_MEMORY_ID,map<String,StringVec>);
 
@@ -111,29 +119,30 @@ mod web;
 
 pub mod impl_storable {
     use crate::common::utils::xrc::ExchangeRate;
-    use crate::web::models::predictor_model::{Prediction, PredictionHistory, PredictorView};
-    pub(crate) use crate::web::models::stake_model::{Stake, StakeRecord, StakeRecordKey};
-    use crate::{impl_storable};
-    use candid::{CandidType, Principal};
-    use candid::{Decode, Encode};
-    use ic_stable_structures::storable::Bound;
-    use ic_stable_structures::{Storable};
-    use icrc_ledger_types::icrc1::account::Account;
-    use serde::{Deserialize, Serialize};
-    use std::borrow::Cow;
-    use std::collections::{BTreeMap};
+    use crate::impl_storable;
     use crate::web::models::context::Context;
     use crate::web::models::exchange_rate::{ExchangeRateRecord, ExchangeRateRecordKey};
+    use crate::web::models::prediction_model::{
+        Prediction, PredictionHistory, PredictionKey, PredictorView,
+    };
     pub(crate) use crate::web::models::record::{Record, RecordKey};
+    pub(crate) use crate::web::models::stake_model::{Stake, StakeRecord, StakeRecordKey};
     pub(crate) use crate::web::models::temp_stable::{TempMapValue, TempVecValue};
     pub(crate) use crate::web::models::user_model::{User, UserAffiliation};
     use crate::web::models::wallet_model::Wallet;
     pub(crate) use crate::web::models::wasm_file::WasmFile;
+    use candid::{CandidType, Principal};
+    use candid::{Decode, Encode};
+    use ic_stable_structures::storable::Bound;
+    use ic_stable_structures::Storable;
+    use icrc_ledger_types::icrc1::account::Account;
+    use serde::{Deserialize, Serialize};
+    use std::borrow::Cow;
+    use std::collections::BTreeMap;
 
     #[derive(Deserialize, Serialize, Clone, CandidType)]
     pub struct StringVec(pub Vec<String>);
     impl_storable!(StringVec);
-
     #[derive(Deserialize, Serialize, Clone, CandidType)]
     pub struct BackupRecord(pub String);
 
@@ -141,27 +150,19 @@ pub mod impl_storable {
     impl_storable!(User);
     impl_storable!(UserAffiliation);
     impl_storable!(Wallet);
-
     impl_storable!(PredictionHistory);
     impl_storable!(Prediction);
-
-
-
+    impl_storable!(PredictionKey);
     impl_storable!(WasmFile);
-
-
     impl_storable!(ExchangeRateRecord);
     impl_storable!(ExchangeRateRecordKey);
-
     impl_storable!(PredictorView);
     impl_storable!(Stake);
-
 
     impl_storable!(TempMapValue<K,V>);
     impl_storable!(TempVecValue<T>);
 
-
-    impl_storable!(BackupRecord,[100 * 1024 * 1024,false]);
+    impl_storable!(BackupRecord, [100 * 1024 * 1024, false]);
 
     impl_storable!(StakeRecord);
     impl_storable!(StakeRecordKey);
@@ -177,11 +178,14 @@ pub mod export_candid {
     use crate::ml::api::default_api::PriceData;
     use crate::web::api::canister_api::backup_api::{HttpRequest, HttpResponse};
     use crate::web::api::stake_api::transfer_log::QueryBlocksResponse;
-    use crate::web::models::predictor_model::{Prediction, PredictorView};
+    use crate::web::models::exchange_rate::ExchangeRateRecord;
+    use crate::web::models::prediction_model::{Prediction, PredictorView};
     use crate::web::models::stake_model::{
         ICRC1BalanceOfArgs, ICRC2AllowanceResponse, WithdrawArgs,
     };
     use crate::web::models::user_model::User;
+    use crate::web::models::wasm_file::{UpdateType, WasmFile};
+    use crate::web::models::stake_model::{StakeRecord};
     use crate::State;
     use candid::{CandidType, Deserialize, Nat, Principal};
     use ic_cdk::{export_candid, query};
@@ -195,8 +199,6 @@ pub mod export_candid {
     use icrc_ledger_types::icrc3::blocks::{GetBlocksRequest, GetBlocksResponse};
     use icrc_ledger_types::icrc3::transactions::{GetTransactionsRequest, GetTransactionsResponse};
     use std::collections::BTreeSet;
-    use crate::web::models::exchange_rate::ExchangeRateRecord;
-    use crate::web::models::wasm_file::{WasmFile, UpdateType};
     export_candid!();
 }
 //TODO: lifecycles和api canid 导出先写到一起  后续需要分canisters再进行重构分离

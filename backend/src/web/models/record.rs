@@ -1,12 +1,12 @@
 use serde::Serialize;
-use crate::web::models::predictor_model::PredictionHistory;
+use crate::web::models::prediction_model::PredictionHistory;
 
 #[derive(Serialize, Deserialize, Debug, Clone, CandidType, Ord, PartialOrd, Eq, PartialEq)]
 pub enum RecordKey {
     //代币名称 预测时间
     PredictionHistory(String, u64),
-    //代币名称 预测时间
-    PredictionAccuracy(String, u64),
+    //代币名称 预测时间  统计范围（按天统计）
+    PredictionAccuracy(String, u64,u16),
     //代币名称  时间
     StakeAmount(String, u64),
 }

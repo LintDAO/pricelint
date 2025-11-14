@@ -5,8 +5,6 @@ use ic_stable_structures::Storable;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
-
-
 #[derive(Serialize, Deserialize, CandidType, Clone, Default)]
 pub struct PredictorResult {
     pub price: Option<f64>,    //历史价格
@@ -29,38 +27,38 @@ pub struct PredictorView {
 //预测结果
 #[derive(Serialize, Deserialize, CandidType, Clone, Default)]
 pub struct Pred {
-    pub staked: f64,
-    pub up: f64,
-    pub down: f64,
+    pub staked: u64,
+    pub up: u64,
+    pub down: u64,
     //预测结果 涨跌
-    pub trend: String
+    pub trend: String,
 }
 
-
-
-
-#[derive(Serialize, Deserialize, CandidType, Clone, Default)]
-#[derive(Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, CandidType, Clone, Ord, PartialOrd, Eq, PartialEq)]
 //历史预测结果
-pub struct PredictionHistory{
+pub struct PredictionHistory {
     //代币
-    token_name:String,
+    pub token_name: String,
     //实际价格
-    price:u64,
+    pub price: u64,
     //这一次和上一次的实际家给对比 涨跌
-    trend:String,
+    pub trend: String,
     //质押和预测结果 --> 质押金额  预测up金额  预测down金额  预测趋势
-    pred:(u64,u64,u64,String),
+    pub pred: (u64, u64, u64, String),
     //记录时间
-    time:u64
+    pub time: u64,
 }
-
+//预测用户(canister_id)  预测时间 预测币种
+#[derive(Serialize, Deserialize, CandidType, Clone, Default, Ord, PartialOrd, Eq, PartialEq)]
+pub struct PredictionKey(pub(crate) String, pub(crate) u64, pub(crate) String);
 //个人预测数据
 #[derive(Serialize, Deserialize, CandidType, Clone, Default)]
 pub struct Prediction {
     pub id: String,
     pub user_id: String,
     pub canister_id: String,
+    //预测币种
+    pub token_name: String,
     pub price: f64,
     pub trend: Option<String>, //实际结果 涨跌      // up down none  ,none表示尚未预测
     pub pred: Pred,

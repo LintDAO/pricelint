@@ -240,6 +240,6 @@ pub struct Reward{
 
 //通过token代币 用户  质押数据首次产生时间 唯一确认
 #[derive(Serialize, Deserialize, Debug, Clone, CandidType, Ord, PartialOrd, Eq, PartialEq)]
-pub struct StakeRecordKey(String, Account, u64);
+pub struct StakeRecordKey(pub String, pub Account, pub u64);
 
 

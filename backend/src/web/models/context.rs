@@ -4,7 +4,7 @@ use ic_cdk::caller;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use serde::{Deserialize, Serialize};
 use crate::impl_storable;
-use crate::web::models::predictor_model::Prediction;
+use crate::web::models::prediction_model::Prediction;
 use crate::web::models::user_model::User;
 use crate::web::models::wallet_model::Wallet;
 use ic_stable_structures::storable::Bound;

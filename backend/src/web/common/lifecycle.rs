@@ -4,7 +4,7 @@ use crate::common::utils::xrc::{
 };
 use crate::web::common::constants::XRC_CANISTER_ID;
 use crate::web::common::guard::init_admin;
-use crate::web::services::predictor_service::ExtendPredictorService;
+use crate::web::services::prediction_service::ExtendPredictorService;
 use candid::Principal;
 use ic_cdk::api::time;
 use ic_cdk::{ init, post_upgrade, pre_upgrade, spawn};
