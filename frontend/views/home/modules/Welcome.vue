@@ -39,7 +39,7 @@
               >
             </div>
             <div class="text-h4 text-weight-light" style="opacity: 0.9">
-              AI-Prediction Keeps You Covered
+              AI Nodes Got You Covered
             </div>
           </h1>
 
