@@ -317,13 +317,12 @@
         </div>
       </div>
     </div>
-
-    <!-- 质押 Dialog -->
+    <!-- stake dialog -->
     <q-dialog v-model="openStakeDialog">
       <q-card style="width: 500px; max-width: 90vw">
-        <!-- Dialog 头部 -->
+        <!-- Dialog header -->
         <q-card-section class="row items-center q-pb-none">
-          <div class="text-h6">质押 Stake</div>
+          <div class="text-h6">Stake</div>
           <q-space />
           <q-btn
             icon="close"
@@ -334,12 +333,12 @@
           />
         </q-card-section>
 
-        <!-- Dialog 内容 -->
+        <!-- Dialog content -->
         <q-card-section class="q-pt-md">
-          <!-- 钱包余额显示 -->
+          <!-- Available balance display -->
           <q-item>
             <q-item-section>
-              <q-item-label caption>可用余额</q-item-label>
+              <q-item-label caption>Available Balance</q-item-label>
               <q-item-label class="text-weight-bold"
                 >{{ walletBalance }} TOKENS</q-item-label
               >
@@ -347,16 +346,19 @@
           </q-item>
 
           <q-separator class="q-my-md" />
-
-          <!-- 质押金额输入 -->
           <q-input
             v-model.number="stakeAmount"
-            label="质押金额"
+            label="Stake Amount"
             type="number"
             filled
             dense
+            :rules="[
+            (val: number | null) => val !== null || 'Please enter stake amount',
+            (val: number | null) => (val && val > 0) || 'Amount must be greater than 0',
+            (val: number | null) => (val && val <= walletBalance) || 'Insufficient balance'
+            ]"
             class="q-mb-md"
-            hint="输入要质押的数量"
+            hint="Enter the amount you want to stake"
           >
             <template #append>
               <q-btn
@@ -369,88 +371,47 @@
               />
             </template>
           </q-input>
-
-          <!-- 预计收益 -->
-          <q-item class="bg-blue-1 rounded-borders q-mb-md">
-            <q-item-section>
-              <q-item-label caption>预计年收益</q-item-label>
-              <q-item-label class="text-weight-bold text-positive">
-                TOKENS ({{ apy }}% APY)
-              </q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <!-- 质押详情 -->
-          <div class="q-mb-md text-caption text-grey-7">
-            <div class="row justify-between q-mb-xs">
-              <span>年利率 (APY):</span>
-              <span class="text-weight-bold">{{ apy }}%</span>
-            </div>
-            <div class="row justify-between q-mb-xs">
-              <span>锁定期:</span>
-              <span class="text-weight-bold">{{ lockingPeriod }} 天</span>
-            </div>
-            <div class="row justify-between">
-              <span>最小质押金额:</span>
-              <span class="text-weight-bold">{{ minStakeAmount }} TOKENS</span>
-            </div>
-          </div>
-
-          <!-- 风险提示 -->
-          <q-banner class="bg-warning text-white q-mb-md rounded-borders">
-            <template #avatar>
-              <q-icon name="warning" />
-            </template>
-            质押后将在 {{ lockingPeriod }} 天内无法提现，请谨慎操作。
-          </q-banner>
-
-          <!-- 同意条款复选框 -->
-          <q-checkbox
-            v-model="agreedToTerms"
-            label="我已阅读并同意质押条款"
-            class="q-mb-md"
-          />
         </q-card-section>
 
-        <!-- Dialog 底部操作按钮 -->
+        <!-- Dialog action buttons -->
         <q-card-actions align="right">
           <q-btn
-            label="取消"
+            label="Cancel"
             flat
             color="grey-8"
             @click="openStakeDialog = false"
           />
           <q-btn
-            label="确认质押"
+            label="Confirm Stake"
             color="primary"
             :loading="stakeLoading"
+            :disable="!isFormValid || stakeLoading"
             @click="handleStake"
           />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <!-- 操作结果通知 -->
+    <!-- Success notification -->
     <q-dialog v-model="showSuccessDialog">
       <q-card style="width: 400px">
         <q-card-section class="row items-center">
           <q-icon name="check_circle" size="lg" color="positive" />
-          <span class="q-ml-md text-h6">质押成功!</span>
+          <span class="q-ml-md text-h6">Staking Successful!</span>
         </q-card-section>
 
         <q-card-section class="text-center text-grey-7">
           <p>
-            已成功质押
+            Successfully staked
             <span class="text-weight-bold text-positive"
               >{{ stakeAmount }} TOKENS</span
             >
           </p>
-          <p class="text-caption">预计 {{ lockingPeriod }} 天后可提现</p>
         </q-card-section>
 
         <q-card-actions align="center">
           <q-btn
-            label="关闭"
+            label="Close"
             color="primary"
             @click="showSuccessDialog = false"
           />
@@ -481,7 +442,7 @@ import {
 } from "@/utils/storage";
 import * as echarts from "echarts";
 import { Notify } from "quasar";
-import { nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 const route = useRoute();
@@ -497,17 +458,13 @@ const openStakeDialog = ref(false);
 const showSuccessDialog = ref(false);
 
 // 表单数据
-const stakeAmount = ref<number | null>(null);
-const agreedToTerms = ref(false);
+const stakeAmount = ref<number>(0);
 
 // 加载状态
 const stakeLoading = ref(false);
 
 // 常数
-const walletBalance = ref(1000);
-const minStakeAmount = 10;
-const apy = 15; // 年百分比收益率
-const lockingPeriod = 30; // 天数
+const walletBalance = ref(0);
 
 const canisterId = ref(route.params.canisterId as string);
 // 当前 Canister 版本和最新版本（示例数据）
@@ -923,6 +880,11 @@ const handleItemClick = (item) => {
 
 // 处理质押
 const handleStake = async () => {
+  if (!isFormValid.value) {
+    showMessageError("Please check form information");
+    return;
+  }
+
   stakeLoading.value = true;
 
   try {
@@ -939,6 +901,14 @@ const handleStake = async () => {
     stakeLoading.value = false;
   }
 };
+
+const isFormValid = computed(() => {
+  return (
+    stakeAmount.value &&
+    stakeAmount.value > 0 &&
+    stakeAmount.value <= walletBalance.value
+  );
+});
 </script>
 
 <style lang="scss" scoped>

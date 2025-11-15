@@ -217,7 +217,7 @@ const startCursorBlink = () => {
 const animateNumbers = () => {
   // Animate accuracy to xx %
   const accuracyInterval = setInterval(() => {
-    if (animatedAccuracy.value < 63) {
+    if (animatedAccuracy.value < 0) {
       animatedAccuracy.value += 1;
     } else {
       clearInterval(accuracyInterval);
