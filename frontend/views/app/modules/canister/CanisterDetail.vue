@@ -130,22 +130,31 @@
               </div>
               <q-skeleton v-if="isStatusLoading" type="QBtn" width="120px" />
               <template v-else>
-                <q-btn
-                  v-if="canisterData.status !== 'Predicting'"
-                  label="Start Predict"
-                  color="primary"
-                  no-caps
-                  :loading="startPredictLoading"
-                  @click="startPredict(true)"
-                />
-                <q-btn
-                  v-else
-                  label="Stop Predict"
-                  color="negative"
-                  no-caps
-                  :loading="startPredictLoading"
-                  @click="startPredict(false)"
-                />
+                <div class="q-gutter-md">
+                  <q-btn
+                    v-if="canisterData.status !== 'Predicting'"
+                    label="Start Predict"
+                    color="primary"
+                    no-caps
+                    :loading="startPredictLoading"
+                    @click="startPredict(true)"
+                  />
+                  <q-btn
+                    v-else
+                    label="Stop Predict"
+                    color="negative"
+                    no-caps
+                    :loading="startPredictLoading"
+                    @click="startPredict(false)"
+                  />
+                  <q-btn
+                    label="Stake"
+                    color="primary"
+                    no-caps
+                    :loading="startPredictLoading"
+                    @click="openStakeDialog = true"
+                  />
+                </div>
               </template>
             </div>
           </div>
@@ -308,6 +317,146 @@
         </div>
       </div>
     </div>
+
+    <!-- 质押 Dialog -->
+    <q-dialog v-model="openStakeDialog">
+      <q-card style="width: 500px; max-width: 90vw">
+        <!-- Dialog 头部 -->
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6">质押 Stake</div>
+          <q-space />
+          <q-btn
+            icon="close"
+            flat
+            round
+            dense
+            @click="openStakeDialog = false"
+          />
+        </q-card-section>
+
+        <!-- Dialog 内容 -->
+        <q-card-section class="q-pt-md">
+          <!-- 钱包余额显示 -->
+          <q-item>
+            <q-item-section>
+              <q-item-label caption>可用余额</q-item-label>
+              <q-item-label class="text-weight-bold"
+                >{{ walletBalance }} TOKENS</q-item-label
+              >
+            </q-item-section>
+          </q-item>
+
+          <q-separator class="q-my-md" />
+
+          <!-- 质押金额输入 -->
+          <q-input
+            v-model.number="stakeAmount"
+            label="质押金额"
+            type="number"
+            filled
+            dense
+            class="q-mb-md"
+            hint="输入要质押的数量"
+          >
+            <template #append>
+              <q-btn
+                label="Max"
+                flat
+                dense
+                no-caps
+                size="sm"
+                @click="stakeAmount = walletBalance"
+              />
+            </template>
+          </q-input>
+
+          <!-- 预计收益 -->
+          <q-item class="bg-blue-1 rounded-borders q-mb-md">
+            <q-item-section>
+              <q-item-label caption>预计年收益</q-item-label>
+              <q-item-label class="text-weight-bold text-positive">
+                TOKENS ({{ apy }}% APY)
+              </q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <!-- 质押详情 -->
+          <div class="q-mb-md text-caption text-grey-7">
+            <div class="row justify-between q-mb-xs">
+              <span>年利率 (APY):</span>
+              <span class="text-weight-bold">{{ apy }}%</span>
+            </div>
+            <div class="row justify-between q-mb-xs">
+              <span>锁定期:</span>
+              <span class="text-weight-bold">{{ lockingPeriod }} 天</span>
+            </div>
+            <div class="row justify-between">
+              <span>最小质押金额:</span>
+              <span class="text-weight-bold">{{ minStakeAmount }} TOKENS</span>
+            </div>
+          </div>
+
+          <!-- 风险提示 -->
+          <q-banner class="bg-warning text-white q-mb-md rounded-borders">
+            <template #avatar>
+              <q-icon name="warning" />
+            </template>
+            质押后将在 {{ lockingPeriod }} 天内无法提现，请谨慎操作。
+          </q-banner>
+
+          <!-- 同意条款复选框 -->
+          <q-checkbox
+            v-model="agreedToTerms"
+            label="我已阅读并同意质押条款"
+            class="q-mb-md"
+          />
+        </q-card-section>
+
+        <!-- Dialog 底部操作按钮 -->
+        <q-card-actions align="right">
+          <q-btn
+            label="取消"
+            flat
+            color="grey-8"
+            @click="openStakeDialog = false"
+          />
+          <q-btn
+            label="确认质押"
+            color="primary"
+            :loading="stakeLoading"
+            @click="handleStake"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- 操作结果通知 -->
+    <q-dialog v-model="showSuccessDialog">
+      <q-card style="width: 400px">
+        <q-card-section class="row items-center">
+          <q-icon name="check_circle" size="lg" color="positive" />
+          <span class="q-ml-md text-h6">质押成功!</span>
+        </q-card-section>
+
+        <q-card-section class="text-center text-grey-7">
+          <p>
+            已成功质押
+            <span class="text-weight-bold text-positive"
+              >{{ stakeAmount }} TOKENS</span
+            >
+          </p>
+          <p class="text-caption">预计 {{ lockingPeriod }} 天后可提现</p>
+        </q-card-section>
+
+        <q-card-actions align="center">
+          <q-btn
+            label="关闭"
+            color="primary"
+            @click="showSuccessDialog = false"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
@@ -343,6 +492,22 @@ const showBanner = ref(false);
 const isDataLoading = ref(true);
 const isStatusLoading = ref(true);
 const startPredictLoading = ref(false);
+// Dialog 显示状态
+const openStakeDialog = ref(false);
+const showSuccessDialog = ref(false);
+
+// 表单数据
+const stakeAmount = ref<number | null>(null);
+const agreedToTerms = ref(false);
+
+// 加载状态
+const stakeLoading = ref(false);
+
+// 常数
+const walletBalance = ref(1000);
+const minStakeAmount = 10;
+const apy = 15; // 年百分比收益率
+const lockingPeriod = 30; // 天数
 
 const canisterId = ref(route.params.canisterId as string);
 // 当前 Canister 版本和最新版本（示例数据）
@@ -449,6 +614,8 @@ const startPredict = async (start: boolean) => {
   startPredictLoading.value = true;
   try {
     await onPredict(canisterId.value, start);
+
+    checkIsPredict();
   } catch (error) {}
   startPredictLoading.value = false;
 };
@@ -554,10 +721,8 @@ const initChart = () => {
 
   chart.setOption(option);
 };
-// Lifecycle
-onMounted(async () => {
-  getCanisterInfo();
 
+const checkIsPredict = () => {
   checkIsPredictRunning(canisterId.value)
     .then((res) => {
       canisterData.value.status = res ? "Predicting" : "Standby";
@@ -568,6 +733,12 @@ onMounted(async () => {
         initChart();
       });
     });
+};
+// Lifecycle
+onMounted(async () => {
+  getCanisterInfo();
+
+  checkIsPredict();
 
   // 检查是否启用升级版本的banner
   showBanner.value = await checkVersion();
@@ -747,6 +918,25 @@ const handleItemClick = (item) => {
     window.open(fullUrl, "_blank", "noopener,noreferrer");
   } else {
     showMessageError(`Coming Soon: ${item.title}`);
+  }
+};
+
+// 处理质押
+const handleStake = async () => {
+  stakeLoading.value = true;
+
+  try {
+    // 模拟 API 调用
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // 更新钱包余额
+    walletBalance.value -= stakeAmount.value!;
+
+    openStakeDialog.value = false;
+    showSuccessDialog.value = true;
+  } catch (error) {
+  } finally {
+    stakeLoading.value = false;
   }
 };
 </script>

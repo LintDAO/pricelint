@@ -181,6 +181,7 @@ import ArrowIcon from "@/components/ArrowIcon.vue";
 import { useUserStore } from "@/stores/user";
 import type { TableColumn } from "@/types/model";
 import type { TimePoint } from "@/types/predict";
+import { showMessageError } from "@/utils/message";
 import { debounce } from "quasar";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -207,158 +208,180 @@ const columnTooltips: Record<string, string> = {
     "Price at the specified time with direction compared to previous prediction time price. \nIf subscribed, the prediction data it's going to be displayed.",
   last_1:
     "Price at the specified time with direction compared to previous prediction time price. \nIf subscribed, the prediction data it's going to be displayed.",
-  now: "Live price and direction compared to previous prediction time price. \nPrice is refreshed every 60 seconds.",
+  now: "Live price and direction compared to previous prediction time price.",
   next: "Predicted price direction for the time specified time. Check PCL staked and stake directions for a higher confidence.",
   accuracy: "Percentage of accurate predictions over the last 1 week.",
   stake:
     "The percentage difference in the total number of PCL tokens invested in the past 24 hours compared to the previous day.",
 };
 
-// 与 II 认证相关的信息
-const signedIn = ref(false); // 是否登录
 const loading = ref(false);
+let priceTimer: any = null;
 
 onMounted(() => {
   // getOKInfo()
+  // 每 60 秒刷新一次价格
+  // priceTimer = setInterval(() => {
+  //   refreshNowPrice();
+  // }, 60000);
 });
 
-// 更新表格数据的函数
 const updateTable = debounce(async () => {
   loading.value = true;
-  const now = new Date(); // 当前时间
-  const times = getTimeLabels(now); // 获取时间标签
-  showPredictions().then((res) => {
-    console.log("showPredictions", res);
-  });
 
-  // 设置 columns
-  columns.value = [
-    {
-      name: "asset",
-      label: "Asset",
-      field: "name",
-      align: "left",
-    },
-    {
-      name: "last_2",
-      label: times[0],
-      field: "last_2",
-      align: "center",
-    },
-    {
-      name: "last_1",
-      label: times[1],
-      field: "last_1",
-      align: "center",
-    },
-    {
-      name: "now",
-      label: times[2],
-      field: "now",
-      align: "center",
-    },
-    {
-      name: "next",
-      label: `${times[3]}`,
-      field: "next",
-      align: "center",
-      subtitle: "Predictions",
-    },
-    {
-      name: "accuracy",
-      label: "Accuracy",
-      field: "accuracy",
-      align: "center",
-      subtitle: "1 week",
-    },
-    {
-      name: "stake",
-      label: "Stake",
-      field: "stake",
-      align: "center",
-      subtitle: "24h",
-    },
-  ];
+  const now = new Date();
+  const times = getTimeLabels(now);
 
-  // 假数据（实际从 API 获取）
-  const rawData: RowData[] = [
-    {
-      id: 1,
-      token: { name: "BTC-USDT", logo: "" },
-      source: { name: "BINANCE", logo: "" },
-      last_2: {
-        price: 105133.25,
-        trend: "Down",
-        pred: { staked: 100.5, up: 39.091, down: 36.109, trend: "Up" },
+  try {
+    // 1. 调用 API，获取 ApiResult<ApiItem[]>
+    const result = await showPredictions();
+    console.log("showPredictions result:", result);
+
+    // ---- 关键：处理 Ok / Err ----
+    if (result.Err) {
+      console.error("API Error:", result.Err);
+      showMessageError("Failed to obtain predicted data" + result.Err);
+      loading.value = false;
+      return;
+    }
+
+    if (!result.Ok || result.Ok.length === 0) {
+      console.warn("No data in Ok");
+      rows.value = [];
+      loading.value = false;
+      return;
+    }
+
+    const apiData = result.Ok; // 现在安全使用
+
+    // 2. 设置 columns
+    columns.value = [
+      { name: "asset", label: "Asset", field: "token", align: "left" },
+      { name: "last_2", label: times[0], field: "last_2", align: "center" },
+      { name: "last_1", label: times[1], field: "last_1", align: "center" },
+      { name: "now", label: times[2], field: "now", align: "center" },
+      {
+        name: "next",
+        label: `${times[3]}`,
+        field: "next",
+        align: "center",
+        subtitle: "Predictions",
       },
-      last_1: {
-        price: 105223.01,
-        trend: "Down",
-        pred: { staked: 100.5, up: 39.091, down: 36.109, trend: "Up" },
+      {
+        name: "accuracy",
+        label: "Accuracy",
+        field: "accuracy",
+        align: "center",
+        subtitle: "1 week",
       },
-      now: { price: 105248.65, trend: "Up", pred: null },
-      next: {
-        trend: "Up",
-        pred: { staked: 76.2, up: 45.5, down: 30.2, trend: "Up" },
+      {
+        name: "stake",
+        label: "Stake",
+        field: "stake",
+        align: "center",
+        subtitle: "24h",
       },
-      accuracy: 51.9,
-      stake: { amount: 23786.0, change: 5.2 },
-    },
-    {
-      id: 2,
-      token: { name: "ICP-USDT", logo: "" },
-      source: { name: "BINANCE", logo: "" },
-      last_2: {
-        price: 7.5,
-        trend: "Up",
-        pred: { staked: 76.2, up: 45.5, down: 30.2, trend: "Up" },
-      },
-      last_1: {
-        price: 7.4,
-        trend: "Up",
-        pred: { staked: 76.2, up: 46.0, down: 29.8, trend: "Up" },
-      },
-      now: { price: 7.5, trend: "Down", pred: null },
-      next: {
-        trend: "Up",
-        pred: { staked: 76.2, up: 45.5, down: 30.2, trend: "Up" },
-      },
-      accuracy: 62.3,
-      stake: { amount: 16000, change: 5.2 },
-    },
-  ];
-  // ==== 批量获取当前价格 ====
-  const symbols = rawData.map((item) => getTokenSymbol(item.token.name)); // ["BTC", "ICP"]
-  const pricePromises = symbols.map((symbol) =>
-    getTokenPrice(symbol).catch((err) => {
-      return 0; // 失败 fallback
-    })
-  );
-  const priceResults = await Promise.all(pricePromises);
-  // 将获取的数据填入模板
-  rows.value = await Promise.all(
-    rawData.map(async (item, index) => {
-      const symbol = symbols[index];
-      const currentPrice = priceResults[index];
+    ];
+    // 直接映射，类型用 any 绕过检查（简单粗暴但有效）
+    const rawRows: any[] = apiData.map((item: any, i: number) => {
+      const l2 = item.last_2[0] || {};
+      const l1 = item.last_1[0] || {};
+      const nx = item.next[0] || {};
+
       return {
-        ...item,
+        id: i + 1,
+        token: { name: item.token_name.replace("USDT", "-USDT"), logo: "" },
+        source: { name: "BINANCE", logo: "" },
+        last_2: {
+          price: l2.price?.[0] || 0,
+          trend: (l2.trend?.[0] || "").toUpperCase(),
+          pred: l2.pred || { up: 0, down: 0, staked: 0, trend: "" },
+        },
+        last_1: {
+          price: l1.price?.[0] || 0,
+          trend: (l1.trend?.[0] || "").toUpperCase(),
+          pred: l1.pred || { up: 0, down: 0, staked: 0, trend: "" },
+        },
+        now: { price: 0, trend: "", pred: null },
+        next: {
+          trend: (nx.trend?.[0] || "").toUpperCase(),
+          pred: nx.pred || { up: 0, down: 0, staked: 0, trend: "" },
+        },
+        accuracy: item.accuracy || 0,
+        stake: {
+          amount: item.stake[0] || 0, // 总数
+          change: item.stake[1] || 0, // 变化百分比
+        },
+      };
+    });
+
+    // 4. 批量获取实时价格
+    const symbols = rawRows.map((r) => getTokenSymbol(r.token.name));
+    const pricePromises = symbols.map((sym) =>
+      getTokenPrice(sym).catch(() => 0)
+    );
+    const priceResults = await Promise.all(pricePromises);
+
+    // 5. 合并 logo + 实时价格
+    rows.value = rawRows.map((row, i) => {
+      const symbol = symbols[i];
+      const currentPrice = priceResults[i];
+
+      return {
+        ...row,
         token: {
-          ...item.token,
+          ...row.token,
           logo: TOKENS[symbol]?.meta.logo || "/assets/default-icon.png",
         },
         source: {
-          name: item.source.name,
-          logo: MARKETS[item.source.name]?.logo || "/assets/default-icon.png",
+          name: row.source.name,
+          logo: MARKETS[row.source.name]?.logo || "/assets/default-icon.png",
         },
         now: {
-          ...item.now, // 保留原始的 now.trend 和 now.pred
-          price: currentPrice,
+          price: currentPrice || row.last_1.price,
+          trend:
+            currentPrice > row.last_1.price
+              ? "up"
+              : currentPrice < row.last_1.price
+              ? "down"
+              : "",
+          pred: null,
         },
       };
-    })
-  );
-  loading.value = false;
+    });
+  } catch (err) {
+    console.error("updateTable error:", err);
+    showMessageError("Failed to obtain predicted data: " + err);
+  } finally {
+    loading.value = false;
+  }
 }, 500);
+// 新增：每 60 秒刷新实时价格
+const refreshNowPrice = async () => {
+  if (!rows.value.length) return; // 没数据就不刷
+
+  const symbols = rows.value.map((row) => getTokenSymbol(row.token.name));
+  const prices = await Promise.all(
+    symbols.map((sym) => getTokenPrice(sym).catch(() => 0))
+  );
+
+  rows.value = rows.value.map((row, i) => {
+    const currentPrice = prices[i] || row.last_1.price;
+    return {
+      ...row,
+      now: {
+        price: currentPrice,
+        trend:
+          currentPrice > row.last_1.price
+            ? "up"
+            : currentPrice < row.last_1.price
+            ? "down"
+            : "",
+        pred: null,
+      },
+    };
+  });
+};
 
 // 提取代币符号的辅助函数
 const getTokenSymbol = (pair: string): string => {

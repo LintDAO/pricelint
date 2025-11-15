@@ -16,6 +16,7 @@ import {
 } from "./canister_pool";
 import { IC_API_URL_V3 } from "./constants/ic";
 import { CONTROLLER_CANISTERS_KEY } from "./icp";
+import type { PredictorView } from ".dfx/ic/canisters/backend/backend.did";
 
 // 定义 Canister 数据接口
 export interface CanisterData {
@@ -451,6 +452,6 @@ export async function checkIsPredictRunning(
   }
 }
 
-export async function showPredictions(): Promise<ApiResult<any>> {
+export async function showPredictions(): Promise<ApiResult<PredictorView[]>> {
   return getBackend().show_predictions();
 }
