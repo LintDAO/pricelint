@@ -28,7 +28,7 @@ pub mod backup_api {
     use crate::impl_storable::{BackupRecord, StringVec, UserAffiliation, WasmFile};
     use crate::web::models::context::Context;
     use crate::web::models::prediction_model::{PredictionHistory, Prediction, PredictorView, PredictionKey};
-    use crate::web::models::stake_model::Stake;
+    use crate::web::models::stake_model::{Stake, StakeKey};
     use crate::web::models::user_model::User;
     use crate::web::models::wallet_model::Wallet;
     use crate::{
@@ -89,7 +89,7 @@ pub mod backup_api {
         wasm_files_data: Vec<(String, WasmFile)>,
         exchange_rate_data: Vec<(ExchangeRateRecordKey,ExchangeRateRecord)>,
         prediction_data: Vec<(PredictionKey,Prediction)>,
-        stake_data: Vec<(String, Stake)>,
+        stake_data: Vec<(StakeKey, Stake)>,
         canister_list_data: Vec<(String, StringVec)>,
     }
 

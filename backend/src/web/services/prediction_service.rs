@@ -127,7 +127,7 @@ impl ExtendPredictorService for Prediction {
                     let pred_up = v.iter().map(|(&v)| v.pred.up).sum::<u64>();
                     let pred_down = v.iter().map(|(&v)| v.pred.down).sum::<u64>();
                     let stake = v.iter().map(|(&v)| v.pred.staked).sum::<u64>();
-                    //todo ge't from xrc
+                    //TODO get from xrc
                     let realtime_price = 1;
                     let last_realtime_price = EXCHANGE_RATE.with_borrow(|r| {
                         //缩小范围 只取最近2小时的记录 避免性能爆炸
@@ -364,9 +364,9 @@ pub mod autosave {
         }
     }
 
-    //保存汇率到稳定内存
+    //保存汇率到稳定内存 15分钟更新一次
     //OK
-    async fn autosave_exchange_rate() -> Result<(), String> {
+    pub async fn autosave_exchange_rate() -> Result<(), String> {
         const ICP_SYMBOL: &str = "ICP";
         const BTC_SYMBOL: &str = "BTC";
         const TARGET_SYMBOL: &str = "USDT";
@@ -425,8 +425,8 @@ pub mod autosave {
 
         Ok(())
     }
-    //定时保存质押总额
-    fn autosave_stake_amount() -> Result<(), String> {
+    //定时保存质押总额  15分钟一次
+    pub fn autosave_stake_amount() -> Result<(), String> {
         let stake_amount = Prediction::get_total_stake();
         RECORD.with_borrow_mut(|r| {
             stake_amount.iter().for_each(|u| {
@@ -438,7 +438,8 @@ pub mod autosave {
         });
         Ok(())
     }
-    fn autosave_predict_accuracy() -> Result<(), String> {
+    //自动保存预测的准确率聚合 1天统计一次
+    pub fn autosave_predict_accuracy() -> Result<(), String> {
         RECORD.with_borrow_mut(|r| {
             let now = Duration::from_nanos(time()).as_secs();
             let per_second_day = 60 * 60 * 24;
@@ -465,8 +466,8 @@ pub mod autosave {
         });
         Ok(())
     }
-
-    fn autosave_prediction_history() -> Result<(), String> {
+    //定时保存质押总额  15分钟一次
+    pub fn autosave_prediction_history() -> Result<(), String> {
         RECORD.with_borrow_mut(|r| {
             let aggregation = Prediction::get_prediction_aggregation(5);
             aggregation.iter().for_each(|u| {

@@ -106,6 +106,7 @@ type Prediction = record {
   stake : record { float64; float64 };
   create_time : nat64;
   price : float64;
+  token_name : text;
 };
 type PredictorResult = record {
   trend : opt text;
@@ -131,10 +132,12 @@ type PriceData = record {
   volume : float32;
   price_diff : float32;
 };
+type Recycle = record { time : nat64 };
 type Result = variant { Ok; Err : text };
 type Result_1 = variant { Ok : WasmFile; Err : text };
 type Result_10 = variant { Ok : vec PredictorView; Err : text };
-type Result_11 = variant { Ok : User; Err : text };
+type Result_11 = variant { Ok : StakeRecord; Err : text };
+type Result_12 = variant { Ok : User; Err : text };
 type Result_2 = variant { Ok : GetBlocksResponse; Err : text };
 type Result_3 = variant { Ok : text; Err : text };
 type Result_4 = variant { Ok : vec Prediction; Err : text };
@@ -143,6 +146,16 @@ type Result_6 = variant { Ok : vec WasmFile; Err : text };
 type Result_7 = variant { Ok : nat; Err : text };
 type Result_8 = variant { Ok : ICRC2AllowanceResponse; Err : text };
 type Result_9 = variant { Ok : Prediction; Err : text };
+type Reward = record { time : nat64; reward_amount : nat64 };
+type StakeRecord = record {
+  reward : opt Reward;
+  is_staking : bool;
+  cost : opt Recycle;
+  stake_time : nat64;
+  account : Account;
+  amount : nat64;
+  token_name : text;
+};
 type State = record {
   bias : opt vec float32;
   max_values : vec float32;
@@ -235,19 +248,18 @@ service : () -> {
   list_symbol_kind : () -> (vec text) query;
   minting_or_burn : (Account, nat) -> (Result_7);
   predict : () -> (float32) query;
-  prediction_record : () -> ();
-  push_user_pred : (Prediction) -> (Result_9);
+  prediction_record : (Prediction) -> (Result_9);
   refill_random_buffer : (nat32) -> ();
   restore_from_file : (text) -> (Result);
   show_predictions : () -> (Result_10) query;
   // 质押token  累计计算
-  stake : (nat, nat64) -> (Result);
-  staking_operation_record : () -> ();
+  stake : (text, nat, nat64) -> (Result);
+  staking_operation_record : (StakeRecord) -> (Result_11);
   test_1 : (DurationRange) -> (nat64, nat64) query;
   train : (nat64) -> ();
   unstake : () -> (Result);
   upload_json_file : (blob) -> ();
   upload_wasm : (text, text, blob, UpdateType) -> (Result_3);
-  user_login : () -> (Result_11) query;
-  user_register : () -> (Result_11);
+  user_login : () -> (Result_12) query;
+  user_register : () -> (Result_12);
 }

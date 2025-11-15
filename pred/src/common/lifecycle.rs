@@ -62,8 +62,8 @@ pub enum Value<K: Ord, V = String> {
     Text(String),
     Number(u64),
     Tuple1(V),
-    Tuple2(V,V),
-    Tuple3(V,V,V),
+    Tuple2(V, V),
+    Tuple3(V, V, V),
     BtreeMap(BTreeMap<K, V>),
     Vector(Vec<V>), // 可以添加更多变体
 }
@@ -89,8 +89,8 @@ use crate::api::config::config_entity::Config;
 use crate::common::constants::config::{
     FIVE_MIN_TIMER_INTERVAL, ONE_HOUR_IMER_INTERVAL, PREDICT_FLAG_KEY, TIMER_INTERVAL_KEY, T_FLAG,
 };
-use crate::services::pred_service::predict_entity::Predictor;
-use crate::services::pred_service::predict_service::push_predictor_to_backend;
+use crate::services::user_predict_service::predict_entity::Predictor;
+use crate::services::user_predict_service::predict_service::{ push_to_backend};
 use getrandom::Error;
 use ic_cdk::api::time;
 use ic_cdk_timers::{set_timer, set_timer_interval, TimerId};
@@ -140,29 +140,21 @@ pub fn periodic_task() -> () {
             let now = Duration::from_nanos(time()).as_secs();
             // 计算距离下一个整点的秒数
             let next_running_duration = duration - (now % duration);
-            let next_running_time=now+next_running_duration;
-            schedule_next_tick(duration,next_running_duration,next_running_time);
+            let next_running_time = now + next_running_duration;
+            schedule_next_tick(duration, next_running_duration, next_running_time,task_list);
         }
     })
 }
-fn schedule_next_tick(duration: u64,next_running_duration:u64,next_running_time:u64) {
-   
-    let timer_id = set_timer(Duration::from_secs(next_running_duration), move|| {
-        spawn(async move {
-            // 这里是你的核心异步任务逻辑
-            ic_cdk::println!("start schedule_next_tick");
-            task_list();
-            
-            let next_running_duration=next_running_time-Duration::from_nanos(time()).as_secs();
-            if duration<0 {
-                panic!("Failed to schedule next tick");
-            }
-            let next_running_time=next_running_time+duration;
-            // 任务完成后，立即安排下一次执行
-            schedule_next_tick(duration,next_running_duration, next_running_time);
-        });
+fn schedule_next_tick(duration: u64, next_running_duration: u64, next_running_time: u64, func: fn(), ) {
+    let timer_id = set_timer(Duration::from_nanos(next_running_duration), move || {
+        ic_cdk::println!("now {}, next_running_time:{} ", time(), next_running_time);
+        func();
+        let now = time(); // 在闭包内部获取当前时间
+                          // 基于当前时间重新计算下一次执行时间
+        let next_running_duration = duration - (now % duration);
+        let next_running_time = now + next_running_duration;
+        schedule_next_tick(duration, next_running_duration, next_running_time, func);
     });
-
     // 存储定时器ID
     TIMER_ID.with(|timer_id_cell| {
         *timer_id_cell.borrow_mut() = timer_id;
@@ -172,12 +164,6 @@ fn schedule_next_tick(duration: u64,next_running_duration:u64,next_running_time:
 pub fn task_list() -> () {
     ic_cdk::println!("running task_list");
     spawn(async move {
-        let x = push_pred().await;
+        let x = push_to_backend().await;
     });
-}
-async fn push_pred() -> Result<(), String> {
-    //推送预测结果
-    ic_cdk::println!("running push_pred");
-    let p = push_predictor_to_backend().await?;
-    Ok(())
 }

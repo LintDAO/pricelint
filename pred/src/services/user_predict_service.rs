@@ -5,8 +5,8 @@ use ic_stable_structures::Storable;
 use std::borrow::Cow;
 use ic_cdk::api::call::CallResult;
 use ic_cdk::call;
-use crate::common::constants::IC_BACKEND_CANISTER_ID;
-use crate::services::pred_service::predict_entity::Predictor;
+use crate::common::constants::canister_id::IC_BACKEND_CANISTER_ID;
+use crate::services::user_predict_service::predict_entity::Predictor;
 
 pub mod predict_entity{
     use candid::utils::ArgumentEncoder;
@@ -19,7 +19,7 @@ pub mod predict_entity{
     use ic_cdk::api::call::CallResult;
     use ic_cdk::api::management_canister::main::CanisterIdRecord;
     use ic_cdk::call;
-    use crate::common::constants::IC_BACKEND_CANISTER_ID;
+    use crate::common::constants::canister_id::IC_BACKEND_CANISTER_ID;
 
     #[derive(Serialize, Deserialize, CandidType, Clone, Default)]
     pub struct Predictor {
@@ -50,14 +50,14 @@ pub mod predict_service{
     use candid::Principal;
     use ic_cdk::api::call::CallResult;
     use ic_cdk::call;
-    use crate::common::constants::IC_BACKEND_CANISTER_ID;
-    use crate::services::pred_service::predict_entity::Predictor;
+    use crate::common::constants::canister_id::IC_BACKEND_CANISTER_ID;
+    use crate::services::user_predict_service::predict_entity::Predictor;
 
     // 推送到 backend canister
-    pub async fn push_predictor_to_backend()->Result<Predictor,String> {
+    pub async fn push_to_backend()->Result<Predictor,String> {
         let canister_id=Principal::from_text(IC_BACKEND_CANISTER_ID).map_err(|e|e.to_string())?;
         let args=Predictor::default();
-        let result:CallResult<(Predictor,)> =call(canister_id, "push_user_pred", (args,)).await;
+        let result:CallResult<(Predictor,)> =call(canister_id, "prediction_record", (args,)).await;
         let (ret,)=result.map_err(|(r,e)| e.to_string())?;
         Ok(ret)
     }

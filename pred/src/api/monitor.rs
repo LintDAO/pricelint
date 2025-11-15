@@ -3,8 +3,8 @@ use ic_cdk::{api, call, caller, post_upgrade, pre_upgrade, query, update};
 use crate::common::guard::is_owner;
 use ic_cdk::api::call::CallResult;
 use ic_cdk::api::time;
-use crate::common::constants::{IC_BACKEND_CANISTER_ID, LOCAL_BACKEND_CANISTER_ID};
-use crate::services::pred_service::predict_entity::{Pred, Predictor};
+use crate::common::constants::canister_id::LOCAL_BACKEND_CANISTER_ID;
+use crate::services::user_predict_service::predict_entity::{Pred, Predictor};
 
 //监控canisters数据
 #[query(guard = "is_owner")]

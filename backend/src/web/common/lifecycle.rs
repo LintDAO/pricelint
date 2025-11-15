@@ -1,20 +1,10 @@
-use crate::common::utils::xrc;
-use crate::common::utils::xrc::{
-    Asset, ExchangeRate, GetExchangeRateRequest, GetExchangeRateResult,
-};
-use crate::web::common::constants::XRC_CANISTER_ID;
+use crate::common::utils::time::NANOS_PER_SEC;
 use crate::web::common::guard::init_admin;
-use crate::web::services::prediction_service::ExtendPredictorService;
-use candid::Principal;
+use crate::web::services::prediction_service::autosave;
 use ic_cdk::api::time;
-use ic_cdk::{ init, post_upgrade, pre_upgrade, spawn};
-use ic_cdk_timers::{set_timer, set_timer_interval};
-use std::fmt;
-use std::fmt::Debug;
-use std::future::IntoFuture;
+use ic_cdk::{init, post_upgrade, pre_upgrade, spawn};
+use ic_cdk_timers::set_timer;
 use std::time::Duration;
-use tokio::runtime::Handle;
-
 #[init]
 fn init() {
     init_admin();
@@ -33,25 +23,47 @@ fn post_upgrade() {
 }
 
 fn init_timer() {
-    let duration = 60 * 60;
-    let now = Duration::from_nanos(time()).as_secs();
-    // 计算距离下一个整点的秒数
-    let next_running_duration = duration - (now % duration);
-    let next_running_time = now + next_running_duration;
+    let duration_15m = NANOS_PER_SEC * 60 * 15;
+    let duration_60m = NANOS_PER_SEC * 60 * 60;
+    let duration_1d = duration_60m * 24;
+    let now = time();
     schedule_next_tick(
-        duration,
-        next_running_duration,
-        next_running_time,
-        schedule_tasklists,
+        duration_15m,
+        duration_15m - (now % duration_15m),
+        now + (duration_15m - (now % duration_15m)),
+        schedule_tasklists_15m,
+    );
+    schedule_next_tick(
+        duration_60m,
+        duration_60m - (now % duration_60m),
+        now + (duration_60m - (now % duration_60m)),
+        schedule_tasklists_60m,
+    );
+    schedule_next_tick(
+        duration_1d,
+        duration_1d - (now % duration_1d),
+        now + (duration_1d - (now % duration_1d)),
+        schedule_tasklists_1d,
     );
 }
 
-fn schedule_tasklists() {
-    ic_cdk::println!("schedule_tasklists:{}", time());
+fn schedule_tasklists_15m() {
+    ic_cdk::println!("schedule_tasklists_15m:{}", time());
+    autosave::autosave_stake_amount();
+    autosave::autosave_prediction_history();
     spawn(async move {
-        // let x=Predictor::autosave_predictor().await;       
-        // let x=Predictor::autosave_exchange_rate().await;
+        let exchange_error=autosave::autosave_exchange_rate().await;
     })
+}
+fn schedule_tasklists_60m() {
+    ic_cdk::println!("schedule_tasklists_60m:{}", time());
+    spawn(async move {})
+}
+
+fn schedule_tasklists_1d() {
+    ic_cdk::println!("schedule_tasklists_1d:{}", time());
+    autosave::autosave_predict_accuracy();
+    spawn(async move {})
 }
 // 计划下一个任务执行时间
 fn schedule_next_tick(
@@ -60,18 +72,13 @@ fn schedule_next_tick(
     next_running_time: u64,
     func: fn(),
 ) {
-    let timer_id = set_timer(Duration::from_secs(next_running_duration), move || {
-        spawn(async move {
-            // 这里是你的核心异步任务逻辑
-            ic_cdk::println!("start schedule_next_tick");
-            func();
-            let next_running_duration = next_running_time - Duration::from_nanos(time()).as_secs();
-            if duration < 0 {
-                panic!("Failed to schedule next tick");
-            }
-            let next_running_time = next_running_time + duration;
-            // 任务完成后，立即安排下一次执行
-            schedule_next_tick(duration, next_running_duration, next_running_time, func);
-        });
+    let timer_id = set_timer(Duration::from_nanos(next_running_duration), move || {
+        ic_cdk::println!("now {}, next_running_time:{} ", time(), next_running_time);
+        func();
+        let now = time(); // 在闭包内部获取当前时间
+                          // 基于当前时间重新计算下一次执行时间
+        let next_running_duration = duration - (now % duration);
+        let next_running_time = now + next_running_duration;
+        schedule_next_tick(duration, next_running_duration, next_running_time, func);
     });
 }

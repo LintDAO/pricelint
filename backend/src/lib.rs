@@ -17,7 +17,7 @@ use crate::web::models::exchange_rate::{ExchangeRateRecord, ExchangeRateRecordKe
 use crate::web::models::prediction_model::{
     Prediction, PredictionHistory, PredictionKey, PredictorView,
 };
-use crate::web::models::stake_model::{Stake, StakeRecord};
+use crate::web::models::stake_model::{Stake, StakeKey, StakeRecord};
 use crate::web::models::temp_stable::{TempMapValue, TempVecValue};
 use crate::web::models::user_model::User;
 use crate::web::models::wallet_model::Wallet;
@@ -100,7 +100,7 @@ init_stable_memory!(
 init_stable_memory!(WASM_FILES,WASM_FILES_MEMORY_ID,map<String, WasmFile>);
 init_stable_memory!(EXCHANGE_RATE,EXCHANGE_RATE_MEMORY_ID,map<ExchangeRateRecordKey,ExchangeRateRecord>);
 init_stable_memory!(PREDICTION,PREDICTION_MEMORY_ID,map<PredictionKey,Prediction>);
-init_stable_memory!(STAKE,STAKE_MEMORY_ID,map<String,Stake>);
+init_stable_memory!(STAKE,STAKE_MEMORY_ID,map<StakeKey,Stake>);
 init_stable_memory!(CANISTER_LIST,CANISTER_LIST_MEMORY_ID,map<String,StringVec>);
 
 //存储预测各种结果数据
@@ -139,6 +139,7 @@ pub mod impl_storable {
     use serde::{Deserialize, Serialize};
     use std::borrow::Cow;
     use std::collections::BTreeMap;
+    use crate::web::models::stake_model::StakeKey;
 
     #[derive(Deserialize, Serialize, Clone, CandidType)]
     pub struct StringVec(pub Vec<String>);
@@ -157,6 +158,7 @@ pub mod impl_storable {
     impl_storable!(ExchangeRateRecord);
     impl_storable!(ExchangeRateRecordKey);
     impl_storable!(PredictorView);
+    impl_storable!(StakeKey);
     impl_storable!(Stake);
 
     impl_storable!(TempMapValue<K,V>);

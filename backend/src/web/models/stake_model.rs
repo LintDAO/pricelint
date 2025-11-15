@@ -1,9 +1,9 @@
+use crate::common::utils::xrc::ExchangeRate;
+use crate::impl_storable;
 use candid::{CandidType, Nat, Principal};
 use icrc_ledger_types::icrc1::account::Account;
 use icrc_ledger_types::icrc1::transfer::{BlockIndex, NumTokens};
 use serde::{Deserialize, Serialize};
-use crate::common::utils::xrc::ExchangeRate;
-use crate::impl_storable;
 
 #[derive(CandidType, Deserialize, Serialize)]
 pub struct ICRC2TransferFromArgs {
@@ -32,7 +32,6 @@ pub enum TransferError {
     InsufficientFunds { balance: u128 },
 }
 
-
 #[derive(Serialize, Deserialize, CandidType)]
 pub struct GetBlocksArgs {
     pub start: BlockIndex,
@@ -53,8 +52,6 @@ pub struct ICRC1BalanceOfArgs {
     pub subaccount: Option<Vec<u8>>,
 }
 
-
-
 #[derive(CandidType, Deserialize, Serialize)]
 pub struct AllowanceArgs {
     pub account: Account,
@@ -66,8 +63,6 @@ pub struct ICRC2AllowanceResponse {
     pub allowance: Nat,
     pub expires_at: Option<u64>,
 }
-
-
 
 #[derive(CandidType, Deserialize, Serialize)]
 pub struct ApproveArgs {
@@ -135,111 +130,107 @@ pub enum ApproveResult {
     Err(ApproveError),
 }
 
-
-
 #[derive(CandidType, Deserialize, Serialize)]
 pub struct SwapArgs {
-    pub user:Principal,
-    pub amount:Nat,
+    pub user: Principal,
+    pub amount: Nat,
 }
 #[derive(CandidType, Deserialize, Serialize)]
-pub struct SwapResponse {
-
-}
-
+pub struct SwapResponse {}
 
 #[derive(CandidType, Deserialize, Serialize)]
 pub struct WithdrawArgs {
     pub token: Principal,
-    pub to: Account,      // 账户结构体
+    pub to: Account, // 账户结构体
     pub amount: Nat,
     pub fee: Option<Nat>,
     pub memo: Option<Vec<u8>>,
     pub created_at_time: Option<u64>,
 }
 
-
-
+// (user_principal,canister_principal,token_name)
+#[derive(Serialize, Deserialize, Debug, Clone, CandidType, Ord, PartialOrd, Eq, PartialEq)]
+pub struct StakeKey(pub String, pub String, pub String);
 
 //稳定存储的数据
 //本结构体用于stake的一个简单记录和存储 ，实际结果以记账罐数据为准
-#[derive(CandidType, Deserialize, Serialize,Clone)]
-pub struct Stake{
-    pub id:String,
-    pub account:Account,
-    pub token_balance:Nat, //PCL质押金额
-    pub lock_period_days :u64, //质押周期 天
-    pub unlock_time :u64,    //解除锁定的时间戳
-    pub last_op_time:u64,   //最后操作时间
-    pub stake_detail:StakeDetail,
+#[derive(CandidType, Deserialize, Serialize, Clone)]
+pub struct Stake {
+    pub id: String,
+    pub account: Account,
+    pub token_balance: Nat,    //PCL质押金额
+    pub lock_period_days: u64, //质押周期 天
+    pub unlock_time: u64,      //解除锁定的时间戳
+    pub last_op_time: u64,     //最后操作时间
+    pub stake_detail: StakeDetail,
 }
 
-#[derive(CandidType, Deserialize, Serialize,Clone)]
+#[derive(CandidType, Deserialize, Serialize, Clone)]
 pub struct StakeDetail {
     //质押比例
-    pub staking_percentage:f64,
+    pub staking_percentage: f64,
     //质押的token的名字
-    pub token_name:String,
+    pub token_name: String,
+    //质押用户的principal
+    pub user_principal:String,
+    //参与质押的canister
+    pub canister_principal:String,
 }
 
-
-pub  enum  TransactionsKind{
+pub enum TransactionsKind {
     Transfer,
     Mint,
     Burn,
-    Approve
+    Approve,
 }
 //记录stake质押历史的相关信息 不一定需要
-pub struct StakeInfo{
-    pub id:Nat,
+pub struct StakeInfo {
+    pub id: Nat,
     //操作者
     pub operator: Account,
     //转账类型
-    pub kind:TransactionsKind,
+    pub kind: TransactionsKind,
 
     //操作时间
-    pub time:u64,
+    pub time: u64,
 }
 
 //具体质押操作记录
 //解质押只能解除没有参与质押的,记录这部分是参与了质押的只能被消耗回收
-#[derive(CandidType, Deserialize, Serialize,Clone)]
-pub struct StakeRecord{
+#[derive(CandidType, Deserialize, Serialize, Clone)]
+pub struct StakeRecord {
     //操作账户
     pub account: Account,
     //质押时间
-    pub stake_time:u64,
+    pub stake_time: u64,
     //质押代币被回收或者消耗
-    pub cost:Option<Recycle>,
+    pub cost: Option<Recycle>,
     //质押的奖励发放
-    pub reward:Option<Reward>,
+    pub reward: Option<Reward>,
     //操作金额
-    pub amount:u64,
-    //是否质押状态 
+    pub amount: u64,
+    //是否质押状态
     //不在质押状态就是被回收或者奖励了
-    pub is_staking:bool,
+    pub is_staking: bool,
     //质押目标token的名字也，就是你使用了我们的代币对什么token进行质押
-    pub token_name:String,
+    pub token_name: String,
 }
 //回收
-#[derive(CandidType, Deserialize, Serialize,Clone)]
-pub  struct Recycle{
+#[derive(CandidType, Deserialize, Serialize, Clone)]
+pub struct Recycle {
     //回收代币的时间
-    pub time:u64,
+    pub time: u64,
 }
 //奖励
-#[derive(CandidType, Deserialize, Serialize,Clone)]
-pub struct Reward{
+#[derive(CandidType, Deserialize, Serialize, Clone)]
+pub struct Reward {
     //奖励发放的时间
-    pub time:u64,
+    pub time: u64,
     //额外奖励金额=其他未质押中的金额的加权平均，根据质押的金额加权
     //总奖励金额=质押金额+额外奖励金额
-    pub reward_amount:u64
+    pub reward_amount: u64,
 }
-
 
 //通过token代币 用户  质押数据首次产生时间 唯一确认
 #[derive(Serialize, Deserialize, Debug, Clone, CandidType, Ord, PartialOrd, Eq, PartialEq)]
 pub struct StakeRecordKey(pub String, pub Account, pub u64);
-
-

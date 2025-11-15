@@ -1,5 +1,5 @@
-// 按道理来说这个agent调用应该前端实现 直接用户自己的principal操作 待验证 看是否规定强制canister的principal
-//此处的所有方法都是canister代替操作 如果需要用户直接操作 则需要在前端agent实现调用
+
+//该模块的所有操作都是本canister在操作并不是用户本身，需要用户本身大操作直接前端调用principal
 pub mod icrc_api {
     use crate::web::common::constants::ICRC1_LEDGER_CANISTER_ID;
     use crate::web::common::guard::is_admin;
@@ -220,19 +220,17 @@ pub mod stake {
     use crate::web::api::stake_api::transfer_log::get_transactions;
     use crate::web::common::constants::ICRC1_LEDGER_CANISTER_ID;
     use crate::web::common::errors::StakeError;
-    use crate::web::models::stake_model::{Stake, StakeDetail};
+    use crate::web::models::stake_model::{Stake, StakeDetail, StakeKey};
     use crate::STAKE;
     use candid::{Nat, Principal};
     use ic_cdk::api::time;
     use ic_cdk::{caller, id, update};
     use icrc_ledger_types::icrc1::account::Account;
-    use icrc_ledger_types::icrc2::transfer_from::TransferFromArgs;
     use icrc_ledger_types::icrc3::transactions::{GetTransactionsRequest, Transaction, Transfer};
-    use std::ops::Deref;
-
+    use crate::web::common::guard::is_named_user;
     ///质押token  累计计算
-    #[update]
-    pub async fn stake(stake_amount: Nat, lock_days: u64,) -> Result<(), String> {
+    #[update(guard = "is_named_user")]
+    pub async fn stake(canister_id:String,token_name:String,stake_amount: Nat, lock_days: u64,) -> Result<(), String> {
         if stake_amount <= Nat::from(0u32) {
             return Err(StakeError::StakeAmountIsZero.to_string());
         }
@@ -279,32 +277,34 @@ pub mod stake {
                     {
                         //转账成功
                         STAKE.with(|map| {
-                            let stake = map.borrow_mut().get(&(caller().to_string()));
+                            let stake = map.borrow_mut().get(&StakeKey(caller().to_string(),canister_id.clone(),token_name.clone()));
                             let now_time = time();
+
                             match stake {
                                 None => {
                                     let new_stake = Stake {
                                         id: hash_salt(caller(), time().to_string()),
                                         account: Account::from(caller()),
                                         token_balance: stake_amount, //
-                                        lock_period_days: 0,         //质押周期 待定
+                                        lock_period_days: lock_days,         //质押周期 待定
                                         unlock_time: now_time + lock_days * NANOS_PER_DAY,
                                         last_op_time: now_time,
                                         stake_detail: StakeDetail {
-                                            //todo 后续修改
+                                            //TODO 后续改动
                                             staking_percentage: 0.0,
-                                            token_name: "".to_string(),
+                                            token_name: token_name.clone(),
+                                            user_principal: caller().to_string(),
+                                            canister_principal: canister_id.to_string(),
                                         },
                                     };
-                                    map.borrow_mut().insert(caller().to_string(), new_stake);
+                                    map.borrow_mut().insert(StakeKey(caller().to_string(),canister_id.clone(),token_name.clone()), new_stake);
                                 }
                                 Some(mut some_stake) => {
                                     some_stake.token_balance += stake_amount;
                                     some_stake.last_op_time += now_time;
                                     some_stake.lock_period_days =
                                         now_time + lock_days * NANOS_PER_DAY; //质押周期 待定 后续修改具体值
-
-                                    map.borrow_mut().insert(caller().to_string(), some_stake);
+                                    map.borrow_mut().insert(StakeKey(caller().to_string(),canister_id.clone(),token_name.clone()), some_stake);
                                 } //质押之后 应该有个存款map记录质押的存款 后续待定
                             }
                         });
@@ -319,9 +319,9 @@ pub mod stake {
 
     //解质押全部token
     #[update]
-    pub async fn unstake() -> Result<(), String> {
+    pub async fn unstake(canister_id:String,token_name:String) -> Result<(), String> {
         let some_stake = STAKE.with(|map| {
-            let stake = map.borrow().get(&(caller().to_string()));
+            let stake = map.borrow().get(&StakeKey(caller().to_string(),canister_id.clone(),token_name.clone()));
             return Ok(match stake {
                 None => {
                     return Err(StakeError::UserHasNotStake.to_string());
@@ -350,7 +350,7 @@ pub mod stake {
             unstake.token_balance=Nat::from(0u32);
             unstake.last_op_time=now_time;
             unstake.lock_period_days=0;
-            map.borrow_mut().insert(caller().to_string(),unstake);
+            map.borrow_mut().insert(StakeKey(caller().to_string(),canister_id.clone(),token_name.clone()),unstake);
         });
         //因为是解质押就不需要太多验证了  直接提取到用户钱包
         Ok(())
@@ -376,7 +376,7 @@ pub mod stake_api{
     use crate::web::models::stake_model::Stake;
 
     //批量结算token
-    fn settle_token(){
+    fn settled_token(){
         //1.获取预测结果
         //2.根据预测结果 结算用户质押的token
         //3.如果质押的PCL小于固定值则不结算

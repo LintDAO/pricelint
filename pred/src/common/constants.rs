@@ -16,7 +16,17 @@ pub mod config{
    pub const _VALUE:&str  = "_value"; 
 }
 
+pub mod duration{
+   pub const NANOS_PER_MICRO: u64 = 1_000;
+   pub const NANOS_PER_MILLI: u64 = 1_000_000;
+   pub const NANOS_PER_SEC: u64 = 1_000_000_000;
+   pub const NANOS_PER_MINUTE: u64 = 60 * NANOS_PER_SEC;
+   pub const NANOS_PER_HOUR: u64 = 60 * NANOS_PER_MINUTE;
+   pub const NANOS_PER_DAY: u64 = 24 * NANOS_PER_HOUR;
+}
+//定义各种canister_id 集中放置
+pub mod canister_id{
+   pub const IC_BACKEND_CANISTER_ID: &str = "eov5t-niaaa-aaaah-arepa-cai";
+   pub const LOCAL_BACKEND_CANISTER_ID: &str = "uxrrr-q7777-77774-qaaaq-cai";
+}
 
-
-pub const IC_BACKEND_CANISTER_ID: &str = "eov5t-niaaa-aaaah-arepa-cai";
-pub const LOCAL_BACKEND_CANISTER_ID: &str = "uxrrr-q7777-77774-qaaaq-cai";
