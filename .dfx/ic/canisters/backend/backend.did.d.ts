@@ -103,10 +103,10 @@ export interface Mint {
   'amount' : bigint,
 }
 export interface Pred {
-  'up' : number,
-  'staked' : number,
+  'up' : bigint,
+  'staked' : bigint,
   'trend' : string,
-  'down' : number,
+  'down' : bigint,
 }
 export interface Prediction {
   'id' : string,
@@ -117,6 +117,7 @@ export interface Prediction {
   'stake' : [number, number],
   'create_time' : bigint,
   'price' : number,
+  'token_name' : string,
 }
 export interface PredictorResult {
   'trend' : [] | [string],
@@ -142,13 +143,16 @@ export interface PriceData {
   'volume' : number,
   'price_diff' : number,
 }
+export interface Recycle { 'time' : bigint }
 export type Result = { 'Ok' : null } |
   { 'Err' : string };
 export type Result_1 = { 'Ok' : WasmFile } |
   { 'Err' : string };
 export type Result_10 = { 'Ok' : Array<PredictorView> } |
   { 'Err' : string };
-export type Result_11 = { 'Ok' : User } |
+export type Result_11 = { 'Ok' : StakeRecord } |
+  { 'Err' : string };
+export type Result_12 = { 'Ok' : User } |
   { 'Err' : string };
 export type Result_2 = { 'Ok' : GetBlocksResponse } |
   { 'Err' : string };
@@ -166,6 +170,16 @@ export type Result_8 = { 'Ok' : ICRC2AllowanceResponse } |
   { 'Err' : string };
 export type Result_9 = { 'Ok' : Prediction } |
   { 'Err' : string };
+export interface Reward { 'time' : bigint, 'reward_amount' : bigint }
+export interface StakeRecord {
+  'reward' : [] | [Reward],
+  'is_staking' : boolean,
+  'cost' : [] | [Recycle],
+  'stake_time' : bigint,
+  'account' : Account,
+  'amount' : bigint,
+  'token_name' : string,
+}
 export interface State {
   'bias' : [] | [Array<number>],
   'max_values' : Array<number>,
@@ -269,21 +283,22 @@ export interface _SERVICE {
   'list_symbol_kind' : ActorMethod<[], Array<string>>,
   'minting_or_burn' : ActorMethod<[Account, bigint], Result_7>,
   'predict' : ActorMethod<[], number>,
-  'push_user_pred' : ActorMethod<[Prediction], Result_9>,
+  'prediction_record' : ActorMethod<[Prediction], Result_9>,
   'refill_random_buffer' : ActorMethod<[number], undefined>,
   'restore_from_file' : ActorMethod<[string], Result>,
   'show_predictions' : ActorMethod<[], Result_10>,
-  'stake' : ActorMethod<[bigint, bigint], Result>,
+  'stake' : ActorMethod<[string, string, bigint, bigint], Result>,
+  'staking_operation_record' : ActorMethod<[StakeRecord], Result_11>,
   'test_1' : ActorMethod<[DurationRange], [bigint, bigint]>,
   'train' : ActorMethod<[bigint], undefined>,
-  'unstake' : ActorMethod<[], Result>,
+  'unstake' : ActorMethod<[string, string], Result>,
   'upload_json_file' : ActorMethod<[Uint8Array | number[]], undefined>,
   'upload_wasm' : ActorMethod<
     [string, string, Uint8Array | number[], UpdateType],
     Result_3
   >,
-  'user_login' : ActorMethod<[], Result_11>,
-  'user_register' : ActorMethod<[], Result_11>,
+  'user_login' : ActorMethod<[], Result_12>,
+  'user_register' : ActorMethod<[], Result_12>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

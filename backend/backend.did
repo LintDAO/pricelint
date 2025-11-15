@@ -253,11 +253,11 @@ service : () -> {
   restore_from_file : (text) -> (Result);
   show_predictions : () -> (Result_10) query;
   // 质押token  累计计算
-  stake : (text, nat, nat64) -> (Result);
+  stake : (text, text, nat, nat64) -> (Result);
   staking_operation_record : (StakeRecord) -> (Result_11);
   test_1 : (DurationRange) -> (nat64, nat64) query;
   train : (nat64) -> ();
-  unstake : () -> (Result);
+  unstake : (text, text) -> (Result);
   upload_json_file : (blob) -> ();
   upload_wasm : (text, text, blob, UpdateType) -> (Result_3);
   user_login : () -> (Result_12) query;
