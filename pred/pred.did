@@ -39,6 +39,9 @@ type TrainConfig = record {
 };
 type Value = variant {
   Text : text;
+  Tuple1 : text;
+  Tuple2 : record { text; text };
+  Tuple3 : record { text; text; text };
   BtreeMap : vec record { text; text };
   Vector : vec text;
   Number : nat64;
@@ -47,15 +50,17 @@ service : () -> {
   collect_metrics : () -> ();
   find_model_lists : () -> (Result) query;
   get_canister_info : () -> () query;
-  get_current_version : () -> () query;
+  get_current_version : () -> (opt record { text; text }) query;
   get_default_model : () -> (Result_1) query;
   is_predict_running : () -> (bool) query;
   predict : () -> (Result_2);
+  set_current_version : (text, text) -> () query;
   set_default_model : (text) -> (Result_3);
   set_start_predict : () -> (Result_4);
   set_stop_predict : () -> (Result_4);
   set_timer_interval : (nat64) -> (Result_4);
   set_train_params : (TrainConfig) -> (Result_4);
+  t : () -> ();
   test1 : () -> (Result_5);
   train : () -> (Result_4);
   update_canister_info : () -> ();

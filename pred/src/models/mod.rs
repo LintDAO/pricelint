@@ -1,1 +1,4 @@
-pub mod lstm_v1;
+pub mod lstm;
+pub mod linear;
+pub mod interface;
+

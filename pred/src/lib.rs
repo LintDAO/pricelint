@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate candid;
+
 mod common;
 mod models;
 mod api;

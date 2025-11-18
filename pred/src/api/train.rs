@@ -2,12 +2,12 @@ use crate::common::constants::config::DEFAULT_MODEL_KEY;
 use crate::common::errors::ConfigError;
 use crate::common::guard::is_owner;
 use crate::common::lifecycle::{Value, CONFIG};
-use crate::models::lstm_v1::{load_model, LstmModel};
 use burn::backend::ndarray::NdArrayDevice;
 use burn::backend::{Autodiff, NdArray};
 use burn::tensor::{DataError, Tensor, TensorData};
 use ic_cdk::{query, update};
 use crate::api::config::default_model_config::get_default_model;
+use crate::models::lstm::v1::lstm::{load_model, LstmModel};
 
 #[update(guard = "is_owner")]
 fn train() -> Result<(), String> {
@@ -55,8 +55,7 @@ fn predict() -> Result<Vec<f32>, String> {
             let device = NdArrayDevice::Cpu;
 
             // 加载模型
-            let model: LstmModel<Autodiff<NdArray>> =
-                load_model(&device).map_err(|e| e.to_string())?;
+            let model: LstmModel<Autodiff<NdArray>> = load_model(&device).map_err(|e| e.to_string())?;
             let input = vec![1.0f32, 2.0, 3.0];
             // 输入预处理
             let seq_len = input.len();

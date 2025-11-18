@@ -57,7 +57,7 @@ init_stable_memory!(MODEL_MAP,0,map<String, Vec<u8>>);
 init_stable_memory!(CONFIG,1,map<String, Value<String>>);
 init_stable_memory!(LOG,String,log<index:2, data:3>);
 
-#[derive(CandidType, Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, candid::Deserialize, Debug, Clone, candid::CandidType)]
 pub enum Value<K: Ord, V = String> {
     Text(String),
     Number(u64),
@@ -67,24 +67,7 @@ pub enum Value<K: Ord, V = String> {
     BtreeMap(BTreeMap<K, V>),
     Vector(Vec<V>), // 可以添加更多变体
 }
-impl<K> Storable for Value<K>
-where
-    K: Ord + Clone + Serialize + for<'de> Deserialize<'de>,
-{
-    fn to_bytes(&self) -> Cow<[u8]> {
-        let bytes = bincode::serialize(self).expect("Failed to serialize object");
-        Cow::Owned(bytes)
-    }
-
-    fn from_bytes(bytes: Cow<[u8]>) -> Self {
-        bincode::deserialize(&bytes).expect("Failed to deserialize enum object")
-    }
-
-    const BOUND: Bound = Bound::Bounded {
-        max_size: 10_000_000,
-        is_fixed_size: false,
-    };
-}
+impl_storable!(Value<K,V>);
 use crate::api::config::config_entity::Config;
 use crate::common::constants::config::{
     FIVE_MIN_TIMER_INTERVAL, ONE_HOUR_IMER_INTERVAL, PREDICT_FLAG_KEY, TIMER_INTERVAL_KEY, T_FLAG,
@@ -94,6 +77,7 @@ use crate::services::user_predict_service::predict_service::{ push_to_backend};
 use getrandom::Error;
 use ic_cdk::api::time;
 use ic_cdk_timers::{set_timer, set_timer_interval, TimerId};
+use crate::impl_storable;
 
 #[no_mangle]
 unsafe extern "Rust" fn __getrandom_v03_custom(dest: *mut u8, len: usize) -> Result<(), Error> {

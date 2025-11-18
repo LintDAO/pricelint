@@ -18,42 +18,72 @@ macro_rules! impl_error {
 }
 #[macro_export]
 macro_rules! impl_storable {
-    ($type:ident <$gen:ident >) => {
-       impl<$genric> Storable for $type<$genric>
+    ($type:ident <$genric:ident> $(,[$max_size:expr,$is_fixed_size:expr])?) => {
+        impl<$genric> Storable for $type<$genric>
         where
-            $genric: Serialize + for<'de> Deserialize<'de>,
+            $genric: Serialize + for<'de> Deserialize<'de>, $genric: candid::CandidType
         {
             fn to_bytes(&self) -> Cow<[u8]> {
-                let bytes = bincode::serialize(self).expect("Serialization failed");
-                Cow::Owned(bytes)
+                Cow::Owned(Encode!(self).unwrap())
             }
 
             fn from_bytes(bytes: Cow<[u8]>) -> Self {
-                bincode::deserialize(&bytes).expect("Deserialization failed")
+                Decode!(bytes.as_ref(), Self).unwrap()
             }
 
             const BOUND: Bound = Bound::Bounded {
-                max_size: 10_000_000, // 调整为类型的最大预期大小（字节）
-                is_fixed_size: false,
+                max_size: impl_storable!(@get max_size, $($max_size)?),
+                is_fixed_size: impl_storable!(@get is_fixed_size, $($is_fixed_size)?),
+            };
+
+
+        }
+    };
+
+
+    ($type:ident <$genric1:ident,$genric2:ident> $(, [$max_size:expr, $is_fixed_size:expr])?) => {
+        impl<$genric1,$genric2> Storable for $type<$genric1,$genric2>
+        where
+            $genric1: Serialize + for<'de> Deserialize<'de>,
+            $genric2: Serialize + for<'de> Deserialize<'de>, $genric1: std::cmp::Ord+candid::CandidType, $genric2: candid::CandidType
+        {
+            fn to_bytes(&self) -> Cow<[u8]> {
+                Cow::Owned(Encode!(self).unwrap())
+            }
+
+            fn from_bytes(bytes: Cow<[u8]>) -> Self {
+                Decode!(bytes.as_ref(), Self).unwrap()
+            }
+
+            const BOUND: Bound = Bound::Bounded {
+                 max_size: impl_storable!(@get max_size, $($max_size)?),
+                 is_fixed_size: impl_storable!(@get is_fixed_size, $($is_fixed_size)?),
             };
         }
     };
 
-    ($type:ident) => {
+
+
+    ($type:ident$(,[$max_size:expr,$is_fixed_size:expr])?) => {
         impl Storable for $type {
             fn to_bytes(&self) -> Cow<[u8]> {
-                let bytes = bincode::serialize(self).expect("Serialization failed");
-                Cow::Owned(bytes)
+                Cow::Owned(Encode!(self).unwrap())
             }
 
             fn from_bytes(bytes: Cow<[u8]>) -> Self {
-                bincode::deserialize(&bytes).expect("Deserialization failed")
+                Decode!(bytes.as_ref(), Self).unwrap()
             }
 
             const BOUND: Bound = Bound::Bounded {
-                max_size: 10_000_000, // 调整为类型的最大预期大小（字节）
-                is_fixed_size: false,
+                 max_size: impl_storable!(@get max_size, $($max_size)?),
+                 is_fixed_size: impl_storable!(@get is_fixed_size, $($is_fixed_size)?),
             };
         }
     };
+
+
+    (@get max_size, $value:expr) => { $value };
+    (@get max_size,) => { 10_000_000 };
+    (@get is_fixed_size, $value:expr) => { $value };
+    (@get is_fixed_size,) => { false };
 }

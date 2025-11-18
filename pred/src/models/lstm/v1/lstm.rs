@@ -343,8 +343,13 @@ pub fn load_model<B: Backend>(device: &B::Device) -> Result<LstmModel<B>,Recorde
     });
     let record=recorder.load::<LstmModelRecord<B>>(memory_data,&device)?;
     Ok(module.load_record(record))
-    
+
 }
 
 //（整合流程）
 fn pred() {}
+
+
+pub mod v1{
+
+}
