@@ -218,14 +218,6 @@ const columnTooltips: Record<string, string> = {
 const loading = ref(false);
 let priceTimer: any = null;
 
-onMounted(() => {
-  // getOKInfo()
-  // 每 60 秒刷新一次价格
-  // priceTimer = setInterval(() => {
-  //   refreshNowPrice();
-  // }, 60000);
-});
-
 const updateTable = debounce(async () => {
   loading.value = true;
 
@@ -288,6 +280,9 @@ const updateTable = debounce(async () => {
       const l1 = item.last_1[0] || {};
       const nx = item.next[0] || {};
 
+      // 辅助函数：把 BigInt 转 Number
+      const n = (val: any) => (typeof val === "bigint" ? Number(val) : val);
+
       return {
         id: i + 1,
         token: { name: item.token_name.replace("USDT", "-USDT"), logo: "" },
@@ -295,22 +290,37 @@ const updateTable = debounce(async () => {
         last_2: {
           price: l2.price?.[0] || 0,
           trend: (l2.trend?.[0] || "").toUpperCase(),
-          pred: l2.pred || { up: 0, down: 0, staked: 0, trend: "" },
+          pred: {
+            up: n(l2.pred?.up ?? 0),
+            down: n(l2.pred?.down ?? 0),
+            staked: n(l2.pred?.staked ?? 0),
+            trend: l2.pred?.trend || "",
+          },
         },
         last_1: {
           price: l1.price?.[0] || 0,
           trend: (l1.trend?.[0] || "").toUpperCase(),
-          pred: l1.pred || { up: 0, down: 0, staked: 0, trend: "" },
+          pred: {
+            up: n(l1.pred?.up ?? 0),
+            down: n(l1.pred?.down ?? 0),
+            staked: n(l1.pred?.staked ?? 0),
+            trend: l1.pred?.trend || "",
+          },
         },
         now: { price: 0, trend: "", pred: null },
         next: {
           trend: (nx.trend?.[0] || "").toUpperCase(),
-          pred: nx.pred || { up: 0, down: 0, staked: 0, trend: "" },
+          pred: {
+            up: n(nx.pred?.up ?? 0),
+            down: n(nx.pred?.down ?? 0),
+            staked: n(nx.pred?.staked ?? 0),
+            trend: nx.pred?.trend || "",
+          },
         },
         accuracy: item.accuracy || 0,
         stake: {
-          amount: item.stake[0] || 0, // 总数
-          change: item.stake[1] || 0, // 变化百分比
+          amount: n(item.stake[0]) || 0,
+          change: n(item.stake[1]) || 0,
         },
       };
     });
