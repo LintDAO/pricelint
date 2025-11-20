@@ -5,7 +5,6 @@ use std::fmt::Error as FmtError;
 use std::error::Error ;
 use candid::Principal;
 use ic_cdk::query;
-use serde::__private::de::IdentifierDeserializer;
 
 // 用户数据结构
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -29,3 +28,4 @@ impl Authentication<ICPAuthenticationType> for UserProfile {
         }
     }
 }
+

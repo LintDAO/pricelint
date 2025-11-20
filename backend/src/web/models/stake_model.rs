@@ -148,9 +148,10 @@ pub struct WithdrawArgs {
     pub created_at_time: Option<u64>,
 }
 
-// (user_principal,canister_principal,token_name)
+// (user_principal,canister_principal,)
+//每个canister一个token_name 所有不需要token_name
 #[derive(Serialize, Deserialize, Debug, Clone, CandidType, Ord, PartialOrd, Eq, PartialEq)]
-pub struct StakeKey(pub String, pub String, pub String);
+pub struct StakeKey(pub String, pub String);
 
 //稳定存储的数据
 //本结构体用于stake的一个简单记录和存储 ，实际结果以记账罐数据为准

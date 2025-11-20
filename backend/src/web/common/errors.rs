@@ -71,8 +71,11 @@ pub enum StakeError{
     TransactionIsNotExist,
     IsNotTransferTransaction,
     UserHasNotStake,
-    StakeAmountIsZero,
-    LockDaysIsZero,
+    StakeAmountIsInvalid,
+    LockDaysIsInvalid,
     LockPeriodNotEnd,
+    UserOrCanisterIsNotExist,
+    NotInitializedStake,//未初始化质押
+    AlreadyInitialized, // 重复初始化
 }
 impl_error!(StakeError);
