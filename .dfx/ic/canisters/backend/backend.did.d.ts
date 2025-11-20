@@ -158,13 +158,13 @@ export type Result_2 = { 'Ok' : GetBlocksResponse } |
   { 'Err' : string };
 export type Result_3 = { 'Ok' : string } |
   { 'Err' : string };
-export type Result_4 = { 'Ok' : Array<Prediction> } |
+export type Result_4 = { 'Ok' : bigint } |
   { 'Err' : string };
-export type Result_5 = { 'Ok' : GetTransactionsResponse } |
+export type Result_5 = { 'Ok' : Array<Prediction> } |
   { 'Err' : string };
-export type Result_6 = { 'Ok' : Array<WasmFile> } |
+export type Result_6 = { 'Ok' : GetTransactionsResponse } |
   { 'Err' : string };
-export type Result_7 = { 'Ok' : bigint } |
+export type Result_7 = { 'Ok' : Array<WasmFile> } |
   { 'Err' : string };
 export type Result_8 = { 'Ok' : ICRC2AllowanceResponse } |
   { 'Err' : string };
@@ -258,40 +258,42 @@ export interface _SERVICE {
   'get_blocks' : ActorMethod<[GetBlocksRequest], Result_2>,
   'get_canister_info' : ActorMethod<[], Result_3>,
   'get_latest_version' : ActorMethod<[UpdateType], Result_1>,
-  'get_predictor_vec' : ActorMethod<[], Result_4>,
+  'get_pcl_balance' : ActorMethod<[], Result_4>,
+  'get_pcl_stake_balance' : ActorMethod<[string], Result_4>,
+  'get_predictor_vec' : ActorMethod<[], Result_5>,
   'get_principal' : ActorMethod<[], Principal>,
   'get_state' : ActorMethod<[], State>,
-  'get_transactions' : ActorMethod<[GetBlocksRequest], Result_5>,
+  'get_transactions' : ActorMethod<[GetBlocksRequest], Result_6>,
   'get_wasm_bin' : ActorMethod<[string, string], Result_1>,
-  'get_wasm_lists' : ActorMethod<[], Result_6>,
+  'get_wasm_lists' : ActorMethod<[], Result_7>,
   'http_request' : ActorMethod<[HttpRequest], HttpResponse>,
-  'icrc1_balance_of' : ActorMethod<[], Result_7>,
   'icrc1_transfer' : ActorMethod<
     [Account, bigint, [] | [Uint8Array | number[]]],
-    Result_7
+    Result_4
   >,
   'icrc2_allowance' : ActorMethod<[Account], Result_8>,
   'icrc2_approve' : ActorMethod<[bigint], Result_3>,
   'icrc2_transfer_from' : ActorMethod<
     [Account, bigint, [] | [Uint8Array | number[]]],
-    Result_7
+    Result_4
   >,
   'import_history_records' : ActorMethod<
     [string, Array<[bigint, number]>],
     Result
   >,
   'list_symbol_kind' : ActorMethod<[], Array<string>>,
-  'minting_or_burn' : ActorMethod<[Account, bigint], Result_7>,
+  'minting_or_burn' : ActorMethod<[Account, bigint], Result_4>,
+  'pcl_stake' : ActorMethod<[string, bigint], Result>,
+  'pcl_unstake' : ActorMethod<[string], Result>,
   'predict' : ActorMethod<[], number>,
   'prediction_record' : ActorMethod<[Prediction], Result_9>,
   'refill_random_buffer' : ActorMethod<[number], undefined>,
   'restore_from_file' : ActorMethod<[string], Result>,
   'show_predictions' : ActorMethod<[], Result_10>,
-  'stake' : ActorMethod<[string, string, bigint, bigint], Result>,
+  'stake_init' : ActorMethod<[string, string, bigint], Result>,
   'staking_operation_record' : ActorMethod<[StakeRecord], Result_11>,
   'test_1' : ActorMethod<[DurationRange], [bigint, bigint]>,
   'train' : ActorMethod<[bigint], undefined>,
-  'unstake' : ActorMethod<[string, string], Result>,
   'upload_json_file' : ActorMethod<[Uint8Array | number[]], undefined>,
   'upload_wasm' : ActorMethod<
     [string, string, Uint8Array | number[], UpdateType],

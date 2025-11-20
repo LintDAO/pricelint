@@ -110,6 +110,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const Result_2 = IDL.Variant({ 'Ok' : GetBlocksResponse, 'Err' : IDL.Text });
   const Result_3 = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
+  const Result_4 = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : IDL.Text });
   const Pred = IDL.Record({
     'up' : IDL.Nat64,
     'staked' : IDL.Nat64,
@@ -127,7 +128,7 @@ export const idlFactory = ({ IDL }) => {
     'price' : IDL.Float64,
     'token_name' : IDL.Text,
   });
-  const Result_4 = IDL.Variant({
+  const Result_5 = IDL.Variant({
     'Ok' : IDL.Vec(Prediction),
     'Err' : IDL.Text,
   });
@@ -196,18 +197,17 @@ export const idlFactory = ({ IDL }) => {
     'transactions' : IDL.Vec(Transaction),
     'archived_transactions' : IDL.Vec(ArchivedRange_1),
   });
-  const Result_5 = IDL.Variant({
+  const Result_6 = IDL.Variant({
     'Ok' : GetTransactionsResponse,
     'Err' : IDL.Text,
   });
-  const Result_6 = IDL.Variant({ 'Ok' : IDL.Vec(WasmFile), 'Err' : IDL.Text });
+  const Result_7 = IDL.Variant({ 'Ok' : IDL.Vec(WasmFile), 'Err' : IDL.Text });
   const HttpRequest = IDL.Record({
     'url' : IDL.Text,
     'method' : IDL.Text,
     'body' : IDL.Vec(IDL.Nat8),
     'headers' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
   });
-  const Result_7 = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : IDL.Text });
   const ICRC2AllowanceResponse = IDL.Record({
     'allowance' : IDL.Nat,
     'expires_at' : IDL.Opt(IDL.Nat64),
@@ -294,24 +294,25 @@ export const idlFactory = ({ IDL }) => {
     'get_blocks' : IDL.Func([GetBlocksRequest], [Result_2], []),
     'get_canister_info' : IDL.Func([], [Result_3], []),
     'get_latest_version' : IDL.Func([UpdateType], [Result_1], ['query']),
-    'get_predictor_vec' : IDL.Func([], [Result_4], ['query']),
+    'get_pcl_balance' : IDL.Func([], [Result_4], []),
+    'get_pcl_stake_balance' : IDL.Func([IDL.Text], [Result_4], ['query']),
+    'get_predictor_vec' : IDL.Func([], [Result_5], ['query']),
     'get_principal' : IDL.Func([], [IDL.Principal], ['query']),
     'get_state' : IDL.Func([], [State], ['query']),
-    'get_transactions' : IDL.Func([GetBlocksRequest], [Result_5], []),
+    'get_transactions' : IDL.Func([GetBlocksRequest], [Result_6], []),
     'get_wasm_bin' : IDL.Func([IDL.Text, IDL.Text], [Result_1], ['query']),
-    'get_wasm_lists' : IDL.Func([], [Result_6], ['query']),
+    'get_wasm_lists' : IDL.Func([], [Result_7], ['query']),
     'http_request' : IDL.Func([HttpRequest], [HttpResponse], ['query']),
-    'icrc1_balance_of' : IDL.Func([], [Result_7], []),
     'icrc1_transfer' : IDL.Func(
         [Account, IDL.Nat, IDL.Opt(IDL.Vec(IDL.Nat8))],
-        [Result_7],
+        [Result_4],
         [],
       ),
     'icrc2_allowance' : IDL.Func([Account], [Result_8], []),
     'icrc2_approve' : IDL.Func([IDL.Nat], [Result_3], []),
     'icrc2_transfer_from' : IDL.Func(
         [Account, IDL.Nat, IDL.Opt(IDL.Vec(IDL.Nat8))],
-        [Result_7],
+        [Result_4],
         [],
       ),
     'import_history_records' : IDL.Func(
@@ -320,17 +321,18 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'list_symbol_kind' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
-    'minting_or_burn' : IDL.Func([Account, IDL.Nat], [Result_7], []),
+    'minting_or_burn' : IDL.Func([Account, IDL.Nat], [Result_4], []),
+    'pcl_stake' : IDL.Func([IDL.Text, IDL.Nat], [Result], []),
+    'pcl_unstake' : IDL.Func([IDL.Text], [Result], []),
     'predict' : IDL.Func([], [IDL.Float32], ['query']),
     'prediction_record' : IDL.Func([Prediction], [Result_9], []),
     'refill_random_buffer' : IDL.Func([IDL.Nat32], [], []),
     'restore_from_file' : IDL.Func([IDL.Text], [Result], []),
     'show_predictions' : IDL.Func([], [Result_10], ['query']),
-    'stake' : IDL.Func([IDL.Text, IDL.Text, IDL.Nat, IDL.Nat64], [Result], []),
+    'stake_init' : IDL.Func([IDL.Text, IDL.Text, IDL.Nat64], [Result], []),
     'staking_operation_record' : IDL.Func([StakeRecord], [Result_11], []),
     'test_1' : IDL.Func([DurationRange], [IDL.Nat64, IDL.Nat64], ['query']),
     'train' : IDL.Func([IDL.Nat64], [], []),
-    'unstake' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
     'upload_json_file' : IDL.Func([IDL.Vec(IDL.Nat8)], [], []),
     'upload_wasm' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Vec(IDL.Nat8), UpdateType],
