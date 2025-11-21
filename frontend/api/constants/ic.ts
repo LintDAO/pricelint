@@ -2,6 +2,7 @@ export const ICP_LEDGER_CANISTER = "ryjl3-tyaaa-aaaaa-aaaba-cai";
 export const NNS_CANISTER_ID = "qoctq-giaaa-aaaaa-aaaea-cai";
 export const CYCLES_LEDGER_CANISTER = "um5iw-rqaaa-aaaaq-qaaba-cai";
 export const CMC_CANISTER = "rkp4c-7iaaa-aaaaa-aaaca-cai";
+export const PCL_CANISTER = "tx6gn-wqaaa-aaaac-qbrma-cai"; //测试代币容器
 
 export const NET_ID = {
   blockchain: "Internet Computer",

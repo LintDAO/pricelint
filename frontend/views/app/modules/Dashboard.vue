@@ -303,8 +303,13 @@
 <script lang="ts" setup>
 import { getCanisterCycles, getCanisterList } from "@/api/canisters";
 import { DOCS_URL } from "@/api/constants/docs";
-import { ICP_LOGO } from "@/api/constants/tokens";
-import { getICPBalance, transferICP } from "@/api/icp";
+import { ICP_LOGO, PCL_LOGO } from "@/api/constants/tokens";
+import {
+  getICPBalance,
+  getICRCTokenBalance,
+  getPCLBalance,
+  transferICP,
+} from "@/api/icp";
 import { useUserStore } from "@/stores/user";
 import { isPrincipal, p2a } from "@/utils/common";
 import { showMessageError } from "@/utils/message";
@@ -414,12 +419,12 @@ const userData = ref({
     //   logo: "",
     //   amount: 0,
     // },
-    // pcl: {
-    //   name: "PriceLint",
-    //   symbol: "PCL",
-    //   logo: "",
-    //   amount: 0,
-    // },
+    pcl: {
+      name: "PriceLint",
+      symbol: "testPCL",
+      logo: PCL_LOGO,
+      amount: 0,
+    },
   },
   cycles: {
     amount: 0,
@@ -445,6 +450,10 @@ const getUserInfo = () => {
   userData.value.accountId = p2a(userStore.principal);
   getICPBalance(userData.value.accountId).then((res) => {
     userData.value.balances.icp.amount = res;
+  });
+  getPCLBalance().then((res) => {
+    console.log("getPCLBalance res", res);
+    userData.value.balances.pcl.amount = res;
   });
 
   getCanisterList().then((res) => {

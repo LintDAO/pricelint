@@ -1,6 +1,5 @@
 import { fromTokenAmount, p2a, toTokenAmount } from "@/utils/common";
 import { showMessageError, showMessageSuccess } from "@/utils/message";
-import { setCanisterArrayByPrincipal } from "@/utils/storage";
 import { Actor } from "@dfinity/agent";
 import { CMCCanister } from "@dfinity/cmc";
 import { SubAccount } from "@dfinity/ledger-icp";
@@ -9,11 +8,11 @@ import { Principal } from "@dfinity/principal";
 import axios from "axios";
 import { createIIAgent, getCurrentPrincipal } from "./canister_pool";
 import {
-  BINANCE_URL,
   CMC_CANISTER,
   CYCLES_LEDGER_CANISTER,
   ICP_LEDGER_CANISTER,
   IC_LEDGER_URL,
+  PCL_CANISTER,
 } from "./constants/ic";
 
 const currency = { decimals: 8, symbol: "ICP" };
@@ -102,6 +101,41 @@ export const getICPBalance = async (accountId: string): Promise<number> => {
       console.error("getICPBalance Error:", error);
       showMessageError("getICPBalance Error: An unknown error occurred");
     }
+    return 0;
+  }
+};
+
+export const getICRCTokenBalance = async (
+  canisterId: string
+): Promise<number> => {
+  try {
+    const principalId = getCurrentPrincipal();
+    const ledger = initIcrcLedger(canisterId);
+
+    // 直接调用 balance 方法，和 Cycles Ledger 完全一样！
+    const balanceNat = await ledger.balance({
+      owner: Principal.fromText(principalId),
+    });
+
+    // balanceNat 是 bigint
+    const balance = Number(balanceNat);
+
+    // 常见 ICRC 代币的小数位 8
+    return fromTokenAmount(balance, 8);
+  } catch (error) {
+    console.error(`getICRCBalance Error (${canisterId}):`, error);
+    showMessageError(`getICRCBalance Error (${canisterId}):` + error);
+    return 0;
+  }
+};
+
+export const getPCLBalance = async (): Promise<number> => {
+  try {
+    const balance = await getICRCTokenBalance(PCL_CANISTER);
+    return balance;
+  } catch (error) {
+    console.error(`getPCLBalance Error`, error);
+    showMessageError(`getPCLBalance Error :` + error);
     return 0;
   }
 };

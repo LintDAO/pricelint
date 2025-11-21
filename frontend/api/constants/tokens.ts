@@ -1,9 +1,11 @@
 import icpLogo from "@/assets/dfinity.svg";
 import btcLogo from "@/assets/icons/BTC.svg";
 import ethLogo from "@/assets/icons/ETH.svg";
+import pclLogo from "@/assets/PriceLint-logo.jpg";
 import { ICP_LEDGER_CANISTER } from "./ic";
 
 export const ICP_LOGO = icpLogo;
+export const PCL_LOGO = pclLogo;
 export const TOKENS = {
   ICP: {
     canisters: {
