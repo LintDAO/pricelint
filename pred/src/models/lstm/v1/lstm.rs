@@ -6,8 +6,7 @@ use burn::{
     optim::{ AdamConfig},
     record::{ FullPrecisionSettings, Recorder},
     tensor::{
-        backend::{AutodiffBackend, Backend},
-        Device, Float, Int, Tensor,
+        backend::{AutodiffBackend, Backend}, Tensor,
     },
     LearningRate,
 };
@@ -69,10 +68,10 @@ impl<B: Backend> LstmModel<B> {
         let (output_seq, hidden_state) = self.lstm2.forward(output_seq, None);
 
         // 方案1：直接使用最后隐藏状态（高效）
-        // let final_output = hidden_state; // [batch_size, hidden_size]
+        let final_output = hidden_state.cell; // [batch_size, hidden_size]
 
         // 方案2：取最后一个时间步的输出（更精确）
-        let final_output = self.select_last_timestep(output_seq);
+        // let final_output = self.select_last_timestep(output_seq);
 
         // 全连接层预测
         self.dense.forward(final_output)

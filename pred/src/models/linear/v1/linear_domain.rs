@@ -1,6 +1,6 @@
 use crate::common::errors::ConfigError;
 use burn::backend::ndarray::NdArrayDevice;
-use burn::backend::NdArray;
+use burn::backend::{Autodiff, NdArray};
 use burn::module::{Devices, Ignored, ModuleMapper, ModuleVisitor, Param};
 use burn::nn;
 use burn::nn::{Initializer, Linear, LinearConfig};
@@ -9,21 +9,8 @@ use burn::prelude::{Backend, Config, Device, Module, Tensor};
 use burn::tensor::backend::AutodiffBackend;
 use serde::Serialize;
 use std::fmt::{Debug, DebugList, Display, Formatter, Write};
-use std::marker::PhantomData;
 
-//样本
-#[derive(Debug, Clone, Default)]
-pub struct PriceSample {
-    token_name: String,
-    target_token_name: String,
-    time: u64,
-    exchange_rate: u64,
-}
 
-//数据集
-pub struct PriceDataset {
-    pub(crate) samples: Vec<PriceSample>,
-}
 //具体模型
 #[derive(Module, Debug)]
 pub struct LinearModel<B: Backend> {
@@ -31,61 +18,9 @@ pub struct LinearModel<B: Backend> {
     pub config: Ignored<GlobalConfig>,
 }
 
-//配置汇总
-#[derive(Debug, Clone)]
-pub struct GlobalConfig {
-    pub backend: NdArray,
-    pub device: NdArrayDevice,
-    pub optim: OptimizerConfigs,
-    pub linear_config: LinearModelConfig,
-}
-#[derive(Debug, Clone)]
-pub enum OptimizerConfigs {
-    Adam(AdamConfigWrap),
-    // Sgd(SgdConfigWrap),
-}
-#[derive(Clone)]
-pub struct AdamConfigWrap(pub AdamConfig);
-
-impl Debug for AdamConfigWrap {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("AdamConfigWrap({:?})", self.0.to_string()))
-    }
-}
-// 模型配置
-#[derive(Config, Debug)]
-pub struct LinearModelConfig {
-    // 偏置项
-    #[config(default = true)]
-    pub bias: bool,
-    #[config(default = 3)]
-    pub input_size: usize,
-    #[config(default = 1)]
-    pub output_size: usize,
-    #[config(default = "Initializer::KaimingUniform { gain: 0.57735, fan_out_only: false }")]
-    pub initializer: Initializer,
-}
-
-impl PriceSample {}
-
-impl PriceDataset {
-    pub fn new(samples: Vec<PriceSample>) -> Self {
-        Self { samples }
-    }
-    fn add(&mut self, sample: PriceSample) {
-        self.samples.push(sample);
-    }
-    fn len(&self) -> usize {
-        self.samples.len()
-    }
-    fn as_vec(&self) -> Vec<PriceSample> {
-        self.samples.clone()
-    }
-}
-
 impl<B> LinearModel<B>
 where
-    B: Backend<Device = NdArrayDevice> + Into<NdArray> + From<NdArray>,
+    B: AutodiffBackend<Device = NdArrayDevice> + Into<Autodiff<NdArray>> + From<Autodiff<NdArray>>,
 {
     pub fn default() -> Self {
         let config = LinearModelConfig::new();
@@ -157,4 +92,39 @@ where
     pub fn default_device() -> B::Device {
         B::Device::default()
     }
+}
+
+//配置汇总
+#[derive(Debug, Clone)]
+pub struct GlobalConfig {
+    pub backend: Autodiff<NdArray>,
+    pub device: NdArrayDevice,
+    pub optim: OptimizerConfigs,
+    pub linear_config: LinearModelConfig,
+}
+#[derive(Debug, Clone)]
+pub enum OptimizerConfigs {
+    Adam(AdamConfigWrap),
+    // Sgd(SgdConfigWrap),
+}
+#[derive(Clone)]
+pub struct AdamConfigWrap(pub AdamConfig);
+
+impl Debug for AdamConfigWrap {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("AdamConfigWrap({:?})", self.0.to_string()))
+    }
+}
+// 模型配置
+#[derive(Config, Debug)]
+pub struct LinearModelConfig {
+    // 偏置项
+    #[config(default = true)]
+    pub bias: bool,
+    #[config(default = 2)]
+    pub input_size: usize,
+    #[config(default = 1)]
+    pub output_size: usize,
+    #[config(default = "Initializer::KaimingUniform { gain: 0.57735, fan_out_only: false }")]
+    pub initializer: Initializer,
 }

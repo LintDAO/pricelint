@@ -292,11 +292,8 @@ pub mod stake {
         if !vec_transactions.is_empty() {
             let Transaction {
                 kind,
-                mint,
-                burn,
                 transfer,
-                approve,
-                timestamp,
+                ..
             } = &vec_transactions[0];
             if *kind == "transfer" {
                 if let Some(transfer_obj) = transfer {
@@ -323,7 +320,7 @@ pub mod stake {
                                     .get(&StakeKey(caller().to_string(), canister_id.clone()));
                                 let now_time = time();
                                 //如果匹配是空的说明没进行初始化 先进行初始化
-                                return match stake {
+                                match stake {
                                     None => return Err(StakeError::NotInitializedStake.to_string()),
                                     Some(mut some_stake) => {
                                         some_stake.token_balance += stake_amount;
