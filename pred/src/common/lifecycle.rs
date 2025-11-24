@@ -72,7 +72,7 @@ use crate::api::config::config_entity::Config;
 use crate::common::constants::config::{
     FIVE_MIN_TIMER_INTERVAL, ONE_HOUR_IMER_INTERVAL, PREDICT_FLAG_KEY, TIMER_INTERVAL_KEY, T_FLAG,
 };
-use crate::services::user_predict_service::predict_entity::Predictor;
+use crate::services::user_predict_service::predict_entity::Prediction;
 use crate::services::user_predict_service::predict_service::{ push_to_backend};
 use getrandom::Error;
 use ic_cdk::api::time;

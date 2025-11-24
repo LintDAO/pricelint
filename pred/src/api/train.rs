@@ -1,13 +1,13 @@
+use crate::api::config::default_model_config::get_default_model;
 use crate::common::constants::config::DEFAULT_MODEL_KEY;
 use crate::common::errors::ConfigError;
 use crate::common::guard::is_owner;
 use crate::common::lifecycle::{Value, CONFIG};
+use crate::models::lstm::v1::lstm::{load_model, LstmModel};
 use burn::backend::ndarray::NdArrayDevice;
 use burn::backend::{Autodiff, NdArray};
 use burn::tensor::{DataError, Tensor, TensorData};
 use ic_cdk::{query, update};
-use crate::api::config::default_model_config::get_default_model;
-use crate::models::lstm::v1::lstm::{load_model, LstmModel};
 
 #[update(guard = "is_owner")]
 fn train() -> Result<(), String> {
@@ -51,31 +51,8 @@ fn train() -> Result<(), String> {
 fn predict() -> Result<Vec<f32>, String> {
     let model_name = get_default_model()?;
     match model_name.as_str() {
-        "lstm_v1.0.0" => {
-            let device = NdArrayDevice::Cpu;
-
-            // 加载模型
-            let model: LstmModel<Autodiff<NdArray>> = load_model(&device).map_err(|e| e.to_string())?;
-            let input = vec![1.0f32, 2.0, 3.0];
-            // 输入预处理
-            let seq_len = input.len();
-            let input_tensor =
-                Tensor::<Autodiff<NdArray>, 1>::from_floats(input.as_slice(), &device)
-                    .reshape([1, seq_len, 1]);
-
-            // 推理
-            let output = model.predict(input_tensor);
-
-            // 输出后处理
-            let output_data = output.into_data();
-            let output_slice = output_data.as_slice::<f32>().map_err(|e| match e {
-                DataError::CastError(v) => v.to_string(),
-                DataError::TypeMismatch(v) => v,
-            })?;
-            Ok(output_slice.to_vec())
-        }
+        "lstm_v1.0.0" => Ok(vec![]),
         "linear" => Ok(vec![]),
         _ => Ok(vec![]),
     }
 }
-

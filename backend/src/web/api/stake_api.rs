@@ -24,7 +24,6 @@ pub mod icrc_api {
     // 后续只能管理员操作 测试时不需要
     //1.当前canisters是mint账户的时候 ,转账方法才是铸币 否则是普通转账
     //2.如果当前canisters不是mint账户 那么则需要dfx或者前端agent直接访问记账罐进行转账也就是铸币
-    #[update]
     async fn minting_or_burn(account: Account, amount: Nat) -> Result<Nat, String> {
         let canister_id = Principal::from_text(ICRC1_LEDGER_CANISTER_ID)
             .expect("Could not decode the principal.");
@@ -49,7 +48,6 @@ pub mod icrc_api {
     }
 
     //转账 从from账户到to账户  通过canister代转账的 需要先要from账户授权给to账户 icrc2_approve  足够的amount
-    #[update]
     pub async fn icrc2_transfer_from(
         to_account: Account,
         amount: Nat,
@@ -82,7 +80,6 @@ pub mod icrc_api {
 
     // 查询 授权用户account 和被授权用户spender   授权的amount金额
     // //在 query 方法中不能进行 inter-canister call。 后续应该将此方法移植到前端
-    #[update]
     pub async fn icrc2_allowance(account: Account) -> Result<ICRC2AllowanceResponse, String> {
         let canister_id = Principal::from_text(ICRC1_LEDGER_CANISTER_ID).unwrap();
         let args = AllowanceArgs {
@@ -97,7 +94,6 @@ pub mod icrc_api {
 
     //检查代币余额
     //在 query 方法中不能进行 inter-canister call。 后续应该将此方法移植到前端
-    #[update]
     async fn get_pcl_balance() -> Result<Nat, String> {
         let canister_id = Principal::from_text(ICRC1_LEDGER_CANISTER_ID).unwrap();
         let args = ICRC1BalanceOfArgs {
@@ -111,7 +107,6 @@ pub mod icrc_api {
     }
     //当前罐子直接转账给指定用户
 
-    #[update]
     pub async fn icrc1_transfer(
         to_account: Account,
         amount: Nat,
@@ -143,7 +138,6 @@ pub mod icrc_api {
     // 用户授权给canisters的可以转账的 amount金额  ,每进行一次转账都要消耗授权额度 amount
     // 铸币账户不能被授权转账
     //需要前端实现agent调用授权 canisters不能代替授权
-    #[update]
     pub async fn icrc2_approve(amount: Nat) -> Result<String, String> {
         let args: ApproveArgs = ApproveArgs {
             from_subaccount: None,
@@ -217,23 +211,33 @@ pub mod stake {
     use crate::web::api::stake_api::transfer_log::get_transactions;
     use crate::web::common::constants::ICRC1_LEDGER_CANISTER_ID;
     use crate::web::common::errors::StakeError;
+    use crate::web::common::guard::is_admin;
     use crate::web::common::guard::is_named_user;
     use crate::web::models::stake_model::{Stake, StakeDetail, StakeKey};
+    use crate::STAKE;
     use candid::{Nat, Principal};
     use ic_cdk::api::time;
     use ic_cdk::{caller, id, query, update};
     use icrc_ledger_types::icrc1::account::Account;
     use icrc_ledger_types::icrc3::transactions::{GetTransactionsRequest, Transaction, Transfer};
-    use crate::STAKE;
+    use std::collections::BTreeMap;
 
     #[query]
     pub fn get_pcl_stake_balance(canister_id: String) -> Result<Nat, String> {
         STAKE.with_borrow_mut(|rc| {
-            let x = rc.get(&StakeKey(caller().to_text(), canister_id)).ok_or(StakeError::UserOrCanisterIsNotExist.to_string())?;
+            let x = rc
+                .get(&StakeKey(caller().to_text(), canister_id))
+                .ok_or(StakeError::UserOrCanisterIsNotExist.to_string())?;
             Ok(x.token_balance)
         })
     }
-
+    //自用
+    #[query(guard = "is_admin")]
+    pub fn get_pcl_list() -> Result<BTreeMap<StakeKey, Stake>, String> {
+        let map =
+            STAKE.with_borrow_mut(|rc| rc.iter().map(|(k, v)| (k, v)).collect::<BTreeMap<_, _>>());
+        Ok(map)
+    }
     //初始化还有一些默认参数的设置
     #[update]
     pub fn stake_init(
@@ -273,14 +277,22 @@ pub mod stake {
     /// 质押token  累计计算
     /// 目前由backend代操作 实际是以铸币canisters进行操作的
     #[update(guard = "is_named_user")]
-    pub async fn pcl_stake(canister_id: String, stake_amount: Nat) -> Result<(), String> {
+    pub async fn pcl_stake(canister_id: String, stake_amount: u64) -> Result<(), String> {
+        let stake_amount = Nat::from(stake_amount * 10u64.pow(8));
+        let backend_canister_id = ic_cdk::api::id();
+        ic_cdk::println!("canister_id：{}", backend_canister_id);
         if stake_amount <= Nat::from(0u32) {
             return Err(StakeError::StakeAmountIsInvalid.to_string());
         }
         //先approve允许转账 ，有额度之后  转移到backend canister
-        let resp = icrc2_transfer_from(Account::from(caller()), stake_amount.clone(), None)
-            .await
-            .map_err(|e| e.to_string())?;
+        let resp = icrc2_transfer_from(
+            Account::from(backend_canister_id),
+            stake_amount.clone(),
+            None,
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+
         let get_transactions_args = GetTransactionsRequest {
             start: resp,
             length: Nat::from(1u32),
@@ -289,12 +301,9 @@ pub mod stake {
             .await
             .map_err(|e| e.to_string())?;
         let vec_transactions = transactions.transactions;
+
         if !vec_transactions.is_empty() {
-            let Transaction {
-                kind,
-                transfer,
-                ..
-            } = &vec_transactions[0];
+            let Transaction { kind, transfer, .. } = &vec_transactions[0];
             if *kind == "transfer" {
                 if let Some(transfer_obj) = transfer {
                     let Transfer {
@@ -309,7 +318,7 @@ pub mod stake {
                     //转账金额 转账Form  to 三个字段同时对比成功则认为是转账成功 则进行质押流程
                     // 也可以用memo备注信息判断  后续更新再说
                     if *transfer_amount == stake_amount
-                        && *to == Account::from(id())
+                        && *to == Account::from(backend_canister_id)
                         && *from == Account::from(caller())
                     {
                         //转账成功
@@ -323,7 +332,7 @@ pub mod stake {
                                 match stake {
                                     None => return Err(StakeError::NotInitializedStake.to_string()),
                                     Some(mut some_stake) => {
-                                        some_stake.token_balance += stake_amount;
+                                        some_stake.token_balance =  some_stake.token_balance+stake_amount;
                                         some_stake.last_op_time = now_time;
                                         map.borrow_mut().insert(
                                             StakeKey(caller().to_string(), canister_id.clone()),
@@ -336,9 +345,11 @@ pub mod stake {
                             .map_err(|e| e.to_string())?;
                         return Ok(());
                     }
+                    return Ok(());
                 }
-            }
-            return Err(StakeError::IsNotTransferTransaction.to_string());
+            } else {
+                return Err(StakeError::IsNotTransferTransaction.to_string());
+            };
         }
         Err(StakeError::TransactionIsNotExist.to_string())
     }
@@ -407,6 +418,7 @@ pub mod stake_api {
     //批量结算token
     fn settled_token() {
         //1.获取预测结果
+        // Prediction
         //2.根据预测结果 结算用户质押的token
         //3.如果质押的PCL小于固定值则不结算
     }

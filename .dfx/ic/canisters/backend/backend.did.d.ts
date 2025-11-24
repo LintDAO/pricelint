@@ -148,11 +148,13 @@ export type Result = { 'Ok' : null } |
   { 'Err' : string };
 export type Result_1 = { 'Ok' : WasmFile } |
   { 'Err' : string };
-export type Result_10 = { 'Ok' : Array<PredictorView> } |
+export type Result_10 = { 'Ok' : Prediction } |
   { 'Err' : string };
-export type Result_11 = { 'Ok' : StakeRecord } |
+export type Result_11 = { 'Ok' : Array<PredictorView> } |
   { 'Err' : string };
-export type Result_12 = { 'Ok' : User } |
+export type Result_12 = { 'Ok' : StakeRecord } |
+  { 'Err' : string };
+export type Result_13 = { 'Ok' : User } |
   { 'Err' : string };
 export type Result_2 = { 'Ok' : GetBlocksResponse } |
   { 'Err' : string };
@@ -160,17 +162,32 @@ export type Result_3 = { 'Ok' : string } |
   { 'Err' : string };
 export type Result_4 = { 'Ok' : bigint } |
   { 'Err' : string };
-export type Result_5 = { 'Ok' : Array<Prediction> } |
+export type Result_5 = { 'Ok' : Array<[[string, string], Stake]> } |
   { 'Err' : string };
-export type Result_6 = { 'Ok' : GetTransactionsResponse } |
+export type Result_6 = { 'Ok' : Array<Prediction> } |
   { 'Err' : string };
-export type Result_7 = { 'Ok' : Array<WasmFile> } |
+export type Result_7 = { 'Ok' : GetTransactionsResponse } |
   { 'Err' : string };
-export type Result_8 = { 'Ok' : ICRC2AllowanceResponse } |
+export type Result_8 = { 'Ok' : Array<WasmFile> } |
   { 'Err' : string };
-export type Result_9 = { 'Ok' : Prediction } |
+export type Result_9 = { 'Ok' : ICRC2AllowanceResponse } |
   { 'Err' : string };
 export interface Reward { 'time' : bigint, 'reward_amount' : bigint }
+export interface Stake {
+  'id' : string,
+  'lock_period_days' : bigint,
+  'unlock_time' : bigint,
+  'stake_detail' : StakeDetail,
+  'last_op_time' : bigint,
+  'account' : Account,
+  'token_balance' : bigint,
+}
+export interface StakeDetail {
+  'user_principal' : string,
+  'canister_principal' : string,
+  'staking_percentage' : number,
+  'token_name' : string,
+}
 export interface StakeRecord {
   'reward' : [] | [Reward],
   'is_staking' : boolean,
@@ -259,19 +276,20 @@ export interface _SERVICE {
   'get_canister_info' : ActorMethod<[], Result_3>,
   'get_latest_version' : ActorMethod<[UpdateType], Result_1>,
   'get_pcl_balance' : ActorMethod<[], Result_4>,
+  'get_pcl_list' : ActorMethod<[], Result_5>,
   'get_pcl_stake_balance' : ActorMethod<[string], Result_4>,
-  'get_predictor_vec' : ActorMethod<[], Result_5>,
+  'get_predictor_vec' : ActorMethod<[], Result_6>,
   'get_principal' : ActorMethod<[], Principal>,
   'get_state' : ActorMethod<[], State>,
-  'get_transactions' : ActorMethod<[GetBlocksRequest], Result_6>,
+  'get_transactions' : ActorMethod<[GetBlocksRequest], Result_7>,
   'get_wasm_bin' : ActorMethod<[string, string], Result_1>,
-  'get_wasm_lists' : ActorMethod<[], Result_7>,
+  'get_wasm_lists' : ActorMethod<[], Result_8>,
   'http_request' : ActorMethod<[HttpRequest], HttpResponse>,
   'icrc1_transfer' : ActorMethod<
     [Account, bigint, [] | [Uint8Array | number[]]],
     Result_4
   >,
-  'icrc2_allowance' : ActorMethod<[Account], Result_8>,
+  'icrc2_allowance' : ActorMethod<[Account], Result_9>,
   'icrc2_approve' : ActorMethod<[bigint], Result_3>,
   'icrc2_transfer_from' : ActorMethod<
     [Account, bigint, [] | [Uint8Array | number[]]],
@@ -286,12 +304,12 @@ export interface _SERVICE {
   'pcl_stake' : ActorMethod<[string, bigint], Result>,
   'pcl_unstake' : ActorMethod<[string], Result>,
   'predict' : ActorMethod<[], number>,
-  'prediction_record' : ActorMethod<[Prediction], Result_9>,
+  'prediction_record' : ActorMethod<[Prediction], Result_10>,
   'refill_random_buffer' : ActorMethod<[number], undefined>,
   'restore_from_file' : ActorMethod<[string], Result>,
-  'show_predictions' : ActorMethod<[], Result_10>,
+  'show_predictions' : ActorMethod<[], Result_11>,
   'stake_init' : ActorMethod<[string, string, bigint], Result>,
-  'staking_operation_record' : ActorMethod<[StakeRecord], Result_11>,
+  'staking_operation_record' : ActorMethod<[StakeRecord], Result_12>,
   'test_1' : ActorMethod<[DurationRange], [bigint, bigint]>,
   'train' : ActorMethod<[bigint], undefined>,
   'upload_json_file' : ActorMethod<[Uint8Array | number[]], undefined>,
@@ -299,8 +317,8 @@ export interface _SERVICE {
     [string, string, Uint8Array | number[], UpdateType],
     Result_3
   >,
-  'user_login' : ActorMethod<[], Result_12>,
-  'user_register' : ActorMethod<[], Result_12>,
+  'user_login' : ActorMethod<[], Result_13>,
+  'user_register' : ActorMethod<[], Result_13>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

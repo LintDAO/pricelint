@@ -183,11 +183,10 @@ pub mod export_candid {
     use crate::web::models::exchange_rate::ExchangeRateRecord;
     use crate::web::models::prediction_model::{Prediction, PredictorView};
     use crate::web::models::stake_model::{
-        ICRC1BalanceOfArgs, ICRC2AllowanceResponse, WithdrawArgs,
+        ICRC1BalanceOfArgs, ICRC2AllowanceResponse, WithdrawArgs,Stake,StakeKey,StakeRecord,StakeRecordKey
     };
     use crate::web::models::user_model::User;
     use crate::web::models::wasm_file::{UpdateType, WasmFile};
-    use crate::web::models::stake_model::{StakeRecord};
     use crate::State;
     use candid::{CandidType, Deserialize, Nat, Principal};
     use ic_cdk::{export_candid, query};
@@ -201,6 +200,7 @@ pub mod export_candid {
     use icrc_ledger_types::icrc3::blocks::{GetBlocksRequest, GetBlocksResponse};
     use icrc_ledger_types::icrc3::transactions::{GetTransactionsRequest, GetTransactionsResponse};
     use std::collections::BTreeSet;
+    use std::collections::BTreeMap;
     export_candid!();
 }
 //TODO: lifecycles和api canid 导出先写到一起  后续需要分canisters再进行重构分离

@@ -4,7 +4,7 @@ use crate::common::guard::is_owner;
 use ic_cdk::api::call::CallResult;
 use ic_cdk::api::time;
 use crate::common::constants::canister_id::LOCAL_BACKEND_CANISTER_ID;
-use crate::services::user_predict_service::predict_entity::{Pred, Predictor};
+use crate::services::user_predict_service::predict_entity::{Pred, Prediction};
 
 //监控canisters数据
 #[query(guard = "is_owner")]
@@ -24,10 +24,10 @@ pub async fn collect_metrics() -> () {
 
 
 #[update]
-pub async fn test1()->Result<Predictor,String>{
+pub async fn test1()->Result<Prediction,String>{
     //TODO:实际运行改成ic的canister_id
     let canister_id=Principal::from_text(LOCAL_BACKEND_CANISTER_ID).map_err(|e|e.to_string())?;
-    let args=Predictor{
+    let args=Prediction{
         id: "".to_string(),
         user_id: caller().to_text(),
         canister_id: api::id().to_string(),
@@ -43,7 +43,7 @@ pub async fn test1()->Result<Predictor,String>{
         create_time: time(),
     };
     //TODO:default重新赋值
-    let result:CallResult<(Result<Predictor,String>,)> =call(canister_id, "push_user_pred", (args,)).await;
+    let result:CallResult<(Result<Prediction,String>,)> =call(canister_id, "push_user_pred", (args,)).await;
     let (ret,)=result.map_err(|(r,e)| e.to_string())?;
     ret
 }

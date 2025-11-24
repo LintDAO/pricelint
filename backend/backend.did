@@ -86,10 +86,6 @@ type HttpResponse = record {
   streaming_strategy : opt StreamingStrategy;
   status_code : nat16;
 };
-type ICRC2AllowanceResponse = record {
-  allowance : nat;
-  expires_at : opt nat64;
-};
 type Mint = record {
   to : Account;
   memo : opt blob;
@@ -140,13 +136,31 @@ type Result_11 = variant { Ok : StakeRecord; Err : text };
 type Result_12 = variant { Ok : User; Err : text };
 type Result_2 = variant { Ok : GetBlocksResponse; Err : text };
 type Result_3 = variant { Ok : text; Err : text };
-type Result_4 = variant { Ok : nat; Err : text };
-type Result_5 = variant { Ok : vec Prediction; Err : text };
-type Result_6 = variant { Ok : GetTransactionsResponse; Err : text };
-type Result_7 = variant { Ok : vec WasmFile; Err : text };
-type Result_8 = variant { Ok : ICRC2AllowanceResponse; Err : text };
+type Result_4 = variant {
+  Ok : vec record { record { text; text }; Stake };
+  Err : text;
+};
+type Result_5 = variant { Ok : nat; Err : text };
+type Result_6 = variant { Ok : vec Prediction; Err : text };
+type Result_7 = variant { Ok : GetTransactionsResponse; Err : text };
+type Result_8 = variant { Ok : vec WasmFile; Err : text };
 type Result_9 = variant { Ok : Prediction; Err : text };
 type Reward = record { time : nat64; reward_amount : nat64 };
+type Stake = record {
+  id : text;
+  lock_period_days : nat64;
+  unlock_time : nat64;
+  stake_detail : StakeDetail;
+  last_op_time : nat64;
+  account : Account;
+  token_balance : nat;
+};
+type StakeDetail = record {
+  user_principal : text;
+  canister_principal : text;
+  staking_percentage : float64;
+  token_name : text;
+};
 type StakeRecord = record {
   reward : opt Reward;
   is_staking : bool;
@@ -232,25 +246,20 @@ service : () -> {
   get_blocks : (GetBlocksRequest) -> (Result_2);
   get_canister_info : () -> (Result_3);
   get_latest_version : (UpdateType) -> (Result_1) query;
-  get_pcl_balance : () -> (Result_4);
-  get_pcl_stake_balance : (text) -> (Result_4) query;
-  get_predictor_vec : () -> (Result_5) query;
+  get_pcl_list : () -> (Result_4) query;
+  get_pcl_stake_balance : (text) -> (Result_5) query;
+  get_predictor_vec : () -> (Result_6) query;
   get_principal : () -> (principal) query;
   get_state : () -> (State) query;
-  get_transactions : (GetBlocksRequest) -> (Result_6);
+  get_transactions : (GetBlocksRequest) -> (Result_7);
   get_wasm_bin : (text, text) -> (Result_1) query;
-  get_wasm_lists : () -> (Result_7) query;
+  get_wasm_lists : () -> (Result_8) query;
   http_request : (HttpRequest) -> (HttpResponse) query;
-  icrc1_transfer : (Account, nat, opt blob) -> (Result_4);
-  icrc2_allowance : (Account) -> (Result_8);
-  icrc2_approve : (nat) -> (Result_3);
-  icrc2_transfer_from : (Account, nat, opt blob) -> (Result_4);
   import_history_records : (text, vec record { nat64; float64 }) -> (Result);
   list_symbol_kind : () -> (vec text) query;
-  minting_or_burn : (Account, nat) -> (Result_4);
   // 质押token  累计计算
   // 目前由backend代操作 实际是以铸币canisters进行操作的
-  pcl_stake : (text, nat) -> (Result);
+  pcl_stake : (text, nat64) -> (Result);
   pcl_unstake : (text) -> (Result);
   predict : () -> (float32) query;
   prediction_record : (Prediction) -> (Result_9);
