@@ -36,3 +36,47 @@ export async function getUserAutoRegister(): Promise<ApiResult<ApiUserInfo>> {
     showMessageError("Login Failed: " + error);
   });
 }
+
+export async function getCanisterStakeBalance(
+  canisterId: string
+): Promise<ApiResult<any>> {
+  return getBackend().get_pcl_stake_balance(canisterId);
+}
+
+// 【临时应急版】一键质押（兼容有/没有 init 的后端）
+export async function stakePredictCanister(
+  canisterId: string,
+  stakeAmountE8s: number
+): Promise<boolean> {
+  const backend = getBackend();
+  const amount = BigInt(stakeAmountE8s);
+
+  // Step 1: 尝试一下老的 init（后端删掉 init 之后这一段直接 404 或报错，我们直接走 catch）
+  try {
+    //canister_Id  ,token_name, 质押后锁定时间，默认写0
+    await backend.stake_init(canisterId, "ICPUSDT", 0n);
+    console.log("oldversion：init 成功");
+  } catch (err) {
+    // 只要 init 报任何错（包括方法不存在、already initialized、参数不对等等），我们都认为可以直接 stake
+    // 什么都不用管，直接往下走就行
+    console.log(
+      "Init failed or method no longer exists, try staking directly (compatible with new versions)"
+    );
+  }
+
+  // Step 2: 直接调用 stake（新老版本都支持这一个）
+  try {
+    const result = await backend.pcl_stake(canisterId, amount);
+
+    if ("Ok" in result) {
+      // 质押成功
+      return true;
+    } else {
+      throw new Error(result.Err);
+    }
+  } catch (err) {
+    console.error("stake failed", err);
+    showMessageError("stake failed: " + err);
+    throw new Error("stake failed" + err);
+  }
+}

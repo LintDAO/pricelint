@@ -57,7 +57,7 @@
 
             <div class="project-meta">
               <div class="meta-item">
-                <span class="meta-label">Principal</span>
+                <span class="meta-label">Canister Id</span>
                 <div class="meta-value">
                   <q-icon name="link" size="16px" class="link-icon" />
                   <a
@@ -340,12 +340,26 @@
             <q-item-section>
               <q-item-label caption>Available Balance</q-item-label>
               <q-item-label class="text-weight-bold"
-                >{{ walletBalance }} TOKENS</q-item-label
+                >{{ walletBalance }} testPCL</q-item-label
               >
             </q-item-section>
           </q-item>
 
           <q-separator class="q-my-md" />
+
+          <!-- Alpha Warning Banner -->
+          <q-banner rounded class="bg-orange text-white q-mb-md">
+            <template v-slot:avatar>
+              <q-icon name="warning" />
+            </template>
+            <div class="text-weight-bold">Alpha Phase Warning</div>
+            <div>
+              This is an <strong>alpha testnet</strong>. All staked tokens are
+              test tokens and <strong>will NOT be carried over</strong> to
+              mainnet or any future versions. Use them only for testing
+              purposes.
+            </div>
+          </q-banner>
           <q-input
             v-model.number="stakeAmount"
             label="Stake Amount"
@@ -434,6 +448,7 @@ import {
   DONT_SHOW_AGAIN_STORAGE_KEY,
   IC_DASHBOARD_URL,
 } from "@/api/constants/ic";
+import { getPCLBalance } from "@/api/icp";
 import { fromTokenAmount } from "@/utils/common";
 import { showMessageError, showMessageSuccess } from "@/utils/message";
 import {
@@ -530,7 +545,7 @@ const canisterData = ref({
   module_hash: "",
   cyclesBalance: "0",
   cyclesChange: 0,
-  totalStake: "0 TPCL",
+  totalStake: "0 testPCL",
   stakeChange: 0,
   accuracy: 0,
   accuracyChange: 0,
@@ -679,6 +694,11 @@ const initChart = () => {
   chart.setOption(option);
 };
 
+const getTokenBalance = () => {
+  getPCLBalance().then((res) => {
+    walletBalance.value = res;
+  });
+};
 const checkIsPredict = () => {
   checkIsPredictRunning(canisterId.value)
     .then((res) => {
@@ -694,7 +714,7 @@ const checkIsPredict = () => {
 // Lifecycle
 onMounted(async () => {
   getCanisterInfo();
-
+  getTokenBalance();
   checkIsPredict();
 
   // 检查是否启用升级版本的banner
