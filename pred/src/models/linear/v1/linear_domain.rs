@@ -121,7 +121,7 @@ pub struct LinearModelConfig {
     // 偏置项
     #[config(default = true)]
     pub bias: bool,
-    #[config(default = 2)]
+    #[config(default = 5)]
     pub input_size: usize,
     #[config(default = 1)]
     pub output_size: usize,

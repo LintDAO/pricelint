@@ -7,66 +7,75 @@ use burn::LearningRate;
 use burn::optim::{AdamConfig, GradientsParams, Optimizer};
 use burn::prelude::{Module, Tensor, TensorData};
 use ic_cdk::update;
+use serde_json::Value;
 
 #[update]
-pub fn t(epochs:usize,lr:f32) {
+pub fn linear_epochs(epochs:usize,lr:f32,data:Vec<u8>)->Result<(),String> {
     // 使用 Autodiff 后端 (用于计算梯度) 和 NdArray 设备
-    type ADBackend = Autodiff<NdArray<f32>>;
+    type AutodiffBackend = Autodiff<NdArray<f32>>;
     let device = NdArrayDevice::default();
 
-    // 1. 数据准备
-    let num_samples = 100;
-    // 4个样本，每个2维: (1, 2), (2, 3), (3, 4), (4, 5)
-    let x_data = [
-        1.200, 0.800, 1.570, 1.430, 1.940, 2.060, 2.310, 2.690, 2.680, 3.320, 3.050, 3.950, 3.420, 4.580,
-        3.790, 5.210, 4.160, 5.840, 4.530, 6.470, 4.900, 7.100, 5.270, 7.730, 5.640, 8.360, 6.010, 8.990,
-        6.380, 9.620, 6.750, 10.250, 7.120, 10.880, 7.490, 11.510, 7.860, 12.140, 8.230, 12.770, 8.600,
-        13.400, 8.970, 14.030, 9.340, 14.660, 9.710, 15.290, 10.080, 15.920, 10.450, 16.550, 10.820, 17.180,
-        11.190, 17.810, 11.560, 18.440, 11.930, 19.070, 12.300, 19.700, 12.670, 20.330, 13.040, 20.960,
-        13.410, 21.590, 13.780, 22.220, 14.150, 22.850, 14.520, 23.480, 14.890, 24.110, 15.260, 24.740,
-        15.630, 25.370, 16.000, 26.000, 16.370, 26.630, 16.740, 27.260, 17.110, 27.890, 17.480, 28.520,
-        17.850, 29.150, 18.220, 29.780, 18.590, 30.410, 18.960, 31.040, 19.330, 31.670, 19.700, 32.300,
-        20.070, 32.930, 20.440, 33.560, 20.810, 34.190, 21.180, 34.820, 21.550, 35.450, 21.920, 36.080,
-        22.290, 36.710, 22.660, 37.340, 23.030, 37.970, 23.400, 38.600, 23.770, 39.230, 24.140, 39.860,
-        24.510, 40.490, 24.880, 41.120, 25.250, 41.750, 25.620, 42.380, 25.990, 43.010, 26.360, 43.640,
-        26.730, 44.270, 27.100, 44.900, 27.470, 45.530, 27.840, 46.160, 28.210, 46.790, 28.580, 47.420,
-        28.950, 48.050, 29.320, 48.680, 29.690, 49.310, 30.060, 49.940, 30.430, 50.570, 30.800, 51.200,
-        31.170, 51.830, 31.540, 52.460, 31.910, 53.090, 32.280, 53.720, 32.650, 54.350, 33.020, 54.980,
-        33.390, 55.610, 33.760, 56.240, 34.130, 56.870, 34.500, 57.500, 34.870, 58.130, 35.240, 58.760,
-        35.610, 59.390, 35.980, 60.020, 36.350, 60.650, 36.720, 61.280, 37.090, 61.910, 37.460, 62.540,
-        37.830, 63.170, // End of 200 elements
-    ];
-    // 4个样本，每个1维的标签: (3), (5), (7), (9)
-    let y_data = [
-        2.000, 3.000, 4.000, 5.000, 6.000, 7.000, 8.000, 9.000, 10.000, 11.000, 12.000, 13.000, 14.000,
-        15.000, 16.000, 17.000, 18.000, 19.000, 20.000, 21.000, 22.000, 23.000, 24.000, 25.000, 26.000,
-        27.000, 28.000, 29.000, 30.000, 31.000, 32.000, 33.000, 34.000, 35.000, 36.000, 37.000, 38.000,
-        39.000, 40.000, 41.000, 42.000, 43.000, 44.000, 45.000, 46.000, 47.000, 48.000, 49.000, 50.000,
-        51.000, 52.000, 53.000, 54.000, 55.000, 56.000, 57.000, 58.000, 59.000, 60.000, 61.000, 62.000,
-        63.000, 64.000, 65.000, 66.000, 67.000, 68.000, 69.000, 70.000, 71.000, 72.000, 73.000, 74.000,
-        75.000, 76.000, 77.000, 78.000, 79.000, 80.000, 81.000, 82.000, 83.000, 84.000, 85.000, 86.000,
-        87.000, 88.000, 89.000, 90.000, 91.000, 92.000, 93.000, 94.000, 95.000, 96.000, 97.000, 98.000,
-        99.000, 100.000, 101.000, // End of 100 elements
-    ];
+    let device = NdArrayDevice::default();
+    let json_str = String::from_utf8(data).map_err(|e| e.to_string())?;
+    let raw_data: Vec<Value> = serde_json::from_str(&json_str).map_err(|e| e.to_string())?;
 
-    // 转成 Burn Tensor
-    let x = Tensor::<ADBackend, 2>::from_data(
-        TensorData::new::<f32, Vec<usize>>(x_data.to_vec(), [num_samples, 2].into()),
+    let raw_data_f32: Vec<Vec<f32>> = raw_data
+        .iter()
+        .map(|value| {
+            value
+                .as_array()
+                .expect("Each row must be an array")
+                .iter()
+                .map(|x| match x {
+                    Value::Number(n) => n.as_f64().unwrap_or(0.0) as f32,
+                    Value::String(s) => s.parse::<f32>().unwrap_or(0.0),
+                    _ => 0.0,
+                })
+                .collect()
+        })
+        .collect();
+
+    // 提取目标数据（第9个特征）
+    let price_data: Vec<f32> = raw_data_f32
+        .iter()
+        .map(|v| v[4]) // 使用第9个特征作为目标
+        .collect();
+
+    // 重新组织输入数据：以12个为一组
+    let train_data = raw_data_f32
+        .iter()
+        .map(|x| {
+            let open = x[1];
+            let high = x[2];
+            let low = x[3];
+            let close = x[4];
+            let volume = x[5];
+            [open, high, low, close, volume]
+        })
+        .flatten()
+        .collect::<Vec<_>>();
+
+    let x = Tensor::<AutodiffBackend, 2>::from_data(
+        TensorData::new::<f32, Vec<usize>>(train_data, [347, 5].into()),
         &device,
     );
-    
-    let y = Tensor::<ADBackend, 2>::from_data(
-        TensorData::new::<f32, Vec<usize>>(y_data.to_vec(), [num_samples,1].into()),
+
+    let y = Tensor::<AutodiffBackend, 2>::from_data(
+        TensorData::new::<f32, Vec<usize>>(price_data, [347, 1].into()),
         &device,
     );
+
+
 
     // 2. 模型和优化器初始化
-    let mut model = LinearModel::<ADBackend>::default();
+    let mut model = LinearModel::<AutodiffBackend>::default();
 
     for epoch in 0..epochs  {
         ic_cdk::println!("epoch {}", epoch);
         model=model.train_step(x.clone(),y.clone(),lr as LearningRate);
         ic_cdk::println!("predict {}", model.forward(x.clone()));
     }
+    Ok(())
 
 }
+//       /home/prj/burn_price/temp/icp_history_price_2024.json

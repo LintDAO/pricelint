@@ -60,7 +60,7 @@ service : () -> {
   set_stop_predict : () -> (Result_4);
   set_timer_interval : (nat64) -> (Result_4);
   set_train_params : (TrainConfig) -> (Result_4);
-  t : (nat64, float32) -> ();
+  t : (nat64, float32, blob) -> (Result_4);
   t1 : (nat64, float32, blob) -> (Result_4);
   test1 : () -> (Result_5);
   train : () -> (Result_4);

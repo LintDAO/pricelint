@@ -44,7 +44,8 @@ where
             .with_weight_decay(Some(WeightDecayConfig::new(1e-5))); // L2正则化
         let mut optim = adam_config.init::<B, LstmModel<B>>();
         let new_model = optim.step(lr, self.clone(), grads);
-        new_model
+        *self = new_model;
+        self.clone()
     }
 }
 impl<B, const D: usize> Validate<B, D> for LstmModel<B>
