@@ -104,6 +104,45 @@ export const getICPBalance = async (accountId: string): Promise<number> => {
     return 0;
   }
 };
+/**
+ * ICRC-2 授权（2025 年最新版 @dfinity/ledger-icrc 写法）
+ */
+export const approveICRCToken = async (
+  canisterId: string, // Ledger canister ID
+  spender: string, //授权给谁（通常是治理 canister 的 principal）
+  amount: bigint, // 必须是最小单位 bigint，比如 100_000_000_000n
+  options?: {
+    expiresInHours?: number | null; // 过期时间（小时），null 或不传 = 永不过期
+    expectedAllowance?: bigint | null; // 预期当前 allowance，通常留空 [] 即可
+  }
+): Promise<bigint | false> => {
+  try {
+    const ledger = initIcrcLedger(canisterId);
+    // expires_at 处理
+    const spenderPrincipal =
+      typeof spender === "string" ? Principal.fromText(spender) : spender;
+
+    const rawAmount =
+      typeof amount === "bigint"
+        ? amount
+        : BigInt(Math.round(Number(amount) * Math.pow(10, 8)));
+
+    // 真正的最简版：只传必须的字段，其他全靠 undefined 自动处理
+    const result = await ledger.approve({
+      amount: rawAmount,
+      spender: { owner: spenderPrincipal, subaccount: [] },
+    });
+
+    console.log("Approve Ok, block:", result.toString());
+    // showMessageSuccess?.(`授权成功！区块 ${result}`);
+    return result;
+  } catch (error: any) {
+    console.error("Approve failed:", error);
+    const msg = error.message || String(error);
+    showMessageError?.(`Approve failed: ${msg}`);
+    return false;
+  }
+};
 
 export const getICRCTokenBalance = async (
   canisterId: string

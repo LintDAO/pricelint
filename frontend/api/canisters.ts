@@ -1,3 +1,4 @@
+import type { PredictorView } from ".dfx/ic/canisters/backend/backend.did";
 import type { ApiResult } from "@/types/types";
 import { showMessageError, showMessageSuccess } from "@/utils/message";
 import { blockCanisterArrayByPrincipal } from "@/utils/storage";
@@ -16,7 +17,6 @@ import {
 } from "./canister_pool";
 import { IC_API_URL_V3 } from "./constants/ic";
 import { CONTROLLER_CANISTERS_KEY } from "./icp";
-import type { PredictorView } from ".dfx/ic/canisters/backend/backend.did";
 
 // 定义 Canister 数据接口
 export interface CanisterData {

@@ -152,8 +152,19 @@
                     color="primary"
                     no-caps
                     :loading="startPredictLoading"
-                    @click="openStakeDialog = true"
+                    @click="
+                      isStakeMode = true;
+                      openStakeDialog = true;
+                    "
                   />
+                  <q-btn
+                    @click="
+                      isStakeMode = false;
+                      openStakeDialog = true;
+                    "
+                  >
+                    Unstake
+                  </q-btn>
                 </div>
               </template>
             </div>
@@ -210,7 +221,9 @@
               </div>
               <div v-else>
                 <div class="insight-label">Total Stake</div>
-                <div class="insight-value">{{ canisterData.totalStake }}</div>
+                <div class="insight-value">
+                  {{ canisterData.totalStake }} {{ stakeToken }}
+                </div>
                 <div
                   class="insight-change"
                   :class="getNumberChangeClass(canisterData.stakeChange)"
@@ -320,9 +333,8 @@
     <!-- stake dialog -->
     <q-dialog v-model="openStakeDialog">
       <q-card style="width: 500px; max-width: 90vw">
-        <!-- Dialog header -->
         <q-card-section class="row items-center q-pb-none">
-          <div class="text-h6">Stake</div>
+          <div class="text-h6">{{ isStakeMode ? "Stake" : "Unstake" }}</div>
           <q-space />
           <q-btn
             icon="close"
@@ -333,22 +345,27 @@
           />
         </q-card-section>
 
-        <!-- Dialog content -->
         <q-card-section class="q-pt-md">
-          <!-- Available balance display -->
           <q-item>
             <q-item-section>
-              <q-item-label caption>Available Balance</q-item-label>
-              <q-item-label class="text-weight-bold"
-                >{{ walletBalance }} testPCL</q-item-label
-              >
+              <q-item-label caption>
+                {{ isStakeMode ? "Available Balance" : "Staked Amount" }}
+              </q-item-label>
+              <q-item-label class="text-weight-bold">
+                {{ isStakeMode ? walletBalance : canisterData.totalStake }}
+                {{ stakeToken }}
+              </q-item-label>
             </q-item-section>
           </q-item>
 
           <q-separator class="q-my-md" />
 
-          <!-- Alpha Warning Banner -->
-          <q-banner rounded class="bg-orange text-white q-mb-md">
+          <q-banner
+            v-if="isStakeMode"
+            rounded
+            class="bg-orange text-white q-mb-md"
+          >
+            <!-- Alpha Warning Banner -->
             <template v-slot:avatar>
               <q-icon name="warning" />
             </template>
@@ -360,9 +377,11 @@
               purposes.
             </div>
           </q-banner>
+          <!-- 现在解除质押默认解除质押所有代币，所以先用if else粗暴解决 -->
           <q-input
+            v-if="isStakeMode"
             v-model.number="stakeAmount"
-            label="Stake Amount"
+            :label="isStakeMode ? 'Stake Amount' : 'Unstake Amount'"
             type="number"
             filled
             dense
@@ -372,7 +391,11 @@
             (val: number | null) => (val && val <= walletBalance) || 'Insufficient balance'
             ]"
             class="q-mb-md"
-            hint="Enter the amount you want to stake"
+            :hint="
+              isStakeMode
+                ? 'Enter the amount you want to stake'
+                : 'Enter the amount you want to unstake'
+            "
           >
             <template #append>
               <q-btn
@@ -381,13 +404,57 @@
                 dense
                 no-caps
                 size="sm"
-                @click="stakeAmount = walletBalance"
+                @click="
+                  stakeAmount = isStakeMode
+                    ? walletBalance
+                    : canisterData.totalStake
+                "
               />
             </template>
           </q-input>
+          <!-- 解除质押时的“100% 进度条” -->
+          <div v-else class="q-mb-md">
+            <!-- Progress Bar with Label -->
+            <div class="q-mb-md">
+              <div class="row items-center justify-between q-mb-sm">
+                <div>
+                  <q-icon
+                    name="info"
+                    size="sm"
+                    color="warning"
+                    class="q-mr-sm"
+                  />
+                  <span class="text-subtitle2 text-weight-bold"
+                    >Unstake Token Amount</span
+                  >
+                </div>
+
+                <span class="text-caption text-weight-bold text-red">100%</span>
+              </div>
+              <q-linear-progress
+                :value="1"
+                color="red"
+                size="12px"
+                class="rounded-borders"
+                stripe
+                animated
+              />
+            </div>
+
+            <!-- Info Text -->
+            <q-banner
+              class="bg-red-1 text-red-9 q-mb-md rounded-borders"
+              dense
+              flat
+            >
+              <template v-slot:avatar>
+                <q-icon name="warning" />
+              </template>
+              All your staked tokens will be unstaked immediately
+            </q-banner>
+          </div>
         </q-card-section>
 
-        <!-- Dialog action buttons -->
         <q-card-actions align="right">
           <q-btn
             label="Cancel"
@@ -396,7 +463,7 @@
             @click="openStakeDialog = false"
           />
           <q-btn
-            label="Confirm Stake"
+            :label="isStakeMode ? 'Confirm Stake' : 'Confirm Unstake'"
             color="primary"
             :loading="stakeLoading"
             :disable="!isFormValid || stakeLoading"
@@ -449,6 +516,8 @@ import {
   IC_DASHBOARD_URL,
 } from "@/api/constants/ic";
 import { getPCLBalance } from "@/api/icp";
+import { getStakeBalance } from "@/api/token";
+import { stakePredictCanister } from "@/api/user";
 import { fromTokenAmount } from "@/utils/common";
 import { showMessageError, showMessageSuccess } from "@/utils/message";
 import {
@@ -469,6 +538,7 @@ const isDataLoading = ref(true);
 const isStatusLoading = ref(true);
 const startPredictLoading = ref(false);
 // Dialog 显示状态
+const isStakeMode = ref(true); // true = stake，false = unstake（默认 stake）
 const openStakeDialog = ref(false);
 const showSuccessDialog = ref(false);
 
@@ -488,6 +558,7 @@ const latestVersion = ref("0.0.0");
 const latestVersionName = ref("");
 // Reactive data
 const chartView = ref("accuracy");
+const stakeToken = ref("testPCL");
 const chartRef = ref<HTMLElement>();
 let chart: echarts.ECharts | null = null;
 
@@ -545,7 +616,7 @@ const canisterData = ref({
   module_hash: "",
   cyclesBalance: "0",
   cyclesChange: 0,
-  totalStake: "0 testPCL",
+  totalStake: 0,
   stakeChange: 0,
   accuracy: 0,
   accuracyChange: 0,
@@ -698,6 +769,9 @@ const getTokenBalance = () => {
   getPCLBalance().then((res) => {
     walletBalance.value = res;
   });
+  getStakeBalance(canisterId.value).then((res) => {
+    canisterData.value.totalStake = res;
+  });
 };
 const checkIsPredict = () => {
   checkIsPredictRunning(canisterId.value)
@@ -716,7 +790,6 @@ onMounted(async () => {
   getCanisterInfo();
   getTokenBalance();
   checkIsPredict();
-
   // 检查是否启用升级版本的banner
   showBanner.value = await checkVersion();
 });
@@ -908,14 +981,23 @@ const handleStake = async () => {
   stakeLoading.value = true;
 
   try {
-    // 模拟 API 调用
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    if (isStakeMode.value) {
+      console.log("stake", isStakeMode.value);
+      const resBoolean = await stakePredictCanister(
+        canisterId.value,
+        stakeAmount.value
+      );
+      console.log("resBoolean", resBoolean);
+      //方法不成功，跳出
+      if (!resBoolean) return;
+      // 更新钱包余额
+      walletBalance.value -= stakeAmount.value!;
 
-    // 更新钱包余额
-    walletBalance.value -= stakeAmount.value!;
-
-    openStakeDialog.value = false;
-    showSuccessDialog.value = true;
+      openStakeDialog.value = false;
+      showSuccessDialog.value = true;
+    } else {
+      console.log("unstake", isStakeMode.value);
+    }
   } catch (error) {
   } finally {
     stakeLoading.value = false;
@@ -932,6 +1014,16 @@ const isFormValid = computed(() => {
 </script>
 
 <style lang="scss" scoped>
+.unstake-progress-container {
+  padding: 16px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 0, 0, 0.02) 0%,
+    rgba(255, 0, 0, 0.01) 100%
+  );
+  border-radius: 8px;
+  border: 1px solid rgba(255, 0, 0, 0.1);
+}
 .chart-container {
   height: 200px;
 }
