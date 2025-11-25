@@ -250,7 +250,11 @@ pub mod stake {
         }
         //质押周期设置为0  意思是随时可以解除
         STAKE.with_borrow_mut(|rc| {
-            let x = rc.insert(
+            let is_stake_init = rc.get(&StakeKey(caller().to_text(), canister_id.clone()));
+            if is_stake_init.is_some() {
+                return Err(StakeError::AlreadyInitialized.to_string());
+            }
+            let is_new_insert = rc.insert(
                 StakeKey(caller().to_text(), canister_id.clone()),
                 Stake {
                     id: hash_salt(&caller().to_text(), canister_id.to_string()),
@@ -267,18 +271,14 @@ pub mod stake {
                     },
                 },
             );
-            if x.is_some() {
-                Err(StakeError::AlreadyInitialized.to_string())
-            } else {
-                Ok(())
-            }
+            Ok(())
         })
     }
     /// 质押token  累计计算
     /// 目前由backend代操作 实际是以铸币canisters进行操作的
     #[update(guard = "is_named_user")]
-    pub async fn pcl_stake(canister_id: String, stake_amount: u64) -> Result<(), String> {
-        let stake_amount = Nat::from(stake_amount * 10u64.pow(8));
+    pub async fn pcl_stake(canister_id: String, stake_amount: f64) -> Result<(), String> {
+        let stake_amount = Nat::from((stake_amount * 10f64.powi(8)) as u64);
         let backend_canister_id = ic_cdk::api::id();
         ic_cdk::println!("canister_id：{}", backend_canister_id);
         if stake_amount <= Nat::from(0u32) {
@@ -332,7 +332,8 @@ pub mod stake {
                                 match stake {
                                     None => return Err(StakeError::NotInitializedStake.to_string()),
                                     Some(mut some_stake) => {
-                                        some_stake.token_balance =  some_stake.token_balance+stake_amount;
+                                        some_stake.token_balance =
+                                            some_stake.token_balance + stake_amount;
                                         some_stake.last_op_time = now_time;
                                         map.borrow_mut().insert(
                                             StakeKey(caller().to_string(), canister_id.clone()),
@@ -414,13 +415,17 @@ pub mod stake {
 
 pub mod stake_api {
     use crate::web::models::stake_model::Stake;
+    use crate::STAKE;
 
-    //批量结算token
+    //批量结算pcl token
     fn settled_token() {
         //1.获取预测结果
         // Prediction
         //2.根据预测结果 结算用户质押的token
-        //3.如果质押的PCL小于固定值则不结算
+        let trend = "up".to_string();
+        STAKE.with_borrow_mut(|rc| {
+            rc.iter().map(|(k, v)| (k, v));
+        })
     }
 
     //设置默认的质押配置

@@ -259,7 +259,7 @@ service : () -> {
   list_symbol_kind : () -> (vec text) query;
   // 质押token  累计计算
   // 目前由backend代操作 实际是以铸币canisters进行操作的
-  pcl_stake : (text, nat64) -> (Result);
+  pcl_stake : (text, float64) -> (Result);
   pcl_unstake : (text) -> (Result);
   predict : () -> (float32) query;
   prediction_record : (Prediction) -> (Result_9);
