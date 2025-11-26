@@ -137,3 +137,12 @@ export async function importHistoryRecords(
   console.log("importReocrd", results);
   // 无返回值，或返回 void
 }
+
+export async function getStakeBalance(canisterId: string): Promise<number> {
+  const result = await getBackend().get_pcl_stake_balance(canisterId);
+  if ("Ok" in result) {
+    console.log("getStakeBalance", Number(result.Ok) / 10000_0000);
+    return Number(result.Ok) / 10000_0000;
+  }
+  return 0;
+}
