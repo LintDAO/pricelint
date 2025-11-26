@@ -30,3 +30,18 @@ pub mod canister_id{
    pub const LOCAL_BACKEND_CANISTER_ID: &str = "uxrrr-q7777-77774-qaaaq-cai";
 }
 
+pub mod memory_manager {
+
+   pub const BACKUP_DATA_MEMORY_ID: u8 = 254; //255特殊保留 使用了会报错
+
+   pub const MODEL_MAP_MEMORY_ID: u8 = 0;
+   pub const CONFIG_MEMORY_ID: u8 = 1;
+   pub const CANISTER_MONITOR_MEMORY_ID: u8 = 2;
+
+   pub const EXPORT_MEMORY_IDS: &[u8] = [
+      MODEL_MAP_MEMORY_ID,
+      CONFIG_MEMORY_ID,
+      CANISTER_MONITOR_MEMORY_ID,
+     
+   ].as_slice();
+}

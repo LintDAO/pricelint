@@ -6,13 +6,20 @@ type AdvanceTrainConfig = record {
   activation : opt text;
   dropout_rate : opt float64;
 };
+type CanisterLog = record { time : nat64; message : text };
+type LstmModelConfig = record {
+  dropout : float64;
+  hidden_size : nat64;
+  output_size : nat64;
+  input_size : nat64;
+};
 type Pred = record {
   up : float64;
   staked : float64;
   trend : text;
   down : float64;
 };
-type Predictor = record {
+type Prediction = record {
   id : text;
   trend : opt text;
   pred : Pred;
@@ -23,11 +30,12 @@ type Predictor = record {
   price : float64;
 };
 type Result = variant { Ok : vec text; Err : text };
-type Result_1 = variant { Ok : text; Err : text };
-type Result_2 = variant { Ok : vec float32; Err : text };
-type Result_3 = variant { Ok : Value; Err : text };
-type Result_4 = variant { Ok; Err : text };
-type Result_5 = variant { Ok : Predictor; Err : text };
+type Result_1 = variant { Ok : CanisterLog; Err : text };
+type Result_2 = variant { Ok : text; Err : text };
+type Result_3 = variant { Ok; Err : text };
+type Result_4 = variant { Ok : vec record { nat64; text }; Err : text };
+type Result_5 = variant { Ok : Value; Err : text };
+type Result_6 = variant { Ok : Prediction; Err : text };
 type TrainConfig = record {
   weight_decay : opt float64;
   advance_train_config : opt AdvanceTrainConfig;
@@ -47,22 +55,22 @@ type Value = variant {
   Number : nat64;
 };
 service : () -> {
-  collect_metrics : () -> ();
+  find_all_info : () -> (vec CanisterLog) query;
+  find_last_info : () -> (opt CanisterLog) query;
   find_model_lists : () -> (Result) query;
-  get_canister_info : () -> () query;
+  get_cansiter_info : () -> (Result_1) query;
   get_current_version : () -> (opt record { text; text }) query;
-  get_default_model : () -> (Result_1) query;
+  get_default_model : () -> (Result_2) query;
   is_predict_running : () -> (bool) query;
-  predict : () -> (Result_2);
+  linear_epochs : (nat64, float32, blob) -> (Result_3);
+  lstm_epochs : (nat64, float32, blob) -> (Result_3);
+  lstm_train_init : (opt LstmModelConfig) -> (Result_4);
+  record_canister_info : () -> (Result_3);
   set_current_version : (text, text) -> () query;
-  set_default_model : (text) -> (Result_3);
-  set_start_predict : () -> (Result_4);
-  set_stop_predict : () -> (Result_4);
-  set_timer_interval : (nat64) -> (Result_4);
-  set_train_params : (TrainConfig) -> (Result_4);
-  t : (nat64, float32, blob) -> (Result_4);
-  t1 : (nat64, float32, blob) -> (Result_4);
-  test1 : () -> (Result_5);
-  train : () -> (Result_4);
-  update_canister_info : () -> ();
+  set_default_model : (text) -> (Result_5);
+  set_start_predict : () -> (Result_3);
+  set_stop_predict : () -> (Result_3);
+  set_timer_interval : (nat64) -> (Result_3);
+  set_train_params : (TrainConfig) -> (Result_3);
+  test1 : () -> (Result_6);
 }

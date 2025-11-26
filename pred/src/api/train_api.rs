@@ -1,0 +1,86 @@
+use crate::api::config::default_model_config::get_default_model;
+use crate::common::guard::is_owner;
+use crate::common::lifecycle::MODEL_MAP;
+use crate::models::interface::train::Train;
+use crate::models::lstm::v1::lstm_domain::{LstmModel, LstmModelConfig};
+use burn::backend::ndarray::NdArrayDevice;
+use burn::backend::{Autodiff, NdArray};
+use burn::prelude::{Tensor, TensorData};
+use burn::LearningRate;
+use ic_cdk::api::time;
+use ic_cdk::{query, update};
+use std::time;
+
+type AutodiffBackend = Autodiff<NdArray<f32>>;
+const LSTM_V1_0_0: &str = "lstm_v1.0.0";
+
+//初始化或者重置
+#[update(guard = "is_owner")]
+fn lstm_train_init(mut config: Option<LstmModelConfig>) -> Result<Vec<(u64, String)>, String> {
+    ic_cdk::println!("Training started...");
+    let model_name = get_default_model()?;
+    let device = &NdArrayDevice::Cpu;
+    match model_name.as_str() {
+        LSTM_V1_0_0 => {
+            let mut model;
+            if config.is_none() {
+                model = LstmModel::<AutodiffBackend>::default();
+            } else {
+                model = LstmModel::<AutodiffBackend>::new(config.unwrap(), device);
+            }
+            let record = model.record_as_bytes()?;
+            MODEL_MAP.with_borrow_mut(|rc| rc.insert(LSTM_V1_0_0.to_string(), record));
+            Ok(vec![(time(), String::from("Init or reset model success"))])
+        }
+        _ => Ok(vec![(
+            time(),
+            String::from("Has not matched default model in this canister!"),
+        )]),
+    }
+}
+fn train_epochs(epochs: usize, mut lr: Option<f64>) -> Result<Vec<(u64, String)>, String> {
+    if lr.is_none() {
+        lr = Some(0.1);
+    }
+    let device = &NdArrayDevice::Cpu;
+    let model_name = get_default_model()?;
+    match model_name.as_str() {
+        LSTM_V1_0_0 => {
+            let model = MODEL_MAP
+                .with(|rc| rc.borrow().get(&model_name))
+                .ok_or("Has not init training config,please set training config first.")?;
+            let init = LstmModel::<AutodiffBackend>::default();
+            let mut model = init.restore_from_bytes(model)?;
+
+            //todo  补全训练数据来源
+            let train_data = vec![];
+            let price_data = vec![];
+            let input = Tensor::<AutodiffBackend, 3>::from_data(
+                TensorData::new::<f32, Vec<usize>>(train_data, [347, 1, 5].into()),
+                device,
+            );
+
+            // 创建目标张量 [num_sequences, 1]
+            let target = Tensor::<AutodiffBackend, 2>::from_data(
+                TensorData::new::<f32, Vec<usize>>(price_data, [347, 1].into()),
+                &device,
+            );
+            let mut log = Vec::<(u64, String)>::new();
+            for epoch in 0..epochs {
+                log.push((time(), String::from(format!("Start epoch {}", epoch))));
+                let (_, train_log) =
+                    model.train_step(input.clone(), target.clone(), lr.unwrap() as LearningRate);
+                log.extend(train_log);
+            }
+            let record = model.record_as_bytes()?;
+
+            MODEL_MAP.with_borrow_mut(|rc| rc.insert(LSTM_V1_0_0.to_string(), record));
+            log.push((time(), String::from("Record this model successfully")));
+            Ok(log)
+        }
+        _ => Ok(vec![(
+            time(),
+            String::from("Has not matched default model in this canister!"),
+        )]),
+    }
+}

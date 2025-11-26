@@ -72,7 +72,7 @@ pub fn linear_epochs(epochs:usize,lr:f32,data:Vec<u8>)->Result<(),String> {
 
     for epoch in 0..epochs  {
         ic_cdk::println!("epoch {}", epoch);
-        model=model.train_step(x.clone(),y.clone(),lr as LearningRate);
+        model.train_step(x.clone(),y.clone(),lr as LearningRate);
         ic_cdk::println!("predict {}", model.forward(x.clone()));
     }
     Ok(())

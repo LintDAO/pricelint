@@ -6,10 +6,10 @@ use burn::nn;
 use burn::nn::{Initializer, Linear, LinearConfig};
 use burn::optim::{Adam, AdamConfig, SgdConfig};
 use burn::prelude::{Backend, Config, Device, Module, Tensor};
+use burn::record::{BinBytesRecorder, FullPrecisionSettings, Recorder};
 use burn::tensor::backend::AutodiffBackend;
 use serde::Serialize;
 use std::fmt::{Debug, DebugList, Display, Formatter, Write};
-
 
 //具体模型
 #[derive(Module, Debug)]
@@ -40,11 +40,7 @@ where
             }),
         }
     }
-    pub fn new(
-        config: LinearModelConfig,
-        optim: OptimizerConfigs,
-        device: B::Device,
-    ) -> Self {
+    pub fn new(config: LinearModelConfig, optim: OptimizerConfigs, device: B::Device) -> Self {
         let linear = nn::LinearConfig::new(config.input_size, config.output_size)
             .with_bias(config.bias)
             .with_initializer(config.initializer)
@@ -59,6 +55,7 @@ where
             }),
         }
     }
+
 
     pub fn get_device(&self) -> B::Device {
         self.config.device.into()

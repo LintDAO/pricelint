@@ -16,7 +16,7 @@ pub mod memory_manager {
     pub const TEMP_VEC_MEMORY_ID: u8 = 0;
     pub const TEMP_MAP_MEMORY_ID: u8 = 1;
     pub const USER_CONTEXT_MEMORY_ID: u8 = 2;
-    pub const WALLET_CONTEXT_MEMORY_ID: u8 = 3;
+    pub const CANISTER_MONITOR_MEMORY_ID: u8 = 3;
     pub const PREDICTOR_CONTEXT_MEMORY_ID: u8 = 4;
     pub const ROLE_USER_TREE_MEMORY_ID: u8 = 5;
     pub const WASM_FILES_MEMORY_ID: u8 = 6;
@@ -31,7 +31,7 @@ pub mod memory_manager {
         TEMP_VEC_MEMORY_ID,
         TEMP_MAP_MEMORY_ID,
         USER_CONTEXT_MEMORY_ID,
-        WALLET_CONTEXT_MEMORY_ID,
+        CANISTER_MONITOR_MEMORY_ID,
         PREDICTOR_CONTEXT_MEMORY_ID,
         ROLE_USER_TREE_MEMORY_ID,
         WASM_FILES_MEMORY_ID,

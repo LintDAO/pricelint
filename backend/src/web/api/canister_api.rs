@@ -30,12 +30,8 @@ pub mod backup_api {
     use crate::web::models::prediction_model::{PredictionHistory, Prediction, PredictorView, PredictionKey};
     use crate::web::models::stake_model::{Stake, StakeKey};
     use crate::web::models::user_model::User;
-    use crate::web::models::wallet_model::Wallet;
-    use crate::{
-        BACKUP_DATA, CANISTER_LIST, EXCHANGE_RATE, MEMORY_MANAGER, PREDICTOR_CONTEXT,
-            PREDICTION, ROLE_USER_TREE, STAKE, TEMP_MAP, TEMP_VEC, USER_CONTEXT,
-        WALLET_CONTEXT, WASM_FILES,
-    };
+    use crate::web::models::monitor::{CanisterLog};
+    use crate::{BACKUP_DATA, CANISTER_LIST, EXCHANGE_RATE, MEMORY_MANAGER, PREDICTOR_CONTEXT, PREDICTION, ROLE_USER_TREE, STAKE, TEMP_MAP, TEMP_VEC, USER_CONTEXT, WASM_FILES, CANISTER_MONITOR};
     use candid::{Nat, Principal};
     use ic_cdk::api::time;
     use ic_cdk::{query, update};
@@ -83,7 +79,7 @@ pub mod backup_api {
         temp_vec_data: Vec<TempVecValue<String>>,
         temp_map_data: Vec<(String, TempMapValue<String>)>,
         user_context_data: Vec<(String, Context<User>)>,
-        wallet_context_data: Vec<(String, Context<Wallet>)>,
+        canister_monitor_data: Vec<(u64, CanisterLog)>,
         predictor_context_data: Vec<(String, Context<Prediction>)>,
         role_user_tree_data: Vec<UserAffiliation>,
         wasm_files_data: Vec<(String, WasmFile)>,
@@ -134,7 +130,7 @@ pub mod backup_api {
         let temp_vec_data = collect_memory_data!(TEMP_VEC);
         let temp_map_data = collect_memory_data!(TEMP_MAP);
         let user_context_data = collect_memory_data!(USER_CONTEXT);
-        let wallet_context_data = collect_memory_data!(WALLET_CONTEXT);
+        let canister_monitor_data = collect_memory_data!(CANISTER_MONITOR);
         let predictor_context_data = collect_memory_data!(PREDICTOR_CONTEXT);
         let role_user_tree_data = collect_memory_data!(ROLE_USER_TREE);
         let wasm_files_data = collect_memory_data!(WASM_FILES);
@@ -146,7 +142,7 @@ pub mod backup_api {
             temp_vec_data,
             temp_map_data,
             user_context_data,
-            wallet_context_data,
+            canister_monitor_data,
             predictor_context_data,
             role_user_tree_data,
             wasm_files_data,
@@ -217,7 +213,7 @@ pub mod backup_api {
         restore_from_data!(TEMP_VEC,export_data.temp_vec_data,vec);
         restore_from_data!(TEMP_MAP,export_data.temp_map_data,map);
         restore_from_data!(USER_CONTEXT,export_data.user_context_data,map);
-        restore_from_data!(WALLET_CONTEXT,export_data.wallet_context_data,map);
+        restore_from_data!(CANISTER_MONITOR,export_data.canister_monitor_data,map);
         restore_from_data!(PREDICTOR_CONTEXT,export_data.predictor_context_data,map);
         restore_from_data!(ROLE_USER_TREE,export_data.role_user_tree_data,set);
         restore_from_data!(WASM_FILES,export_data.wasm_files_data,map);

@@ -11,11 +11,13 @@ candid = "0.10"
 ic-cdk = "0.16"
 burn = { version = "0.17.0", default-features = false, features = ["std", "ndarray", "autodiff","dataset"] }
 
-serde = { version = "1.0", features = ["derive"] }
 ic-stable-structures = { version="0.6.8"}
 getrandom = { version = "0.3.2", default-features = false, features = ["wasm_js"]}
 serde_json = "1.0.142"
 ic-cdk-timers = "0.1.0"
+ic0 = {version = "1.0.0" }
+serde = { version = "1.0", features = ["derive"] }
+canistergeek_ic_rust = "0.4.3"
 
 [build]
 rustflags = ["--cfg", "getrandom_backend=\"custom\""]

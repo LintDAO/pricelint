@@ -2,12 +2,13 @@ use candid::CandidType;
 use ic_cdk::{call, init, post_upgrade, pre_upgrade, spawn};
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory};
 use ic_stable_structures::storable::Bound;
-use ic_stable_structures::{DefaultMemoryImpl, Log, StableBTreeMap, StableLog, Storable};
+use ic_stable_structures::{
+    DefaultMemoryImpl, Log, StableBTreeMap, StableLog, StableVec, Storable,
+};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::cmp::PartialEq;
-use std::collections::BTreeMap;
 use std::io::Read;
 use std::slice;
 use std::time::Duration;
@@ -35,27 +36,15 @@ macro_rules! init_stable_memory {
             );
         }
     };
-    ($name:ident,$event:ident,log<index:$index_mem:tt,data:$data_mem:tt>) => {
-        thread_local! {
-            pub static $name: RefCell<Log<$event,Memory,Memory>> = RefCell::new(
-                Log::init(
-                    MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new($index_mem))),
-                    MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new($data_mem)))
-                ).expect("Failed to initialize StableLog")
-            );
-        }
-    };
 }
 
 thread_local! {
-        static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> =RefCell::new(MemoryManager::init(
-        DefaultMemoryImpl::default()
-    ));
+    pub static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> =RefCell::new(MemoryManager::init(DefaultMemoryImpl::default()));
     pub static TIMER_ID: RefCell<TimerId> = RefCell::new(TimerId::default());
 }
-init_stable_memory!(MODEL_MAP,0,map<String, Vec<u8>>);
-init_stable_memory!(CONFIG,1,map<String, Value<String>>);
-init_stable_memory!(LOG,String,log<index:2, data:3>);
+init_stable_memory!(MODEL_MAP,MODEL_MAP_MEMORY_ID,map<String, Vec<u8>>);
+init_stable_memory!(CONFIG,CONFIG_MEMORY_ID,map<String, Value<String>>);
+init_stable_memory!(CANISTER_MONITOR,CANISTER_MONITOR_MEMORY_ID,map<u64,CanisterLog>);
 
 #[derive(Serialize, candid::Deserialize, Debug, Clone, candid::CandidType)]
 pub enum Value<K: Ord, V = String> {
@@ -64,20 +53,32 @@ pub enum Value<K: Ord, V = String> {
     Tuple1(V),
     Tuple2(V, V),
     Tuple3(V, V, V),
-    BtreeMap(BTreeMap<K, V>),
+    BtreeMap(std::collections::BTreeMap<K, V>),
     Vector(Vec<V>), // 可以添加更多变体
 }
+#[derive(CandidType, Deserialize, Debug, Serialize, Clone)]
+pub struct CanisterLog {
+    pub time: u64,
+    pub message: String,
+}
 impl_storable!(Value<K,V>);
+impl_storable!(CanisterLog);
+
 use crate::api::config::config_entity::Config;
+use crate::api::monitor::monitor_api::record_canister_info;
 use crate::common::constants::config::{
     FIVE_MIN_TIMER_INTERVAL, ONE_HOUR_IMER_INTERVAL, PREDICT_FLAG_KEY, TIMER_INTERVAL_KEY, T_FLAG,
 };
+use crate::common::constants::duration::NANOS_PER_SEC;
+use crate::common::constants::memory_manager::{
+    CANISTER_MONITOR_MEMORY_ID, CONFIG_MEMORY_ID, MODEL_MAP_MEMORY_ID,
+};
+use crate::impl_storable;
 use crate::services::user_predict_service::predict_entity::Prediction;
-use crate::services::user_predict_service::predict_service::{ push_to_backend};
+use crate::services::user_predict_service::predict_service::push_to_backend;
 use getrandom::Error;
 use ic_cdk::api::time;
 use ic_cdk_timers::{set_timer, set_timer_interval, TimerId};
-use crate::impl_storable;
 
 #[no_mangle]
 unsafe extern "Rust" fn __getrandom_v03_custom(dest: *mut u8, len: usize) -> Result<(), Error> {
@@ -85,13 +86,54 @@ unsafe extern "Rust" fn __getrandom_v03_custom(dest: *mut u8, len: usize) -> Res
 }
 
 #[init]
-fn init() {}
+fn init() {
+    // init_timer();
+}
 #[pre_upgrade]
 fn pre_upgrade_function() {}
 
 #[post_upgrade]
-fn post_upgrade_function() {}
+fn post_upgrade_function() {
+    init_timer();
+}
 
+fn schedule_tasklists_15m() {
+    ic_cdk::println!("schedule_tasklists_15m:{}", time());
+}
+fn schedule_tasklists_60m() {
+    ic_cdk::println!("schedule_tasklists_60m:{}", time());
+    spawn(async move {})
+}
+
+fn schedule_tasklists_1d() {
+    ic_cdk::println!("schedule_tasklists_1d:{}", time());
+    let ret = record_canister_info();
+}
+fn init_timer() {
+    const NANOS_PER_SEC: u64 = 1_000_000_000;
+    let duration_15m = NANOS_PER_SEC * 60 * 15;
+    let duration_60m = NANOS_PER_SEC * 60 * 60;
+    let duration_1d = duration_60m * 24;
+    let now = time();
+    schedule_next_tick(
+        duration_15m,
+        duration_15m - (now % duration_15m),
+        now + (duration_15m - (now % duration_15m)),
+        schedule_tasklists_15m,
+    );
+    schedule_next_tick(
+        duration_60m,
+        duration_60m - (now % duration_60m),
+        now + (duration_60m - (now % duration_60m)),
+        schedule_tasklists_60m,
+    );
+    schedule_next_tick(
+        duration_1d,
+        duration_1d - (now % duration_1d),
+        now + (duration_1d - (now % duration_1d)),
+        schedule_tasklists_1d,
+    );
+}
 //需要执行的所有任务
 pub fn periodic_task() -> () {
     CONFIG.with(|rc| {
@@ -120,16 +162,27 @@ pub fn periodic_task() -> () {
         };
         if let Value::Number(duration) = value.unwrap() {
             ic_cdk::println!("duration:{:?}", duration);
+            let duration = duration * NANOS_PER_SEC;
             //分钟
-            let now = Duration::from_nanos(time()).as_secs();
+            let now = time();
             // 计算距离下一个整点的秒数
             let next_running_duration = duration - (now % duration);
             let next_running_time = now + next_running_duration;
-            schedule_next_tick(duration, next_running_duration, next_running_time,task_list);
+            schedule_next_tick(
+                duration,
+                next_running_duration,
+                next_running_time,
+                task_list,
+            );
         }
     })
 }
-fn schedule_next_tick(duration: u64, next_running_duration: u64, next_running_time: u64, func: fn(), ) {
+fn schedule_next_tick(
+    duration: u64,
+    next_running_duration: u64,
+    next_running_time: u64,
+    func: fn(),
+) {
     let timer_id = set_timer(Duration::from_nanos(next_running_duration), move || {
         ic_cdk::println!("now {}, next_running_time:{} ", time(), next_running_time);
         func();
@@ -139,12 +192,7 @@ fn schedule_next_tick(duration: u64, next_running_duration: u64, next_running_ti
         let next_running_time = now + next_running_duration;
         schedule_next_tick(duration, next_running_duration, next_running_time, func);
     });
-    // 存储定时器ID
-    TIMER_ID.with(|timer_id_cell| {
-        *timer_id_cell.borrow_mut() = timer_id;
-    });
 }
-
 pub fn task_list() -> () {
     ic_cdk::println!("running task_list");
     spawn(async move {

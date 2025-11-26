@@ -29,6 +29,7 @@ type Burn = record {
   amount : nat;
   spender : opt Account;
 };
+type CanisterLog = record { time : nat64; message : text };
 type DurationRange = variant {
   Microseconds;
   Minutes;
@@ -131,20 +132,21 @@ type PriceData = record {
 type Recycle = record { time : nat64 };
 type Result = variant { Ok; Err : text };
 type Result_1 = variant { Ok : WasmFile; Err : text };
-type Result_10 = variant { Ok : vec PredictorView; Err : text };
-type Result_11 = variant { Ok : StakeRecord; Err : text };
-type Result_12 = variant { Ok : User; Err : text };
+type Result_10 = variant { Ok : Prediction; Err : text };
+type Result_11 = variant { Ok : vec PredictorView; Err : text };
+type Result_12 = variant { Ok : StakeRecord; Err : text };
+type Result_13 = variant { Ok : User; Err : text };
 type Result_2 = variant { Ok : GetBlocksResponse; Err : text };
 type Result_3 = variant { Ok : text; Err : text };
-type Result_4 = variant {
+type Result_4 = variant { Ok : CanisterLog; Err : text };
+type Result_5 = variant {
   Ok : vec record { record { text; text }; Stake };
   Err : text;
 };
-type Result_5 = variant { Ok : nat; Err : text };
-type Result_6 = variant { Ok : vec Prediction; Err : text };
-type Result_7 = variant { Ok : GetTransactionsResponse; Err : text };
-type Result_8 = variant { Ok : vec WasmFile; Err : text };
-type Result_9 = variant { Ok : Prediction; Err : text };
+type Result_6 = variant { Ok : nat; Err : text };
+type Result_7 = variant { Ok : vec Prediction; Err : text };
+type Result_8 = variant { Ok : GetTransactionsResponse; Err : text };
+type Result_9 = variant { Ok : vec WasmFile; Err : text };
 type Reward = record { time : nat64; reward_amount : nat64 };
 type Stake = record {
   id : text;
@@ -238,22 +240,25 @@ service : () -> {
   delete_backup_data : (nat64) -> (bool);
   delete_wasm : (text, text) -> (Result_1);
   dump_stable_memory : (opt nat64) -> (HttpResponse) query;
+  find_all_info : () -> (vec CanisterLog) query;
   find_all_symbols : () -> (vec record { text; vec ExchangeRateRecord }) query;
   find_backup_data : (nat64) -> (opt text);
   find_backup_lists : () -> (vec record { nat64; nat64 }) query;
   find_by_symbol : (text) -> (vec ExchangeRateRecord) query;
+  find_last_info : () -> (opt CanisterLog) query;
   find_user_lists : () -> (vec User) query;
   get_blocks : (GetBlocksRequest) -> (Result_2);
   get_canister_info : () -> (Result_3);
+  get_cansiter_info : () -> (Result_4) query;
   get_latest_version : (UpdateType) -> (Result_1) query;
-  get_pcl_list : () -> (Result_4) query;
-  get_pcl_stake_balance : (text) -> (Result_5) query;
-  get_predictor_vec : () -> (Result_6) query;
+  get_pcl_list : () -> (Result_5) query;
+  get_pcl_stake_balance : (text) -> (Result_6) query;
+  get_predictor_vec : () -> (Result_7) query;
   get_principal : () -> (principal) query;
   get_state : () -> (State) query;
-  get_transactions : (GetBlocksRequest) -> (Result_7);
+  get_transactions : (GetBlocksRequest) -> (Result_8);
   get_wasm_bin : (text, text) -> (Result_1) query;
-  get_wasm_lists : () -> (Result_8) query;
+  get_wasm_lists : () -> (Result_9) query;
   http_request : (HttpRequest) -> (HttpResponse) query;
   import_history_records : (text, vec record { nat64; float64 }) -> (Result);
   list_symbol_kind : () -> (vec text) query;
@@ -262,16 +267,16 @@ service : () -> {
   pcl_stake : (text, float64) -> (Result);
   pcl_unstake : (text) -> (Result);
   predict : () -> (float32) query;
-  prediction_record : (Prediction) -> (Result_9);
+  prediction_record : (Prediction) -> (Result_10);
   refill_random_buffer : (nat32) -> ();
   restore_from_file : (text) -> (Result);
-  show_predictions : () -> (Result_10) query;
+  show_predictions : () -> (Result_11) query;
   stake_init : (text, text, nat64) -> (Result);
-  staking_operation_record : (StakeRecord) -> (Result_11);
+  staking_operation_record : (StakeRecord) -> (Result_12);
   test_1 : (DurationRange) -> (nat64, nat64) query;
   train : (nat64) -> ();
   upload_json_file : (blob) -> ();
   upload_wasm : (text, text, blob, UpdateType) -> (Result_3);
-  user_login : () -> (Result_12) query;
-  user_register : () -> (Result_12);
+  user_login : () -> (Result_13) query;
+  user_register : () -> (Result_13);
 }

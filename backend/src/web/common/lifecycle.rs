@@ -7,8 +7,8 @@ use ic_cdk_timers::set_timer;
 use std::time::Duration;
 #[init]
 fn init() {
-    init_admin();
-    init_timer();
+    // init_admin();
+    // init_timer();
 }
 #[pre_upgrade]
 fn pre_upgrade() {

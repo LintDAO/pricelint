@@ -41,7 +41,7 @@ where
         input: Tensor<B, D>,
         target: Tensor<B, D>,
         lr: LearningRate,
-    ) -> Self {
+    ) -> (Self,Vec<(u64,String)>) {
         let output = self.forward(input.clone());
         let loss = self.mse_loss(&output, &target);
         let grads = loss.backward();
@@ -57,8 +57,8 @@ where
         let grad_clipping_config = GradientClippingConfig::Value(10.0);
         let adam_config = AdamConfig::new().with_grad_clipping(Some(grad_clipping_config));
         let mut optim = adam_config.init::<B, LinearModel<B>>();
-        let new_model = optim.step(lr, self.clone(), grads);
-        new_model
+        *self = optim.step(lr, self.clone(), grads);
+        (self.clone(),vec![])
     }
 
     fn record_as_bytes(&self) -> Result<Vec<u8>, String> {
@@ -70,15 +70,7 @@ where
         Ok(bytes)
     }
 
-    fn restore_from_bytes(&self, record: Vec<u8>) -> Result<LinearModel<B>, String> {
-        let recorder = BinBytesRecorder::<FullPrecisionSettings>::new();
-        let record = recorder
-            .load::<LinearModelRecord<B>>(record, &self.config.device)
-            .map_err(|e| format!("{:?}", e))?;
-        let model = LinearModel::default();
-        let module = model.load_record(record);
-        Ok(module)
-    }
+
 }
 impl<B, const D: usize> Validate<B, D> for LinearModel<B>
 where

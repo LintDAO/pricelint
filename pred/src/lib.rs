@@ -12,6 +12,8 @@ pub mod export_canid{
     use crate::services::user_predict_service::predict_entity::Prediction;
     use crate::api::config::config_entity::TrainConfig;
     use crate::common::lifecycle::Value;
+    use crate::models::lstm::v1::lstm_domain::LstmModelConfig;
+    use crate::common::lifecycle::CanisterLog;
     export_candid!();
     
 }

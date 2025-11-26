@@ -34,7 +34,7 @@ where
         input: Tensor<B, 3>,  // 输入数据，形状 [Batch, Seq, Feature]
         target: Tensor<B, 2>, // 目标值，形状 [Batch, OutputSize]
         lr: LearningRate,     // 学习率
-    ) -> Self {
+    ) -> (Self,Vec<(u64,String)>) {
         let output = self.forward(input.clone()); // 预测值 y_hat
         let loss = self.mse_loss(&output, &target);
         let grads = loss.backward(); // 计算梯度
@@ -45,7 +45,7 @@ where
         let mut optim = adam_config.init::<B, LstmModel<B>>();
         let new_model = optim.step(lr, self.clone(), grads);
         *self = new_model;
-        self.clone()
+        (self.clone(),vec![])
     }
 }
 impl<B, const D: usize> Validate<B, D> for LstmModel<B>
