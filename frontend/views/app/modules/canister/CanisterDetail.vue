@@ -566,16 +566,16 @@ const activeStep = ref(1);
 
 const chartData = ref({
   dates: [
-    "Jan 6",
-    "Jan 7",
-    "Jan 8",
-    "Jan 9",
-    "Jan 10",
-    "Jan 11",
-    "Jan 12",
-    "Jan 13",
-    "Jan 14",
-    "Jan 15",
+    "Nov 17",
+    "Nov 18",
+    "Nov 19",
+    "Nov 20",
+    "Nov 21",
+    "Nov 22",
+    "Nov 23",
+    "Nov 24",
+    "Nov 25",
+    "Nov 26",
   ],
   accuracyRate: [51, 49, 51, 52, 54, 55, 57, 56, 55, 57],
 });
@@ -990,11 +990,9 @@ const handleStake = async () => {
       console.log("resBoolean", resBoolean);
       //方法不成功，跳出
       if (!resBoolean) return;
-      // 更新钱包余额
-      walletBalance.value -= stakeAmount.value!;
-
       openStakeDialog.value = false;
       showSuccessDialog.value = true;
+      getTokenBalance();
     } else {
       console.log("unstake", isStakeMode.value);
     }

@@ -50,19 +50,21 @@ export async function stakePredictCanister(
   stakeAmountE8s: number
 ): Promise<boolean> {
   const backend = getBackend();
-  const approve = await approveICRCToken(
-    "tx6gn-wqaaa-aaaac-qbrma-cai",
-    "eov5t-niaaa-aaaah-arepa-cai",
-    18446744073709551615n
-  );
-  if (!approve) {
-    return false;
-  }
+
   // Step 1: 尝试一下老的 init（后端删掉 init 之后这一段直接 404 或报错，我们直接走 catch）
   try {
     //canister_Id  ,token_name, 质押后锁定时间，默认写0
     const initRes = await backend.stake_init(canisterId, "ICPUSDT", 0n);
     if ("Ok" in initRes) {
+      //TODO init方法删了之后记得把这个approve移出去
+      const approve = await approveICRCToken(
+        "tx6gn-wqaaa-aaaac-qbrma-cai",
+        "eov5t-niaaa-aaaah-arepa-cai",
+        18446744073709551615n
+      );
+      if (!approve) {
+        return false;
+      }
     }
     if ("Err" in initRes) {
       throw initRes.Err;
