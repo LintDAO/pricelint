@@ -834,8 +834,8 @@ const checkVersion = async (): Promise<boolean> => {
       return false; // 如果后端返回错误，假设无需提示更新
     }
 
-    latestVersion.value = latestVersionResult.Ok.wasm_version; // 获取最新版本号
-    latestVersionName.value = latestVersionResult.Ok.wasm_name; // 获取最新版本号
+    latestVersion.value = latestVersionResult.Ok.version; // 获取最新版本号
+    latestVersionName.value = latestVersionResult.Ok.name; // 获取最新版本号
     currentVersion.value = "0.0.9"; // TODO 临时占位符，替换为实际调用用户 canister 接口的逻辑
     // 示例：const currentVersion = await userCanister.getCurrentVersion();
 

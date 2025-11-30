@@ -75,14 +75,18 @@ const initTargetCanister = async (canisterId: string) => {
   });
 };
 
-//检查最新的系统版本号是多少，用于通知用户更新，添加新的api
-export async function checkSystemLatestVersion() {
-  // FunctionUpdate 功能性更新，返回系统的版本号 ; ModelUpdate 模型更新，返回模型的版本号
-  const version = await getBackend().get_latest_version({
-    FunctionUpdate: null,
-  });
-  return version;
+// 彻底取代后端版本接口
+export async function checkSystemLatestVersion(): Promise<any> {
+  const info = await axios.get(
+    `https://cdn.jsdelivr.net/gh/LintDAO/pricelint@latest/README.md`
+  );
+  // const info = await axios.get(
+  //   `  https://github.com/${GITHUB_REPO}/releases/download/latest/version.json`
+  // );
+  console.log("getLatestVersionInfo", info);
+  return info;
 }
+
 /**
  * 获取用户的 canister 列表
  * @returns Promise<CanisterDetail[]> 返回 CanisterDetail 对象数组

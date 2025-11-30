@@ -1,0 +1,8 @@
+{
+  "version": "1.0.0",
+  "name": "pred",
+  "wasm": "pred.wasm.gz",
+  "released_at": "2025-11-27T12:00:00Z",
+  "changelog": "init pred",
+  "force_update": true
+}
