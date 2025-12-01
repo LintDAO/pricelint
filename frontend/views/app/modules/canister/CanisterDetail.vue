@@ -506,6 +506,8 @@
 import {
   checkIsPredictRunning,
   checkSystemLatestVersion,
+  getPrediction,
+  getPredictionChartData,
   installCode,
   onPredict,
   queryCanisterStatus,
@@ -777,6 +779,8 @@ const checkIsPredict = () => {
   checkIsPredictRunning(canisterId.value)
     .then((res) => {
       canisterData.value.status = res ? "Predicting" : "Standby";
+      if (canisterData.value.status === "Predicting") {
+      }
     })
     .finally(() => {
       isStatusLoading.value = false;
@@ -784,6 +788,23 @@ const checkIsPredict = () => {
         initChart();
       });
     });
+  getPrediction(canisterId.value).then((res) => {
+    console.log("res", res);
+  });
+  getPredictPointChart();
+};
+const getPredictPointChart = () => {
+  const nowNs = BigInt(Date.now()) * 1_000_000n;
+  const sevenDaysAgoNs = nowNs - 7n * 86_400_000_000_000n; // 7 × 24 × 60 × 60 × 1e9
+  getPredictionChartData(canisterId.value, sevenDaysAgoNs, nowNs).then(
+    (data) => {
+      console.log("getPredictPointChart", data);
+      data.map((p) => ({
+        time: new Date(Number(p.timestamp / 1_000_000n)), // 纳秒 → Date
+        value: p.value,
+      }));
+    }
+  );
 };
 // Lifecycle
 onMounted(async () => {

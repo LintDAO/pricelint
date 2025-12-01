@@ -2,7 +2,6 @@ import type { PredictorView } from ".dfx/ic/canisters/backend/backend.did";
 import type { ApiResult } from "@/types/types";
 import { showMessageError, showMessageSuccess } from "@/utils/message";
 import { blockCanisterArrayByPrincipal } from "@/utils/storage";
-import pako from 'pako';
 import { Actor } from "@dfinity/agent";
 import {
   ICManagementCanister,
@@ -11,6 +10,7 @@ import {
 } from "@dfinity/ic-management";
 import { Principal } from "@dfinity/principal";
 import axios from "axios";
+import pako from "pako";
 import {
   createIIAgent,
   getBackend,
@@ -59,11 +59,29 @@ const userCanisterIdlFactory = ({ IDL }) => {
     Ok: IDL.Null, // 成功时无返回值
     Err: IDL.Text, // 失败时返回错误信息
   });
+  const PredictionRecord = IDL.Record({
+    timestamp: IDL.Nat64, // 纳秒时间戳
+    prediction: IDL.Float64, // 预测的浮点数值
+  });
+
+  // 图表数据单条记录
+  const ChartPoint = IDL.Record({
+    timestamp: IDL.Nat64,
+    value: IDL.Float64,
+  });
   return IDL.Service({
     set_train_params: IDL.Func([], [], []), // 无参数，无返回值
     set_start_predict: IDL.Func([], [Result], []), // 返回 Result
     set_stop_predict: IDL.Func([], [Result], []), // 返回 Result
     is_predict_running: IDL.Func([], [IDL.Bool], []),
+    latest_prediction: IDL.Func([], [IDL.Opt(PredictionRecord)], ["query"]),
+
+    // 返回指定时间段内的历史预测点，用于画图
+    prediction_chart_data: IDL.Func(
+      [IDL.Nat64, IDL.Nat64], // begin_time, end_time（纳秒）
+      [IDL.Vec(ChartPoint)], // vec (timestamp, value)
+      ["query"]
+    ),
   });
 };
 
@@ -79,7 +97,7 @@ const initTargetCanister = async (canisterId: string) => {
 // 彻底取代后端版本接口
 export async function checkSystemLatestVersion(): Promise<any> {
   const info = await axios.get(
-    `https://cdn.jsdelivr.net/gh/${GITHUB_REPO}@master/ai_modules/version.json`
+    `https://cdn.jsdelivr.net/gh/${GITHUB_REPO}@master/ai_modules/version.json?t=${Date.now()}`
   );
   // const info = await axios.get(
   //   `  https://github.com/${GITHUB_REPO}/releases/download/latest/version.json`
@@ -491,7 +509,57 @@ export async function checkIsPredictRunning(
     throw error;
   }
 }
+// 获取最新的单条预测
+export async function getPrediction(canisterId: string): Promise<{
+  timestamp: number;
+  prediction: number;
+} | null> {
+  try {
+    const canisterActor = await initTargetCanister(canisterId);
+    const result = await canisterActor.latest_prediction(); // 返回 Option<record>
 
+    // result 为 []（None） 或 [{ timestamp: bigint, prediction: number }]
+    if (!result || result.length === 0) {
+      return null;
+    }
+    return {
+      timestamp: result[0].timestamp as number, // nat64 -> bigint
+      prediction: result[0].prediction as number,
+    };
+  } catch (error) {
+    console.error(
+      `Error calling latest_prediction on canister ${canisterId}:`,
+      error
+    );
+    const msg = error instanceof Error ? error.message : String(error);
+    showMessageError(`Failed to get latest prediction: ${msg}`);
+    throw error;
+  }
+}
+
+// 可选：获取图表数据（用于折线图）
+export async function getPredictionChartData(
+  canisterId: string,
+  beginTime: bigint, // 纳秒
+  endTime: bigint
+): Promise<Array<{ timestamp: bigint; value: number }>> {
+  try {
+    const canisterActor = await initTargetCanister(canisterId);
+    const data = await canisterActor.prediction_chart_data(beginTime, endTime);
+    console.log("getPredictionChartData data", data);
+    return data.map(([timestamp, value]) => ({
+      timestamp,
+      value,
+    }));
+  } catch (error) {
+    console.error(
+      `Error fetching chart data from canister ${canisterId}:`,
+      error
+    );
+    showMessageError("Failed to load chart data");
+    return [];
+  }
+}
 export async function showPredictions(): Promise<ApiResult<PredictorView[]>> {
   return getBackend().show_predictions();
 }
