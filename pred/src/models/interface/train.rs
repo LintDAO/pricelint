@@ -5,6 +5,7 @@ use burn::module::Module;
 use burn::prelude::{Backend, Tensor};
 use burn::record::{BinBytesRecorder, FullPrecisionSettings, Recorder};
 use burn::tensor::backend::AutodiffBackend;
+use burn::tensor::{Int, TensorKind};
 use burn::LearningRate;
 
 pub trait Train<B, const D1: usize, const D2: usize>: Module<B>
@@ -36,4 +37,6 @@ where
         let module = self.clone().load_record(record);
         Ok(module)
     }
+
+
 }

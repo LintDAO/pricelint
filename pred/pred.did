@@ -21,11 +21,10 @@ type Pred = record {
 };
 type Prediction = record {
   id : text;
-  trend : opt text;
+  trend : text;
   pred : Pred;
   canister_id : text;
   user_id : text;
-  stake : record { float64; float64 };
   create_time : nat64;
   price : float64;
 };
@@ -34,8 +33,7 @@ type Result_1 = variant { Ok : CanisterLog; Err : text };
 type Result_2 = variant { Ok : text; Err : text };
 type Result_3 = variant { Ok; Err : text };
 type Result_4 = variant { Ok : vec record { nat64; text }; Err : text };
-type Result_5 = variant { Ok : Value; Err : text };
-type Result_6 = variant { Ok : Prediction; Err : text };
+type Result_5 = variant { Ok : Prediction; Err : text };
 type TrainConfig = record {
   weight_decay : opt float64;
   advance_train_config : opt AdvanceTrainConfig;
@@ -44,15 +42,6 @@ type TrainConfig = record {
   optimizer : opt text;
   momentum : opt float64;
   learning_rate : opt float64;
-};
-type Value = variant {
-  Text : text;
-  Tuple1 : text;
-  Tuple2 : record { text; text };
-  Tuple3 : record { text; text; text };
-  BtreeMap : vec record { text; text };
-  Vector : vec text;
-  Number : nat64;
 };
 service : () -> {
   find_all_info : () -> (vec CanisterLog) query;
@@ -65,12 +54,14 @@ service : () -> {
   linear_epochs : (nat64, float32, blob) -> (Result_3);
   lstm_epochs : (nat64, float32, blob) -> (Result_3);
   lstm_train_init : (opt LstmModelConfig) -> (Result_4);
+  p : () -> ();
   record_canister_info : () -> (Result_3);
   set_current_version : (text, text) -> () query;
-  set_default_model : (text) -> (Result_5);
+  set_default_model : (text) -> (Result_3);
   set_start_predict : () -> (Result_3);
   set_stop_predict : () -> (Result_3);
   set_timer_interval : (nat64) -> (Result_3);
   set_train_params : (TrainConfig) -> (Result_3);
-  test1 : () -> (Result_6);
+  test1 : () -> (Result_5);
+  train_epochs : (nat64, opt float64, blob) -> (Result_4);
 }

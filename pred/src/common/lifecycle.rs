@@ -45,6 +45,7 @@ thread_local! {
 init_stable_memory!(MODEL_MAP,MODEL_MAP_MEMORY_ID,map<String, Vec<u8>>);
 init_stable_memory!(CONFIG,CONFIG_MEMORY_ID,map<String, Value<String>>);
 init_stable_memory!(CANISTER_MONITOR,CANISTER_MONITOR_MEMORY_ID,map<u64,CanisterLog>);
+init_stable_memory!(PREDICTION,PREDICTION_MEMORY_ID,map<u64,Prediction>);
 
 #[derive(Serialize, candid::Deserialize, Debug, Clone, candid::CandidType)]
 pub enum Value<K: Ord, V = String> {
@@ -70,15 +71,14 @@ use crate::common::constants::config::{
     FIVE_MIN_TIMER_INTERVAL, ONE_HOUR_IMER_INTERVAL, PREDICT_FLAG_KEY, TIMER_INTERVAL_KEY, T_FLAG,
 };
 use crate::common::constants::duration::NANOS_PER_SEC;
-use crate::common::constants::memory_manager::{
-    CANISTER_MONITOR_MEMORY_ID, CONFIG_MEMORY_ID, MODEL_MAP_MEMORY_ID,
-};
+use crate::common::constants::memory_manager::{CANISTER_MONITOR_MEMORY_ID, CONFIG_MEMORY_ID, MODEL_MAP_MEMORY_ID, PREDICTION_MEMORY_ID};
 use crate::impl_storable;
-use crate::services::user_predict_service::predict_entity::Prediction;
-use crate::services::user_predict_service::predict_service::push_to_backend;
+
 use getrandom::Error;
 use ic_cdk::api::time;
 use ic_cdk_timers::{set_timer, set_timer_interval, TimerId};
+use crate::api::predict_api::prediction_api::{ predict_trend};
+use crate::api::predict_api::prediction_domain::Prediction;
 
 #[no_mangle]
 unsafe extern "Rust" fn __getrandom_v03_custom(dest: *mut u8, len: usize) -> Result<(), Error> {
@@ -102,12 +102,15 @@ fn schedule_tasklists_15m() {
 }
 fn schedule_tasklists_60m() {
     ic_cdk::println!("schedule_tasklists_60m:{}", time());
-    spawn(async move {})
+    let ret = record_canister_info();
+    spawn(async move {
+        let running_predict=predict_trend().await;
+    })
+
 }
 
 fn schedule_tasklists_1d() {
     ic_cdk::println!("schedule_tasklists_1d:{}", time());
-    let ret = record_canister_info();
 }
 fn init_timer() {
     const NANOS_PER_SEC: u64 = 1_000_000_000;
@@ -196,6 +199,7 @@ fn schedule_next_tick(
 pub fn task_list() -> () {
     ic_cdk::println!("running task_list");
     spawn(async move {
-        let x = push_to_backend().await;
+        // let x = push_to_backend().await;
+        predict_trend();
     });
 }

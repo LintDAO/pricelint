@@ -1,8 +1,11 @@
+use crate::common::utils::xrc::{Asset, AssetClass};
 use crate::web::models::prediction_model::{Prediction, PredictionHistory};
 use crate::web::models::record::{Record, RecordKey};
+use crate::web::services::prediction_service::autosave::{get_exchange_rate, get_sync_exchange_rate};
 use crate::{EXCHANGE_RATE, PREDICTION, RECORD, STAKE, STAKING_RECORD};
 use ic_cdk::api::time;
 use std::collections::{BTreeMap, HashMap};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 macro_rules! secs_to_nanos {
@@ -36,6 +39,8 @@ pub trait ExtendPredictorService {
     fn get_real_stake_util_yesterday() -> BTreeMap<String, u64>;
 
     fn get_stake_growth_rate() -> BTreeMap<String, f64>;
+
+    fn get_next() -> BTreeMap<String, PredictionHistory>;
 }
 impl ExtendPredictorService for Prediction {
     fn predictor_config() {
@@ -109,26 +114,35 @@ impl ExtendPredictorService for Prediction {
     fn get_prediction_aggregation(duration: u16) -> BTreeMap<String, PredictionHistory> {
         PREDICTION.with_borrow_mut(|rc| {
             let now = Duration::from_nanos(time()).as_secs();
-            let begein_time = now - (duration * 60u16) as u64;
-            secs_to_nanos!(begein_time);
+            let begin_time = now - (duration * 60u16) as u64;
+            secs_to_nanos!(begin_time);
             secs_to_nanos!(now);
-            let filter_data = rc
-                .iter()
-                .filter(|(k, v)| k.1 <= now && k.1 >= begein_time)
-                .collect::<Vec<_>>();
-            filter_data
+            rc.iter()
+                .filter(|(k, v)| k.1 <= now && k.1 >= begin_time)
+                .collect::<Vec<_>>()
                 .iter()
                 .fold(HashMap::new(), |mut acc, (key, value)| {
                     acc.entry(key.2.clone()).or_insert(Vec::new()).push(value);
                     acc
                 })
                 .iter()
-                .map(|(k, v)| {
+                .map( |(k, v)| {
                     let pred_up = v.iter().map(|(&v)| v.pred.up).sum::<u64>();
                     let pred_down = v.iter().map(|(&v)| v.pred.down).sum::<u64>();
                     let stake = v.iter().map(|(&v)| v.pred.staked).sum::<u64>();
-                    //TODO get from xrc
-                    let realtime_price = 1;
+                    //从xrc获取实时价格
+                    const TARGET_SYMBOL: &str = "USDT";
+
+                    let realtime_price = get_sync_exchange_rate(
+                        Asset {
+                            class: AssetClass::Cryptocurrency,
+                            symbol: k.clone().replace(TARGET_SYMBOL, ""),
+                        },
+                        Asset {
+                            class: AssetClass::FiatCurrency,
+                            symbol: TARGET_SYMBOL.to_string(),
+                        },
+                    ).unwrap().rate;
                     let last_realtime_price = EXCHANGE_RATE.with_borrow(|r| {
                         //缩小范围 只取最近2小时的记录 避免性能爆炸
                         let two_hour_ago = now - Duration::from_secs(60 * 60 * 2).as_nanos() as u64;
@@ -322,6 +336,9 @@ impl ExtendPredictorService for Prediction {
         }
         stake_growth_rate
     }
+    fn get_next() -> BTreeMap<String, PredictionHistory> {
+        Self::get_prediction_aggregation(5)
+    }
 }
 
 pub mod autosave {
@@ -339,10 +356,25 @@ pub mod autosave {
     use ic_cdk::api::time;
     use std::collections::BTreeMap;
     use std::time::Duration;
+    use tokio::runtime::Builder;
 
     //获取当前的汇率 从xrc canister获取
     //OK
-    async fn get_exchange_rate(
+    pub fn get_sync_exchange_rate(
+        base_asset: Asset,
+        quote_asset: Asset,
+    ) -> Result<ExchangeRate, String> {
+        let rt = Builder::new_current_thread()
+            .enable_all()
+            .build().map_err(|e| format!("{:?}", e))?;
+        let result = rt.block_on(async {
+            // 在这里调用您的异步函数
+            let data = get_exchange_rate(base_asset,quote_asset).await;
+            data
+        });
+        result
+    }
+    pub async fn get_exchange_rate(
         base_asset: Asset,
         quote_asset: Asset,
     ) -> Result<ExchangeRate, String> {
@@ -363,7 +395,6 @@ pub mod autosave {
             GetExchangeRateResult::Err(e) => Err(e.to_string()),
         }
     }
-
     //保存汇率到稳定内存 15分钟更新一次
     //OK
     pub async fn autosave_exchange_rate() -> Result<(), String> {

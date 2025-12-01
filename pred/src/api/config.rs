@@ -110,14 +110,13 @@ pub mod default_model_config {
     }
 
     #[update(guard = "is_owner")]
-    fn set_default_model(model_name: String) -> Result<Value<String>, String> {
+    fn set_default_model(model_name: String) -> Result<(), String> {
         let default_model_name = CONFIG
             .with(|rc| {
                 rc.borrow_mut()
                     .insert(DEFAULT_MODEL_KEY.to_string(), Value::Text(model_name))
-            })
-            .ok_or(ConfigError::SetDefaultModelError.to_string())?;
-        Ok(default_model_name)
+            });
+        Ok(())
     }
 }
 pub mod predict_config {

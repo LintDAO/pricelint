@@ -3,7 +3,7 @@ use burn::backend::ndarray::NdArrayDevice;
 use burn::backend::{Autodiff, NdArray};
 use burn::config::Config;
 use burn::module::{Ignored, Module};
-use burn::nn::{Dropout, DropoutConfig, Initializer, Linear, LinearConfig, Lstm, LstmConfig};
+use burn::nn::{Dropout, DropoutConfig, Embedding, EmbeddingConfig, Initializer, Linear, LinearConfig, Lstm, LstmConfig};
 use burn::tensor::backend::Backend;
 use burn::tensor::Tensor;
 
@@ -27,10 +27,10 @@ pub struct GlobalConfig {
 #[derive(Config, Debug,CandidType)]
 pub struct LstmModelConfig {
     /// 输入特征的大小
-    #[config(default = 5)]
+    #[config(default = 2)]
     pub input_size: usize,
     /// 隐藏状态的大小
-    #[config(default = 64)]
+    #[config(default = 10)]
     pub hidden_size: usize,
     // 最终输出
     #[config(default = 1)]
@@ -51,6 +51,7 @@ impl<B: Backend> LstmModel<B> {
     pub fn new(config: LstmModelConfig, device: &B::Device) -> Self {
         let config_clone = config.clone();
         // 对于LSTM的tanh激活，使用适合的gain
+
 
         let lstm1 = LstmConfig::new(config.input_size, config.hidden_size, true)
             .init(device);

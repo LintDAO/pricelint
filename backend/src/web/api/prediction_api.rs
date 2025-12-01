@@ -1,65 +1,56 @@
 use crate::web::services::prediction_service::ExtendPredictorService;
-use candid::{CandidType, Deserialize,};
+use candid::{CandidType, Deserialize};
 
-pub mod prediction_api{
-    use ic_cdk::{caller, query, update};
-    use crate::PREDICTOR_CONTEXT;
+pub mod prediction_api {
+    use crate::web::common::guard::is_canister;
     use crate::web::models::context::Context;
     use crate::web::models::prediction_model::{Pred, Prediction, PredictorResult, PredictorView};
     use crate::web::services::prediction_service::ExtendPredictorService;
-    use crate::web::common::guard::is_canister;
+    use crate::PREDICTOR_CONTEXT;
+    use ic_cdk::api::time;
+    use ic_cdk::{caller, query, update};
+    use std::ops::Deref;
     #[query]
     fn get_predictor_vec() -> Result<Vec<Prediction>, String> {
         todo!()
     }
     // 查询聚合数据
     //目前是请求一次查询一次 以后可能修改成从记录里定时查询数据
-    #[query]
+    // #[query]
     fn show_predictions() -> Result<Vec<PredictorView>, String> {
         let accuracy = Prediction::get_accuracy_record(7);
-        let total_stake = Prediction::get_total_stake();
-        let t1 = PredictorResult {
-            price: Some(12.1),
-            trend: Some("up".to_string()),
-            pred: Pred {
-                staked: 22,
-                up: 12,
-                down: 10,
-                trend: "up".to_string(),
-            },
-        };
-        let mut view1 = PredictorView {
-            id: "".to_string(),
-            token_name: "ICPUSDT".to_string(),
-            last_2: Some(t1.clone()),
-            last_1: Some(t1.clone()),
-            now: None,
-            next: Some(t1.clone()),
-            accuracy: 0.0,
-            stake: (12.0, 13.0),
-            create_time: 0,
-        };
-        let mut view2 = PredictorView {
-            id: "".to_string(),
-            token_name: "BTCUSDT".to_string(),
-            last_2: Some(t1.clone()),
-            last_1: Some(t1.clone()),
-            now: None,
-            next: Some(t1.clone()),
-            accuracy: 0.0,
-            stake: (11.0, 15.0),
-            create_time: 0,
-        };
-        Ok(vec![view1, view2])
+        let stake_amount = Prediction::get_total_stake();
+        let growth_rate = Prediction::get_stake_growth_rate();
+        let next = Prediction::get_next();
+        let (last1, last2) = Prediction::get_last_two_prediction();
+        let views = accuracy
+            .iter()
+            .map(|(token_name, accuracy_by_token)| {
+                let mut view = PredictorView {
+                    id: "".to_string(),
+                    token_name: token_name.clone(),
+                    last_2: last2.clone().get(token_name).map(|token| token.clone()),
+                    last_1: last1.get(token_name).map(|token| token.clone()),
+                    now: None,
+                    next: next.get(token_name).map(|token_name|token_name.clone()),
+                    accuracy: (accuracy_by_token.clone() as f64) * 10f64.powf(-8.0),
+                    stake: (
+                        *stake_amount.get(token_name).unwrap() as f64,
+                        *growth_rate.get(token_name).unwrap(),
+                    ),
+                    create_time: time(),
+                };
+                view
+            })
+            .collect::<Vec<_>>();
+        Ok(views)
     }
-
-
 }
 
 pub mod exchange_rate_api {
     use crate::web::models::exchange_rate::{ExchangeRateRecord, ExchangeRateRecordKey};
-    use crate::{ EXCHANGE_RATE};
-    use ic_cdk::api::{canister_balance};
+    use crate::EXCHANGE_RATE;
+    use ic_cdk::api::canister_balance;
     use ic_cdk::{query, update};
     use std::borrow::Cow;
 

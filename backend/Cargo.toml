@@ -20,6 +20,7 @@ ic-cdk-timers={version = "0.1.0" }
 burn = { version = "0.17.0", default-features = false, features = ["std", "ndarray", "autodiff","dataset"] }
 getrandom = { version = "0.3.2", default-features = false, features = ["wasm_js","std"]}
 icrc-ledger-types = "0.1.5"
+tokio = { version = "1.46.1", features = ["rt","sync","macros","io-util","time"] }
 [build]
 rustflags = ["--cfg", "getrandom_backend=\"custom\""]
 target = "wasm32-unknown-unknown"

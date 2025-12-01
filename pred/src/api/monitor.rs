@@ -63,11 +63,11 @@ pub mod monitor_api {
 mod test {
     use crate::common::constants::canister_id::LOCAL_BACKEND_CANISTER_ID;
     use crate::common::lifecycle::{Value, CONFIG, MODEL_MAP};
-    use crate::services::user_predict_service::predict_entity::{Pred, Prediction};
     use candid::Principal;
     use ic_cdk::api::call::CallResult;
     use ic_cdk::api::time;
     use ic_cdk::{api, call, caller, update};
+    use crate::api::predict_api::prediction_domain::{Pred, Prediction};
 
     fn test_insert_data(t: String, v1: Vec<u8>) -> usize {
         MODEL_MAP.with_borrow_mut(|rc| rc.insert(t.to_string(), v1.clone()));
@@ -90,14 +90,13 @@ mod test {
             user_id: caller().to_text(),
             canister_id: api::id().to_string(),
             price: 10.0, //TODO:
-            trend: None, //TODO:
+            trend: "".to_string(), //TODO:
             pred: Pred {
                 staked: 0.0,
                 up: 0.0,
                 down: 0.0,
                 trend: "".to_string(),
             }, //TODO:
-            stake: (0.0, 0.0), //TODO:
             create_time: time(),
         };
         //TODO:default重新赋值

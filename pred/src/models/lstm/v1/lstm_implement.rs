@@ -10,6 +10,7 @@ use burn::optim::decay::WeightDecayConfig;
 use burn::optim::{AdamConfig, GradientsParams, Optimizer};
 use burn::prelude::{Backend, Tensor};
 use burn::tensor::backend::AutodiffBackend;
+use burn::tensor::{Int, TensorKind};
 use burn::LearningRate;
 
 impl<B> Train<B, 3, 2> for LstmModel<B>
@@ -29,12 +30,15 @@ where
         ic_cdk::println!("forward{}", output);
         output // [batch, output_size]
     }
+
+  
+
     fn train_step(
         &mut self,
         input: Tensor<B, 3>,  // 输入数据，形状 [Batch, Seq, Feature]
         target: Tensor<B, 2>, // 目标值，形状 [Batch, OutputSize]
         lr: LearningRate,     // 学习率
-    ) -> (Self,Vec<(u64,String)>) {
+    ) -> (Self, Vec<(u64, String)>) {
         let output = self.forward(input.clone()); // 预测值 y_hat
         let loss = self.mse_loss(&output, &target);
         let grads = loss.backward(); // 计算梯度
@@ -45,8 +49,9 @@ where
         let mut optim = adam_config.init::<B, LstmModel<B>>();
         let new_model = optim.step(lr, self.clone(), grads);
         *self = new_model;
-        (self.clone(),vec![])
+        (self.clone(), vec![])
     }
+
 }
 impl<B, const D: usize> Validate<B, D> for LstmModel<B>
 where

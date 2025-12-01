@@ -105,22 +105,6 @@ type Prediction = record {
   price : float64;
   token_name : text;
 };
-type PredictorResult = record {
-  trend : opt text;
-  pred : Pred;
-  price : opt float64;
-};
-type PredictorView = record {
-  id : text;
-  now : opt PredictorResult;
-  next : opt PredictorResult;
-  last_1 : opt PredictorResult;
-  last_2 : opt PredictorResult;
-  stake : record { float64; float64 };
-  create_time : nat64;
-  token_name : text;
-  accuracy : float64;
-};
 type PriceData = record {
   low : float32;
   high : float32;
@@ -133,9 +117,8 @@ type Recycle = record { time : nat64 };
 type Result = variant { Ok; Err : text };
 type Result_1 = variant { Ok : WasmFile; Err : text };
 type Result_10 = variant { Ok : Prediction; Err : text };
-type Result_11 = variant { Ok : vec PredictorView; Err : text };
-type Result_12 = variant { Ok : StakeRecord; Err : text };
-type Result_13 = variant { Ok : User; Err : text };
+type Result_11 = variant { Ok : StakeRecord; Err : text };
+type Result_12 = variant { Ok : User; Err : text };
 type Result_2 = variant { Ok : GetBlocksResponse; Err : text };
 type Result_3 = variant { Ok : text; Err : text };
 type Result_4 = variant { Ok : CanisterLog; Err : text };
@@ -270,13 +253,13 @@ service : () -> {
   prediction_record : (Prediction) -> (Result_10);
   refill_random_buffer : (nat32) -> ();
   restore_from_file : (text) -> (Result);
-  show_predictions : () -> (Result_11) query;
   stake_init : (text, text, nat64) -> (Result);
-  staking_operation_record : (StakeRecord) -> (Result_12);
+  staking_operation_record : (StakeRecord) -> (Result_11);
   test_1 : (DurationRange) -> (nat64, nat64) query;
   train : (nat64) -> ();
   upload_json_file : (blob) -> ();
   upload_wasm : (text, text, blob, UpdateType) -> (Result_3);
-  user_login : () -> (Result_13) query;
-  user_register : () -> (Result_13);
+  user_login : () -> (Result_12) query;
+  user_query_exchange : (text, nat64) -> (vec record { float32; float32 });
+  user_register : () -> (Result_12);
 }

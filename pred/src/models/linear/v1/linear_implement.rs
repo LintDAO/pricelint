@@ -2,7 +2,7 @@ use crate::models::interface::predict::Predict;
 use crate::models::interface::train::Train;
 use crate::models::interface::validate::Validate;
 use crate::models::linear::v1::linear_domain::{
-    AdamConfigWrap, LinearModel, LinearModelRecord, OptimizerConfigs
+    AdamConfigWrap, LinearModel, LinearModelRecord, OptimizerConfigs,
 };
 use burn::backend::ndarray::{NdArray, NdArrayDevice};
 use burn::backend::Autodiff;
@@ -18,19 +18,17 @@ use burn::tensor::TensorKind;
 use burn::{nn, LearningRate};
 use std::fmt::{Debug, Formatter};
 
-
-
 impl<B, const D: usize> Train<B, D, D> for LinearModel<B>
 where
     B: AutodiffBackend<Device = NdArrayDevice, FloatElem = f32>
         + From<Autodiff<NdArray>>
         + Into<Autodiff<NdArray>>,
-   
 {
     //向前传播
     fn forward(&self, x: Tensor<B, D>) -> Tensor<B, D> {
         self.linear.forward(x)
     }
+
 
     ///1.前向传播 (Forward Pass)
     // 2.计算损失 (Loss Calculation)
@@ -41,7 +39,7 @@ where
         input: Tensor<B, D>,
         target: Tensor<B, D>,
         lr: LearningRate,
-    ) -> (Self,Vec<(u64,String)>) {
+    ) -> (Self, Vec<(u64, String)>) {
         let output = self.forward(input.clone());
         let loss = self.mse_loss(&output, &target);
         let grads = loss.backward();
@@ -58,7 +56,7 @@ where
         let adam_config = AdamConfig::new().with_grad_clipping(Some(grad_clipping_config));
         let mut optim = adam_config.init::<B, LinearModel<B>>();
         *self = optim.step(lr, self.clone(), grads);
-        (self.clone(),vec![])
+        (self.clone(), vec![])
     }
 
     fn record_as_bytes(&self) -> Result<Vec<u8>, String> {
@@ -99,5 +97,3 @@ where
         relative_error.mean()
     }
 }
-
-

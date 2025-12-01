@@ -37,11 +37,13 @@ pub mod memory_manager {
    pub const MODEL_MAP_MEMORY_ID: u8 = 0;
    pub const CONFIG_MEMORY_ID: u8 = 1;
    pub const CANISTER_MONITOR_MEMORY_ID: u8 = 2;
+   pub const PREDICTION_MEMORY_ID: u8 = 2;
 
    pub const EXPORT_MEMORY_IDS: &[u8] = [
       MODEL_MAP_MEMORY_ID,
       CONFIG_MEMORY_ID,
       CANISTER_MONITOR_MEMORY_ID,
+      PREDICTION_MEMORY_ID
      
    ].as_slice();
 }

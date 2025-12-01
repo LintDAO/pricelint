@@ -10,6 +10,7 @@ where
     B: AutodiffBackend<Device = NdArrayDevice, FloatElem = f32> + From<Autodiff<NdArray>>,
     Autodiff<NdArray>: From<B>,
 {
+   
     fn predict(&self, input: Tensor<B, D1>) -> f32 {
         self.forward(input).into_scalar()
     }
