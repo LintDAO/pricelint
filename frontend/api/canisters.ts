@@ -73,7 +73,7 @@ const userCanisterIdlFactory = ({ IDL }) => {
     set_train_params: IDL.Func([], [], []), // 无参数，无返回值
     set_start_predict: IDL.Func([], [Result], []), // 返回 Result
     set_stop_predict: IDL.Func([], [Result], []), // 返回 Result
-    is_predict_running: IDL.Func([], [IDL.Bool], []),
+    is_predict_running: IDL.Func([], [IDL.Bool], ["query"]),
     latest_prediction: IDL.Func([], [IDL.Opt(PredictionRecord)], ["query"]),
 
     // 返回指定时间段内的历史预测点，用于画图
