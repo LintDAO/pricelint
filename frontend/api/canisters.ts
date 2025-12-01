@@ -2,6 +2,7 @@ import type { PredictorView } from ".dfx/ic/canisters/backend/backend.did";
 import type { ApiResult } from "@/types/types";
 import { showMessageError, showMessageSuccess } from "@/utils/message";
 import { blockCanisterArrayByPrincipal } from "@/utils/storage";
+import pako from 'pako';
 import { Actor } from "@dfinity/agent";
 import {
   ICManagementCanister,
@@ -15,7 +16,7 @@ import {
   getBackend,
   getCurrentPrincipal,
 } from "./canister_pool";
-import { IC_API_URL_V3 } from "./constants/ic";
+import { GITHUB_REPO, IC_API_URL_V3 } from "./constants/ic";
 import { CONTROLLER_CANISTERS_KEY } from "./icp";
 
 // 定义 Canister 数据接口
@@ -78,13 +79,13 @@ const initTargetCanister = async (canisterId: string) => {
 // 彻底取代后端版本接口
 export async function checkSystemLatestVersion(): Promise<any> {
   const info = await axios.get(
-    `https://cdn.jsdelivr.net/gh/LintDAO/pricelint@latest/README.md`
+    `https://cdn.jsdelivr.net/gh/${GITHUB_REPO}@master/ai_modules/version.json`
   );
   // const info = await axios.get(
   //   `  https://github.com/${GITHUB_REPO}/releases/download/latest/version.json`
   // );
   console.log("getLatestVersionInfo", info);
-  return info;
+  return info.data;
 }
 
 /**
@@ -283,12 +284,47 @@ export async function stopCanister(canisterId: string): Promise<void> {
 
 //防止直接使用返回值导致ts报错：不存在属性“Err”。类型“{ Ok: [] | [User]; }”上不存在属性“Err
 export async function getWasmFile(
-  name: string,
-  version: string
-): Promise<ApiResult<any>> {
-  return getBackend().get_wasm_bin(name, version);
-}
+  _name: string, // 可以忽略，或保留兼容
+  _version: string // 也可以忽略，前端自己知道最新版
+): Promise<any> {
+  try {
+    // 先获取最新版本信息（拿到 wasm 文件名）
+    const info = await checkSystemLatestVersion();
 
+    const wasmUrl = `https://cdn.jsdelivr.net/gh/${GITHUB_REPO}@master/ai_modules/${
+      info.wasm
+    }?t=${Date.now()}`;
+
+    console.log("download wasm:", wasmUrl, "version:", info.version);
+
+    const response = await axios.get(wasmUrl, {
+      responseType: "arraybuffer", // 关键：二进制
+      timeout: 60000, // 大文件给 60 秒
+      onDownloadProgress: (progressEvent) => {
+        // 可选：加个进度条（Quasar Notify 或你的 UI）
+        if (progressEvent.total) {
+          const percent = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          console.log(`wasm donwload: ${percent}%`);
+        }
+      },
+    });
+
+    console.log("compressed size:", response.data.byteLength, "bytes");
+
+    // 关键：解压 gzip
+    const compressed = new Uint8Array(response.data);
+    const wasmModule = pako.inflate(compressed); // ← 就是这一行！
+
+    console.log("decompressed wasm size:", wasmModule.byteLength, "bytes");
+
+    return wasmModule;
+  } catch (error: any) {
+    console.error("failed", error);
+    throw new Error(`get wasm failed: ${error.message}`);
+  }
+}
 // 计算 SHA256 哈希并转换为十六进制字符串
 async function computeSha256Hex(data: Uint8Array): Promise<string> {
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
@@ -315,16 +351,16 @@ export async function installCode(
   try {
     // 获取 WASM 文件
     const wasmResult = await getWasmFile(wasm_name, version);
-    if (!wasmResult.Ok) {
-      throw new Error(`Failed to retrieve WASM file: ${wasmResult.Err}`);
+    if (!wasmResult) {
+      throw new Error(`Failed to retrieve WASM file: ${wasmResult}`);
     }
 
-    const wasmModule = wasmResult.Ok.wasm_bin[0];
-    if (!wasmModule || wasmModule.length === 0) {
+    const wasmModule = wasmResult;
+    if (!wasmModule || wasmModule.byteLength === 0) {
       throw new Error("Retrieved WASM file is empty");
     }
     console.log(
-      `Retrieved WASM file for version ${version}, size: ${wasmModule.length} bytes`
+      `Retrieved WASM file for version ${version}, size: ${wasmModule.byteLength} bytes`
     );
     const targetCanisterId = Principal.fromText(canisterId);
     // 确定安装代码的模式
@@ -332,7 +368,7 @@ export async function installCode(
       mode === "install" ? { install: null } : { upgrade: [] };
     console.log("installMode", installMode);
     // 如果 WASM 小于 2MB，直接使用 installCode
-    if (wasmModule.length <= 2097152) {
+    if (wasmModule.byteLength <= 2097152) {
       await managementCanister.installCode({
         canisterId: targetCanisterId,
         wasmModule: wasmModule,
@@ -348,7 +384,7 @@ export async function installCode(
     // 分块上传
     const chunkHashesList: chunk_hash[] = [];
     const chunks: Uint8Array[] = [];
-    for (let offset = 0; offset < wasmModule.length; offset += CHUNK_SIZE) {
+    for (let offset = 0; offset < wasmModule.byteLength; offset += CHUNK_SIZE) {
       const chunk = wasmModule.subarray(offset, offset + CHUNK_SIZE);
       chunks.push(chunk);
 

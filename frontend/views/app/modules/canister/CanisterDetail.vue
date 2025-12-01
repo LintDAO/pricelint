@@ -834,8 +834,8 @@ const checkVersion = async (): Promise<boolean> => {
       return false; // 如果后端返回错误，假设无需提示更新
     }
 
-    latestVersion.value = latestVersionResult.Ok.version; // 获取最新版本号
-    latestVersionName.value = latestVersionResult.Ok.name; // 获取最新版本号
+    latestVersion.value = latestVersionResult.version; // 获取最新版本号
+    latestVersionName.value = latestVersionResult.name; // 获取最新版本号
     currentVersion.value = "0.0.9"; // TODO 临时占位符，替换为实际调用用户 canister 接口的逻辑
     // 示例：const currentVersion = await userCanister.getCurrentVersion();
 
@@ -880,7 +880,6 @@ const checkVersion = async (): Promise<boolean> => {
 function compareVersions(latest: string, current: string): number {
   const latestParts = latest.split(".").map(Number);
   const currentParts = current.split(".").map(Number);
-
   for (let i = 0; i < Math.max(latestParts.length, currentParts.length); i++) {
     const latestNum = latestParts[i] || 0;
     const currentNum = currentParts[i] || 0;
