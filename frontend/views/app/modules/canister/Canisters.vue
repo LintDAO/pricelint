@@ -147,7 +147,7 @@ import {
 import TopUpCycles from "@/components/TopUpCycles.vue";
 import type { TableColumn } from "@/types/model";
 import { showUsername } from "@/utils/avatars";
-import { copyText, fromTokenAmount, isPrincipal } from "@/utils/common";
+import { copyText, fromTokenAmount } from "@/utils/common";
 import { showMessageError } from "@/utils/message";
 import { useQuasar } from "quasar";
 import { onMounted, ref } from "vue";
@@ -254,7 +254,7 @@ const getCanisterInfo = async () => {
       if (!status) {
         throw new Error(`Canister ${canisterId} status is undefined`);
       }
-      canisterData.value.push({
+      let data = {
         canisterId,
         status: Object.keys(status.status)[0] as
           | "running"
@@ -268,7 +268,8 @@ const getCanisterInfo = async () => {
         tokenBalance: 0,
         predictionAccuracy: 0, // 占位
         profitEarned: BigInt(0), // 占位
-      });
+      };
+      canisterData.value.push(data);
     } catch (error) {
       console.error(
         `Error fetching status for canister ${canister.canister_id}:`,

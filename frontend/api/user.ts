@@ -98,5 +98,18 @@ export async function stakePredictCanister(
 }
 
 export async function unstakePredictCanister(canisterId: string): Promise<any> {
-  return getBackend().pcl_unstake(canisterId);
+  try {
+    const result = await getBackend().pcl_unstake(canisterId);
+    if ("Ok" in result) {
+      // 质押成功
+      console.log("success unstake");
+      return true;
+    } else {
+      throw new Error(result.Err);
+    }
+  } catch (err) {
+    console.error("unstake failed", err);
+    showMessageError("unstake failed: " + err);
+    throw new Error("unstake failed" + err);
+  }
 }

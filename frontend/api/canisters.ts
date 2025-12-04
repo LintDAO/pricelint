@@ -302,45 +302,56 @@ export async function stopCanister(canisterId: string): Promise<void> {
 
 //防止直接使用返回值导致ts报错：不存在属性“Err”。类型“{ Ok: [] | [User]; }”上不存在属性“Err
 export async function getWasmFile(
-  _name: string, // 可以忽略，或保留兼容
-  _version: string // 也可以忽略，前端自己知道最新版
-): Promise<any> {
-  try {
-    // 先获取最新版本信息（拿到 wasm 文件名）
-    const info = await checkSystemLatestVersion();
+  _name: string,
+  _version: string
+): Promise<Uint8Array> {
+  let arrayBuffer: ArrayBuffer;
+  const USE_LOCAL_FILE = true; // ← true = 本地选文件，false = GitHub 下载
+  // ────────────────────── 1. 本地文件模式（调试用） ──────────────────────
+  if (USE_LOCAL_FILE) {
+    arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ".wasm,.wasm.gz";
 
-    const wasmUrl = `https://cdn.jsdelivr.net/gh/${GITHUB_REPO}@master/ai_modules/${
+      input.onchange = async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return reject(new Error("未选择文件"));
+
+        const buf = await file.arrayBuffer();
+        resolve(buf);
+      };
+
+      input.click();
+    });
+  }
+  // ────────────────────── 2. 正常 GitHub 下载模式 ──────────────────────
+  else {
+    const info = await checkSystemLatestVersion(); // 你的 version.json
+
+    const url = `https://cdn.jsdelivr.net/gh/${GITHUB_REPO}@master/ai_modules/${
       info.wasm
     }?t=${Date.now()}`;
 
-    console.log("download wasm:", wasmUrl, "version:", info.version);
-
-    const response = await axios.get(wasmUrl, {
-      responseType: "arraybuffer", // 关键：二进制
-      timeout: 60000, // 大文件给 60 秒
-      onDownloadProgress: (progressEvent) => {
-        // 可选：加个进度条（Quasar Notify 或你的 UI）
-        if (progressEvent.total) {
-          const percent = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
-          console.log(`wasm donwload: ${percent}%`);
-        }
-      },
+    const resp = await axios.get(url, {
+      responseType: "arraybuffer", // ← 必须是 arraybuffer
     });
 
-    console.log("compressed size:", response.data.byteLength, "bytes");
+    arrayBuffer = resp.data as ArrayBuffer;
+  }
 
-    // 关键：解压 gzip
-    const compressed = new Uint8Array(response.data);
-    const wasmModule = pako.inflate(compressed); // ← 就是这一行！
+  // ────────────────────── 3. 统一处理 gzip（不管本地还是远程） ──────────────────────
+  const uint8 = new Uint8Array(arrayBuffer);
 
-    console.log("decompressed wasm size:", wasmModule.byteLength, "bytes");
-
-    return wasmModule;
-  } catch (error: any) {
-    console.error("failed", error);
-    throw new Error(`get wasm failed: ${error.message}`);
+  // gzip 魔数：0x1f 0x8b
+  if (uint8[0] === 0x1f && uint8[1] === 0x8b) {
+    console.log("检测到 gzip，正在前端解压...");
+    const decompressed = pako.ungzip(uint8);
+    console.log("解压后 wasm 大小:", decompressed.byteLength, "bytes");
+    return decompressed; // ← 必须返回 Uint8Array
+  } else {
+    console.log("原始 wasm，大小:", uint8.byteLength, "bytes");
+    return uint8; // ← 直接返回 Uint8Array
   }
 }
 // 计算 SHA256 哈希并转换为十六进制字符串

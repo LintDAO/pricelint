@@ -193,6 +193,9 @@ let cursorInterval: NodeJS.Timeout | null = null;
 const animatedAccuracy = ref(0);
 const animatedAssets = ref(0);
 const animatedPredictions = ref(0);
+const targetAccuracy = ref(42);
+const targetAssets = ref(2);
+const targetPredictions = ref(24);
 
 const startTypingEffect = () => {
   let index = 0;
@@ -217,7 +220,7 @@ const startCursorBlink = () => {
 const animateNumbers = () => {
   // Animate accuracy to xx %
   const accuracyInterval = setInterval(() => {
-    if (animatedAccuracy.value < 0) {
+    if (animatedAccuracy.value < targetAccuracy.value) {
       animatedAccuracy.value += 1;
     } else {
       clearInterval(accuracyInterval);
@@ -226,7 +229,7 @@ const animateNumbers = () => {
 
   // Animate assets to x +
   const assetsInterval = setInterval(() => {
-    if (animatedAssets.value < 2) {
+    if (animatedAssets.value < targetAssets.value) {
       animatedAssets.value += 1;
     } else {
       clearInterval(assetsInterval);
@@ -235,7 +238,7 @@ const animateNumbers = () => {
 
   // Animate predictions to 24 +
   const predictionsInterval = setInterval(() => {
-    if (animatedPredictions.value < 24) {
+    if (animatedPredictions.value < targetPredictions.value) {
       animatedPredictions.value += 2;
     } else {
       clearInterval(predictionsInterval);

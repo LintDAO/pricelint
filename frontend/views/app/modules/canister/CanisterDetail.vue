@@ -158,6 +158,7 @@
                     "
                   />
                   <q-btn
+                    v-if="canisterData.totalStake > 0"
                     @click="
                       isStakeMode = false;
                       openStakeDialog = true;
@@ -254,17 +255,19 @@
               </div>
             </div>
 
-            <!-- Shutdowns Card -->
+            <!-- Profit Card -->
             <div class="insight-card">
               <div v-if="isDataLoading">
-                <div class="insight-label">Shutdowns</div>
+                <div class="insight-label">Profit</div>
                 <q-skeleton type="text" width="60px" class="insight-value" />
                 <q-skeleton type="text" width="80px" class="insight-change" />
               </div>
               <div v-else>
-                <div class="insight-label">Shutdowns</div>
-                <div class="insight-value">0</div>
-                <div class="insight-change">0% from last week</div>
+                <div class="insight-label">Profit</div>
+                <div class="insight-value">{{ canisterData.profit }}</div>
+                <div class="insight-change">
+                  {{ canisterData.profitChange }}% from last week
+                </div>
               </div>
             </div>
           </div>
@@ -466,7 +469,12 @@
             :label="isStakeMode ? 'Confirm Stake' : 'Confirm Unstake'"
             color="primary"
             :loading="stakeLoading"
-            :disable="!isFormValid || stakeLoading"
+            :disable="
+              stakeLoading ||
+              (isStakeMode
+                ? !isFormValid || Number(stakeAmount) <= 0
+                : Number(canisterData.totalStake) <= 0)
+            "
             @click="handleStake"
           />
         </q-card-actions>
@@ -519,7 +527,7 @@ import {
 } from "@/api/constants/ic";
 import { getPCLBalance } from "@/api/icp";
 import { getStakeBalance } from "@/api/token";
-import { stakePredictCanister } from "@/api/user";
+import { stakePredictCanister, unstakePredictCanister } from "@/api/user";
 import { fromTokenAmount } from "@/utils/common";
 import { showMessageError, showMessageSuccess } from "@/utils/message";
 import {
@@ -567,19 +575,8 @@ let chart: echarts.ECharts | null = null;
 const activeStep = ref(1);
 
 const chartData = ref({
-  dates: [
-    "Nov 17",
-    "Nov 18",
-    "Nov 19",
-    "Nov 20",
-    "Nov 21",
-    "Nov 22",
-    "Nov 23",
-    "Nov 24",
-    "Nov 25",
-    "Nov 26",
-  ],
-  accuracyRate: [51, 49, 51, 52, 54, 55, 57, 56, 55, 57],
+  dates: ["Nov 24", "Nov 25", "Nov 26", "Nov 27", "Nov 28", "Nov 29", "Nov 30"],
+  accuracyRate: [52, 53, 51, 54, 56, 55, 49],
 });
 
 const quickStartItems = [
@@ -622,6 +619,8 @@ const canisterData = ref({
   stakeChange: 0,
   accuracy: 0,
   accuracyChange: 0,
+  profit: 0,
+  profitChange: 0,
   tradingPair: "ICP/USDT",
   modelVersion: "v0.0.1",
   nextPrediction: "None",
@@ -993,15 +992,14 @@ const handleItemClick = (item) => {
 
 // 处理质押
 const handleStake = async () => {
-  if (!isFormValid.value) {
-    showMessageError("Please check form information");
-    return;
-  }
-
   stakeLoading.value = true;
 
   try {
     if (isStakeMode.value) {
+      if (!isFormValid.value) {
+        showMessageError("Please check form information");
+        return;
+      }
       console.log("stake", isStakeMode.value);
       const resBoolean = await stakePredictCanister(
         canisterId.value,
@@ -1014,7 +1012,16 @@ const handleStake = async () => {
       showSuccessDialog.value = true;
       getTokenBalance();
     } else {
-      console.log("unstake", isStakeMode.value);
+      // === Unstake 流程===
+      const res = await unstakePredictCanister(canisterId.value);
+      // 根据你的后端返回结构判断成功与否
+      if (res?.Ok || res === true) {
+        showMessageSuccess("Unstaked successfully!");
+      } else {
+        const errMsg = res?.Err ? JSON.stringify(res.Err) : "Unknown error";
+        showMessageError(`Unstake failed: ${errMsg}`);
+        return;
+      }
     }
   } catch (error) {
   } finally {
@@ -1089,10 +1096,6 @@ const isFormValid = computed(() => {
 .banner-text {
   font-size: 14px; /* 类似 Tailwind 的 text-sm */
   line-height: 1.5; /* 类似 Tailwind 的 leading-normal */
-}
-
-.project-overview {
-  // min-height: 100vh;
 }
 
 .overview-container {

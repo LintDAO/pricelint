@@ -29,19 +29,8 @@ let chart: echarts.ECharts | null = null;
 const isChartLoading = ref(false);
 
 const chartData = ref({
-  dates: [
-    "Nov 17",
-    "Nov 18",
-    "Nov 19",
-    "Nov 20",
-    "Nov 21",
-    "Nov 22",
-    "Nov 23",
-    "Nov 24",
-    "Nov 25",
-    "Nov 26",
-  ],
-  accuracyRate: [51, 49, 51, 52, 54, 55, 57, 56, 55, 57],
+  dates: ["Nov 24", "Nov 25", "Nov 26", "Nov 27", "Nov 28", "Nov 29", "Nov 30"],
+  accuracyRate: [52, 53, 51, 54, 56, 55, 49],
 });
 
 // 日志数据结构
